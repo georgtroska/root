@@ -81,6 +81,8 @@ protected:
 	Double_t fNDatapoints; //Number of Datapoints within this candle
 	
 	CandleOption fOption; //Setting the style of the candle
+	int fLogX;
+	int fLogY;
 	
 	void Calculate();
 	
@@ -113,6 +115,11 @@ public:
 	
 	void				 SetOption(CandleOption opt) { fOption = opt; }
 	//void 				 SetOption(Option_t *option="");
+	void 				SetLog(int x, int y) { fLogX = x; fLogY = y; }
+	void				SetAxisPosition(const Double_t candlePos) { fPosCandleAxis = candlePos; }
+
+	void 				SetWidth(const Double_t width) { fCandleWidth = width; }
+	void				SetHistogram(TH1D *proj) { fProj = proj; fIsCalculated = false;}
 	
 	//virtual void         ls(Option_t *option="") const;
 	virtual void         Paint(Option_t *option="");
