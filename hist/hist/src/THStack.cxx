@@ -674,6 +674,8 @@ void THStack::Paint(Option_t *option)
 {
    if (!fHists) return;
    if (!fHists->GetSize()) return;
+   
+   std::cout << "In THStack: option is: " << option << std::endl;
 
    TString opt = option;
    opt.ToLower();
@@ -739,11 +741,13 @@ void THStack::Paint(Option_t *option)
    snprintf(loption,31,"%s",opt.Data());
    char *nostack  = strstr(loption,"nostack");
    char *nostackb = strstr(loption,"nostackb");
+   char *candle = strstr(loption,"candle");
+   
    // do not delete the stack. Another pad may contain the same object
    // drawn in stack mode!
    //if (nostack && fStack) {fStack->Delete(); delete fStack; fStack = 0;}
 
-   if (!opt.Contains("nostack")) BuildStack();
+   if (!opt.Contains("nostack") || (!opt.Contains("candle"))) BuildStack();
 
    Double_t themax,themin;
    if (fMaximum == -1111) themax = GetMaximum(option);
@@ -839,7 +843,16 @@ void THStack::Paint(Option_t *option)
    char noption[32];
    strlcpy(noption,loption,32);
    Int_t nhists = fHists->GetSize();
-   if (nostack) {
+   if (nostack || candle) {
+	   
+	   std::cout << "doing nostack" << std::endl;
+	   /*char * l;
+	   l = strstr(opt, "candle");
+	   if (l) {
+		TCandle candle;
+		Hoption.Candle = candle.ParseOption(l);
+		Hoption.Scat = 0;
+	}*/
       lnk = (TObjOptLink*)fHists->FirstLink();
       TH1* hAti;
       Double_t bo=0.03;
@@ -858,10 +871,24 @@ void THStack::Paint(Option_t *option)
             hAti->SetBarOffset(bo);
             bo += bw;
          }
+         if (candle) {
+			float candleSpace = 1./(nhists*2);
+            float candleOffset = - 1./2 + candleSpace + 2*candleSpace*i;
+			candleSpace *= 1.66; //width of the candle per bin: 1.0 means space is as great as the candle, 2.0 means there is no space
+			
+			std::cout << "barwidth: " << hAti->GetBarWidth() << std::endl;
+			hAti->SetBarWidth(candleSpace);
+			hAti->SetBarOffset(candleOffset);
+		 }
+         
+		 
+		 
+         std::cout << "Painting with " << loption << std::endl;
          hAti->Paint(loption);
          lnk = (TObjOptLink*)lnk->Next();
       }
    } else {
+	   std::cout << "doing with stack" << std::endl;
       lnk = (TObjOptLink*)fHists->LastLink();
       TH1 *h1;
       Int_t h1col, h1fill;
