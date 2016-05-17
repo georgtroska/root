@@ -12,15 +12,6 @@
 #ifndef ROOT_TCandle
 #define ROOT_TCandle
 
-
-//////////////////////////////////////////////////////////////////////////
-//                                                                      //
-// TCandle                                                              //
-//                                                                      //
-// One Candle of a box(-and-whisker)-plot                               //
-//                                                                      //
-//////////////////////////////////////////////////////////////////////////
-
 #ifndef ROOT_TObject
 #include "TObject.h"
 #endif
@@ -35,122 +26,97 @@
 #endif
 
 #include "TH1D.h"
-
-
-
-
+#include "TMath.h"
 
 class TCandle : public TObject, public TAttLine, public TAttFill, public TAttMarker {
 public:
-	//Candle Option
-	enum CandleOption{
-		kNoOption = 0,
-		kBox = 1,
-		kBoxFilled = 2,
-		kMedianLine = 10,
-		kMedianNotched = 20,
-		kMedianCircle = 30,
-		kMeanLine = 100,
-		kMeanCircle = 300,
-		kWhiskerAll = 1000,
-		kWhisker15 = 2000,
-		kAnchor = 10000,
-		kPointsOutliers = 100000,
-		kPointsAll = 200000,
-		kPointsAllScat = 300000,
-		kHorizontal = 1000000 // if this decbit is not set it is vertical!
-	};
-	
-	
+   //Candle Option
+   enum CandleOption{
+      kNoOption = 0,
+      kBox = 1,
+      kBoxFilled = 2,
+      kMedianLine = 10,
+      kMedianNotched = 20,
+      kMedianCircle = 30,
+      kMeanLine = 100,
+      kMeanCircle = 300,
+      kWhiskerAll = 1000,
+      kWhisker15 = 2000,
+      kAnchor = 10000,
+      kPointsOutliers = 100000,
+      kPointsAll = 200000,
+      kPointsAllScat = 300000,
+      kHorizontal = 1000000 // if this bit is not set it is vertical!
+   };
+
 protected:
 
-	bool fIsRaw; //0: for TH1 projection, 1: using raw data
-	bool fIsCalculated;
-	TH1D * fProj;
-	bool fDismiss; //true if the candle cannot be painted
-	
-	Double_t fPosCandleAxis; //x-pos for a vertical candle
-	Double_t fCandleWidth; //the candle width
-	
-	Double_t fMean;	//position of the mean
-	Double_t fMedian; //position of the median
-	Double_t fBoxUp; //position of the upper box end
-	Double_t fBoxDown; //position of the lower box end
-	Double_t fWhiskerUp; //position of the upper whisker end
-	Double_t fWhiskerDown; //position of the lower whisker end
-	
-	Double_t * fDatapoints; //position of all Datapoints within this candle
-	Double_t fNDatapoints; //Number of Datapoints within this candle
-	
-	CandleOption fOption; //Setting the style of the candle
-	int fLogX;
-	int fLogY;
-	
-	void Calculate();
-	
-	
-	int GetOption(const int pos);
-	bool IsOption(CandleOption opt);
-	void PaintLBox(Int_t nPoints, Double_t *x, Double_t *y, Bool_t swapXY, Bool_t fill);
-	void PaintLine(Double_t x1, Double_t y1, Double_t x2, Double_t y2, Bool_t swapXY);
-	
+   bool fIsRaw;             ///< 0: for TH1 projection, 1: using raw data
+   bool fIsCalculated;
+   TH1D * fProj;
+   bool fDismiss;           ///< True if the candle cannot be painted
+
+   Double_t fPosCandleAxis; ///< x-pos for a vertical candle
+   Double_t fCandleWidth;   ///< The candle width
+
+   Double_t fMean;          ///< Position of the mean
+   Double_t fMedian;        ///< Position of the median
+   Double_t fBoxUp;         ///< Position of the upper box end
+   Double_t fBoxDown;       ///< Position of the lower box end
+   Double_t fWhiskerUp;     ///< Position of the upper whisker end
+   Double_t fWhiskerDown;   ///< Position of the lower whisker end
+
+   Double_t * fDatapoints;  ///< position of all Datapoints within this candle
+   Double_t fNDatapoints;   ///< Number of Datapoints within this candle
+
+   CandleOption fOption;    ///< Setting the style of the candle
+   int fLogX;
+   int fLogY;
+
+   void Calculate();
+
+   int  GetCandleOption(const int pos) {return (fOption/(int)TMath::Power(10,pos))%10;}
+   bool IsOption(CandleOption opt);
+   void PaintLBox(Int_t nPoints, Double_t *x, Double_t *y, Bool_t swapXY, Bool_t fill);
+   void PaintLine(Double_t x1, Double_t y1, Double_t x2, Double_t y2, Bool_t swapXY);
+
 public:
-	
 
-	TCandle();
-	TCandle(const Double_t candlePos, const Double_t candleWidth, const Int_t n, const Double_t * points);
-	TCandle(const Double_t candlePos, const Double_t candleWidth, TH1D *proj);
-	TCandle(const TCandle &candle);
-	virtual ~TCandle();
+   TCandle();
+   TCandle(const Double_t candlePos, const Double_t candleWidth, const Int_t n, const Double_t * points);
+   TCandle(const Double_t candlePos, const Double_t candleWidth, TH1D *proj);
+   TCandle(const TCandle &candle);
+   virtual ~TCandle();
 
-	void                 Copy(TObject &candle) const;
-	
-	virtual void         ExecuteEvent(Int_t event, Int_t px, Int_t py);
-	
-	Double_t             GetMean() const {return fMean;}
-	Double_t             GetMedian() const {return fMedian;}
-	Double_t             GetQ1() const {return fBoxUp;}
-	Double_t             GetQ2() const {return fMedian;}
-	Double_t             GetQ3() const {return fBoxDown;}
-	Bool_t               IsHorizontal() {return (IsOption(kHorizontal)); }
-	Bool_t               IsVertical() {return (!IsOption(kHorizontal)); }
-	
-	void				 SetOption(CandleOption opt) { fOption = opt; }
-	//void 				 SetOption(Option_t *option="");
-	void 				SetLog(int x, int y) { fLogX = x; fLogY = y; }
-	void				SetAxisPosition(const Double_t candlePos) { fPosCandleAxis = candlePos; }
+   void           Copy(TObject &candle) const;
 
-	void 				SetWidth(const Double_t width) { fCandleWidth = width; }
-	void				SetHistogram(TH1D *proj) { fProj = proj; fIsCalculated = false;}
-	
-	
-	virtual void         Paint(Option_t *option="");
-	
-	#if 0
-	//virtual void         ls(Option_t *option="") const;
-	//virtual void         Print(Option_t *option="") const;
-	//virtual void         SavePrimitive(std::ostream &out, Option_t *option = "");
-	
-	//virtual void         SetNDC(Bool_t isNDC=kTRUE);
-	//void                 SetHorizontal(Bool_t set = kTRUE) { fOrientation = kHorizontal; }; // *TOGGLE* *GETTER=IsHorizontal
-	//void                 SetVertical(Bool_t set = kTRUE) { fOrientation = kVertical; }; // *TOGGLE* *GETTER=IsVertical
-	#endif
-	
-	virtual void         SetMean(Double_t mean) { fMean = mean; }
-	virtual void         SetMedian(Double_t median) { fMedian = median; }
-	virtual void         SetQ1(Double_t q1) { fBoxUp = q1; }
-	virtual void         SetQ2(Double_t q2) { fMedian = q2; }
-	virtual void         SetQ3(Double_t q3) { fBoxDown = q3; }
-	
-	int ParseOption(char *optin);
-	
+   virtual void   ExecuteEvent(Int_t event, Int_t px, Int_t py);
 
-	//ClassDef(TCandle,1)  //A Candle
+   Double_t       GetMean() const {return fMean;}
+   Double_t       GetMedian() const {return fMedian;}
+   Double_t       GetQ1() const {return fBoxUp;}
+   Double_t       GetQ2() const {return fMedian;}
+   Double_t       GetQ3() const {return fBoxDown;}
+   Bool_t         IsHorizontal() {return (IsOption(kHorizontal)); }
+   Bool_t         IsVertical() {return (!IsOption(kHorizontal)); }
+
+   void           SetOption(CandleOption opt) { fOption = opt; }
+   void           SetLog(int x, int y) { fLogX = x; fLogY = y; }
+   void           SetAxisPosition(const Double_t candlePos) { fPosCandleAxis = candlePos; }
+
+   void           SetWidth(const Double_t width) { fCandleWidth = width; }
+   void           SetHistogram(TH1D *proj) { fProj = proj; fIsCalculated = false;}
+
+   virtual void   Paint(Option_t *option="");
+
+   virtual void   SetMean(Double_t mean) { fMean = mean; }
+   virtual void   SetMedian(Double_t median) { fMedian = median; }
+   virtual void   SetQ1(Double_t q1) { fBoxUp = q1; }
+   virtual void   SetQ2(Double_t q2) { fMedian = q2; }
+   virtual void   SetQ3(Double_t q3) { fBoxDown = q3; }
+
+   int            ParseOption(char *optin);
+
+   ClassDef(TCandle,1)  //A Candle
 };
-
-#ifdef __CINT__
-#pragma link C++ class TCandle-;
-#endif
-
-
 #endif
