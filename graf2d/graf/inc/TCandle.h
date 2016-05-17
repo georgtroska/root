@@ -38,6 +38,8 @@
 
 
 
+
+
 class TCandle : public TObject, public TAttLine, public TAttFill, public TAttMarker {
 public:
 	//Candle Option
@@ -121,14 +123,19 @@ public:
 	void 				SetWidth(const Double_t width) { fCandleWidth = width; }
 	void				SetHistogram(TH1D *proj) { fProj = proj; fIsCalculated = false;}
 	
-	//virtual void         ls(Option_t *option="") const;
+	
 	virtual void         Paint(Option_t *option="");
+	
+	#if 0
+	//virtual void         ls(Option_t *option="") const;
 	//virtual void         Print(Option_t *option="") const;
 	//virtual void         SavePrimitive(std::ostream &out, Option_t *option = "");
 	
 	//virtual void         SetNDC(Bool_t isNDC=kTRUE);
 	//void                 SetHorizontal(Bool_t set = kTRUE) { fOrientation = kHorizontal; }; // *TOGGLE* *GETTER=IsHorizontal
 	//void                 SetVertical(Bool_t set = kTRUE) { fOrientation = kVertical; }; // *TOGGLE* *GETTER=IsVertical
+	#endif
+	
 	virtual void         SetMean(Double_t mean) { fMean = mean; }
 	virtual void         SetMedian(Double_t median) { fMedian = median; }
 	virtual void         SetQ1(Double_t q1) { fBoxUp = q1; }

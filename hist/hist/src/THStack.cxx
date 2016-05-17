@@ -675,8 +675,6 @@ void THStack::Paint(Option_t *option)
    if (!fHists) return;
    if (!fHists->GetSize()) return;
    
-   std::cout << "In THStack: option is: " << option << std::endl;
-
    TString opt = option;
    opt.ToLower();
    Bool_t lsame = kFALSE;
@@ -720,6 +718,25 @@ void THStack::Paint(Option_t *option)
       padsav->cd();
       return;
    }
+   
+   /*
+	char *l;
+	bool showLegend = false;
+	char legOption[8];
+	l = strstr(opt,"leg");
+	if (l) {
+		char *brOpen = strstr(l,"(");
+		char *brClose = strstr(l,")");
+		char legOption[8];
+		if (brOpen && brClose) {
+			showLegend = true;
+			strncpy(legOption, brOpen+1, brClose-brOpen -1); //Now the string "(....)" without brackets is in this array
+			strncpy(brOpen,"                ",brClose-brOpen+1); //Cleanup the (..) string including brackets
+		
+		}
+		strncpy(l,"   ",3); //Cleanup the "leg" string
+   }
+   * */
 
    // compute the min/max of each axis
    TH1 *h;
@@ -844,15 +861,6 @@ void THStack::Paint(Option_t *option)
    strlcpy(noption,loption,32);
    Int_t nhists = fHists->GetSize();
    if (nostack || candle) {
-	   
-	   std::cout << "doing nostack" << std::endl;
-	   /*char * l;
-	   l = strstr(opt, "candle");
-	   if (l) {
-		TCandle candle;
-		Hoption.Candle = candle.ParseOption(l);
-		Hoption.Scat = 0;
-	}*/
       lnk = (TObjOptLink*)fHists->FirstLink();
       TH1* hAti;
       Double_t bo=0.03;
@@ -875,20 +883,14 @@ void THStack::Paint(Option_t *option)
 			float candleSpace = 1./(nhists*2);
             float candleOffset = - 1./2 + candleSpace + 2*candleSpace*i;
 			candleSpace *= 1.66; //width of the candle per bin: 1.0 means space is as great as the candle, 2.0 means there is no space
-			
-			std::cout << "barwidth: " << hAti->GetBarWidth() << std::endl;
 			hAti->SetBarWidth(candleSpace);
 			hAti->SetBarOffset(candleOffset);
 		 }
          
-		 
-		 
-         std::cout << "Painting with " << loption << std::endl;
          hAti->Paint(loption);
          lnk = (TObjOptLink*)lnk->Next();
       }
    } else {
-	   std::cout << "doing with stack" << std::endl;
       lnk = (TObjOptLink*)fHists->LastLink();
       TH1 *h1;
       Int_t h1col, h1fill;
@@ -921,6 +923,16 @@ void THStack::Paint(Option_t *option)
       }
    }
    if (!lsame) fHistogram->Paint("axissame");
+   /*
+   if (drawLegend) {
+	   TLegend leg(0.75,0.75,0.95,0.95);
+	   TH1* hAti;
+	   for (Int_t i=0;i<nhists;i++) {
+		   hAti = (TH1F*)(fHists->At(i));
+			leg.AddEntry(hAti,hAti->GetTitle(),legOption);
+		}
+	   leg->Draw();
+   }*/
 }
 
 ////////////////////////////////////////////////////////////////////////////////

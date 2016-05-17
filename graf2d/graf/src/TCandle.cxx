@@ -249,42 +249,46 @@ void TCandle::ls(Option_t *) const {
 /// This calculated the most values for the candle definition. It depends on the
 /// candle options as well!
 void TCandle::Calculate() {
-	// Determining the quantiles
-	Double_t *prob = new Double_t[5];
-	prob[0]=1E-15; prob[1]=0.25; prob[2]=0.5; prob[3]=0.75; prob[4]=1-1E-15;
-	Double_t *quantiles = new Double_t[5];
-	quantiles[0]=0.; quantiles[1]=0.; quantiles[2] = 0.; quantiles[3] = 0.; quantiles[4] = 0.;
-	
-	fProj->GetQuantiles(5, quantiles, prob);
-	
-	// Check if the quantiles are valid, seems the under- and overflow is taken
-	// into account as well, we need to ignore this!
-	if (quantiles[0] >= quantiles[4]) return;
-	if (quantiles[1] >= quantiles[3]) return;
+	if (!fIsRaw && fProj) {
+		// Determining the quantiles
+		Double_t *prob = new Double_t[5];
+		prob[0]=1E-15; prob[1]=0.25; prob[2]=0.5; prob[3]=0.75; prob[4]=1-1E-15;
+		Double_t *quantiles = new Double_t[5];
+		quantiles[0]=0.; quantiles[1]=0.; quantiles[2] = 0.; quantiles[3] = 0.; quantiles[4] = 0.;
+		
+		fProj->GetQuantiles(5, quantiles, prob);
+		
+		// Check if the quantiles are valid, seems the under- and overflow is taken
+		// into account as well, we need to ignore this!
+		if (quantiles[0] >= quantiles[4]) return;
+		if (quantiles[1] >= quantiles[3]) return;
 
-	// Definition of the candle in the standard case
-	fBoxUp = quantiles[3];
-	fBoxDown = quantiles[1];
-	fWhiskerUp = quantiles[4]; //Standard case
-	fWhiskerDown = quantiles[0]; //Standard case
-	fMedian = quantiles[2];
-	fMean = fProj->GetMean();
-	
-	Double_t iqr = fBoxUp-fBoxDown;
-	
-	if (IsOption(kWhisker15)) { // Improved whisker definition, with 1.5*iqr
-		int bin = fProj->FindBin(fBoxDown-1.5*iqr);
-		// extending only to the lowest data value within this range
-		while (fProj->GetBinContent(bin) == 0 && bin <= fProj->GetNbinsX()) bin++;
-		fWhiskerDown = fProj->GetBinCenter(bin);
+		// Definition of the candle in the standard case
+		fBoxUp = quantiles[3];
+		fBoxDown = quantiles[1];
+		fWhiskerUp = quantiles[4]; //Standard case
+		fWhiskerDown = quantiles[0]; //Standard case
+		fMedian = quantiles[2];
+		fMean = fProj->GetMean();
+		
+		Double_t iqr = fBoxUp-fBoxDown;
+		
+		if (IsOption(kWhisker15)) { // Improved whisker definition, with 1.5*iqr
+			int bin = fProj->FindBin(fBoxDown-1.5*iqr);
+			// extending only to the lowest data value within this range
+			while (fProj->GetBinContent(bin) == 0 && bin <= fProj->GetNbinsX()) bin++;
+			fWhiskerDown = fProj->GetBinCenter(bin);
 
-		bin = fProj->FindBin(fBoxUp+1.5*iqr);
-		while (fProj->GetBinContent(bin) == 0 && bin >= 1) bin--;
-		fWhiskerUp = fProj->GetBinCenter(bin);
+			bin = fProj->FindBin(fBoxUp+1.5*iqr);
+			while (fProj->GetBinContent(bin) == 0 && bin >= 1) bin--;
+			fWhiskerUp = fProj->GetBinCenter(bin);
+		}
+		
+		delete prob;
+		delete quantiles;
+	} else if (fIsRaw) {
+		/* tbd */
 	}
-	
-	delete prob;
-	delete quantiles;
 	fIsCalculated = true;
 }
 
@@ -543,7 +547,7 @@ void TCandle::SavePrimitive(std::ostream &out, Option_t * /*= ""*/)
 }
 #endif
 
-
+#if 0
 ////////////////////////////////////////////////////////////////////////////////
 /// Stream an object of class TLine.
 /* Do we really need this?????
@@ -572,6 +576,9 @@ void TLine::Streamer(TBuffer &R__b)
    }
 }
 * */
+
+#endif
+
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Getter for one option from fOption
