@@ -33,7 +33,7 @@ void candleplotstack()
    THStack *hs = new THStack("hs","Machine A+B+C");
    hs->Add(h1);
    hs->Add(h2);
-   hs->Add(h3);
+   hs->Add(h3,"candle1");
    hs->Draw("candle3");
 
    hs->GetXaxis()->SetTimeDisplay(1);

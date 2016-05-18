@@ -870,7 +870,10 @@ void THStack::Paint(Option_t *option)
             if (nostackb) snprintf(loption,31,"%s%s b",noption,lnk->GetOption());
             else          snprintf(loption,31,"%s%s",noption,lnk->GetOption());
          } else {
+            TString indivOpt = lnk->GetOption();
+            indivOpt.ToLower();
             if (nostackb) snprintf(loption,31,"%ssame%s b",noption,lnk->GetOption());
+            else if (candle && indivOpt.Contains("candle")) snprintf(loption,31,"%ssame",lnk->GetOption());
             else          snprintf(loption,31,"%ssame%s",noption,lnk->GetOption());
          }
          hAti = (TH1F*)(fHists->At(i));
@@ -880,13 +883,12 @@ void THStack::Paint(Option_t *option)
             bo += bw;
          }
          if (candle) {
-			float candleSpace = 1./(nhists*2);
+            float candleSpace = 1./(nhists*2);
             float candleOffset = - 1./2 + candleSpace + 2*candleSpace*i;
-			candleSpace *= 1.66; //width of the candle per bin: 1.0 means space is as great as the candle, 2.0 means there is no space
-			hAti->SetBarWidth(candleSpace);
-			hAti->SetBarOffset(candleOffset);
-		 }
-         
+            candleSpace *= 1.66; //width of the candle per bin: 1.0 means space is as great as the candle, 2.0 means there is no space
+            hAti->SetBarWidth(candleSpace);
+            hAti->SetBarOffset(candleOffset);
+         }
          hAti->Paint(loption);
          lnk = (TObjOptLink*)lnk->Next();
       }
