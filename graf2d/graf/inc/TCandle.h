@@ -61,13 +61,14 @@ protected:
 
    Double_t fMean;          ///< Position of the mean
    Double_t fMedian;        ///< Position of the median
+   Double_t fMedianErr;     ///< The size of the notch
    Double_t fBoxUp;         ///< Position of the upper box end
    Double_t fBoxDown;       ///< Position of the lower box end
    Double_t fWhiskerUp;     ///< Position of the upper whisker end
    Double_t fWhiskerDown;   ///< Position of the lower whisker end
 
    Double_t * fDatapoints;  ///< position of all Datapoints within this candle
-   Double_t fNDatapoints;   ///< Number of Datapoints within this candle
+   Long64_t fNDatapoints;   ///< Number of Datapoints within this candle
 
    CandleOption fOption;    ///< Setting the style of the candle
    int fLogX;
@@ -83,7 +84,7 @@ protected:
 public:
 
    TCandle();
-   TCandle(const Double_t candlePos, const Double_t candleWidth, const Int_t n, const Double_t * points);
+   TCandle(const Double_t candlePos, const Double_t candleWidth, Long64_t n, Double_t * points);
    TCandle(const Double_t candlePos, const Double_t candleWidth, TH1D *proj);
    TCandle(const TCandle &candle);
    virtual ~TCandle();

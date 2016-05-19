@@ -43,12 +43,38 @@ TCandle::TCandle()
    fCandleWidth   = 1.0;
    fMean          = 0.;
    fMedian        = 0.;
+   fMedianErr     = 0;
    fBoxUp         = 0.;
    fBoxDown       = 0.;
    fWhiskerUp     = 0.;
    fWhiskerDown   = 0.;
    fNDatapoints   = 0;
    fDismiss = 0;
+}
+
+
+TCandle::TCandle(const Double_t candlePos, const Double_t candleWidth, Long64_t n, Double_t * points) 
+	: TAttLine(), TAttFill(), TAttMarker()
+{
+	//Preliminary values only, need to be calculated before paint
+   fMean          = 0;
+   fMedian        = 0;
+   fMedianErr     = 0;
+   fBoxUp         = 0;
+   fBoxDown       = 0;
+   fWhiskerUp     = 0;
+   fWhiskerDown   = 0;
+   fNDatapoints   = n;
+   fIsCalculated  = 0;
+   fIsRaw         = true;
+   fPosCandleAxis = candlePos;
+   fCandleWidth   = candleWidth;
+   fDatapoints    = points;
+   fProj          = NULL;
+   fDismiss       = 0;
+   fOption        = kNoOption;
+   
+   std::cout << "constructing raw-candle" << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -60,6 +86,7 @@ TCandle::TCandle(const Double_t candlePos, const Double_t candleWidth, TH1D *pro
    //Preliminary values only, need to be calculated before paint
    fMean          = 0;
    fMedian        = 0;
+   fMedianErr     = 0;
    fBoxUp         = 0;
    fBoxDown       = 0;
    fWhiskerUp     = 0;
@@ -153,45 +180,65 @@ int TCandle::ParseOption(char * opt) {
 /// candle options.
 
 void TCandle::Calculate() {
-   if (!fIsRaw && fProj) {
-      // Determining the quantiles
-      Double_t *prob = new Double_t[5];
-      prob[0]=1E-15; prob[1]=0.25; prob[2]=0.5; prob[3]=0.75; prob[4]=1-1E-15;
-      Double_t *quantiles = new Double_t[5];
-      quantiles[0]=0.; quantiles[1]=0.; quantiles[2] = 0.; quantiles[3] = 0.; quantiles[4] = 0.;
-
+  
+   // Determining the quantiles
+   Double_t *prob = new Double_t[5];
+   prob[0]=1E-15; prob[1]=0.25; prob[2]=0.5; prob[3]=0.75; prob[4]=1-1E-15;
+   Double_t *quantiles = new Double_t[5];
+   quantiles[0]=0.; quantiles[1]=0.; quantiles[2] = 0.; quantiles[3] = 0.; quantiles[4] = 0.;
+   if (!fIsRaw && fProj) { //Need a calculation for a projected histo
       fProj->GetQuantiles(5, quantiles, prob);
-
-      // Check if the quantiles are valid, seems the under- and overflow is taken
-      // into account as well, we need to ignore this!
-      if (quantiles[0] >= quantiles[4]) return;
-      if (quantiles[1] >= quantiles[3]) return;
-
-      // Definition of the candle in the standard case
-      fBoxUp = quantiles[3];
-      fBoxDown = quantiles[1];
-      fWhiskerUp = quantiles[4]; //Standard case
-      fWhiskerDown = quantiles[0]; //Standard case
-      fMedian = quantiles[2];
-      fMean = fProj->GetMean();
-
-      Double_t iqr = fBoxUp-fBoxDown;
-
-      if (IsOption(kWhisker15)) { // Improved whisker definition, with 1.5*iqr
-         int bin = fProj->FindBin(fBoxDown-1.5*iqr);
-         // extending only to the lowest data value within this range
-         while (fProj->GetBinContent(bin) == 0 && bin <= fProj->GetNbinsX()) bin++;
-         fWhiskerDown = fProj->GetBinCenter(bin);
-
-         bin = fProj->FindBin(fBoxUp+1.5*iqr);
-         while (fProj->GetBinContent(bin) == 0 && bin >= 1) bin--;
-         fWhiskerUp = fProj->GetBinCenter(bin);
-      }
-
-      delete [] prob;
-      delete [] quantiles;
-   } else if (fIsRaw) {
+   } else { //Need a calculation for a raw-data candle
+      TMath::Quantiles(fNDatapoints,5,fDatapoints,quantiles,prob,kFALSE);
    }
+
+   // Check if the quantiles are valid, seems the under- and overflow is taken
+   // into account as well, we need to ignore this!
+   if (quantiles[0] >= quantiles[4]) return;
+   if (quantiles[1] >= quantiles[3]) return;
+
+   // Definition of the candle in the standard case
+   Double_t iqr = fBoxUp-fBoxDown;
+   fBoxUp = quantiles[3];
+   fBoxDown = quantiles[1];
+   fWhiskerUp = quantiles[4]; //Standard case
+   fWhiskerDown = quantiles[0]; //Standard case
+   fMedian = quantiles[2];
+   if (!fIsRaw && fProj) { //Need a calculation for a projected histo
+      fMean = fProj->GetMean();
+      fMedianErr = 1.57*iqr/sqrt(fProj->GetEntries());
+    } else { //Need a calculation for a raw-data candle
+      fMean = 0; /// FIXME!!!!
+      fMedianErr = 1.57*iqr/sqrt(fNDatapoints);
+    }
+
+   if (IsOption(kWhisker15)) { // Improved whisker definition, with 1.5*iqr
+      if (!fIsRaw && fProj) { //Need a calculation for a projected histo
+	 int bin = fProj->FindBin(fBoxDown-1.5*iqr);
+	 // extending only to the lowest data value within this range
+	 while (fProj->GetBinContent(bin) == 0 && bin <= fProj->GetNbinsX()) bin++;
+	 fWhiskerDown = fProj->GetBinCenter(bin);
+
+	 bin = fProj->FindBin(fBoxUp+1.5*iqr);
+	 while (fProj->GetBinContent(bin) == 0 && bin >= 1) bin--;
+	 fWhiskerUp = fProj->GetBinCenter(bin);
+      } else { //Need a calculation for a raw-data candle
+	 fWhiskerUp = fBoxDown;
+	 fWhiskerDown = fBoxUp;
+	 //Need to find highest value up to 1.5*iqr from the BoxUp-pos, and the lowest value up to -1.5*iqr from the boxLow-pos
+	 for (Long64_t i = 0; i < fNDatapoints; ++i) {
+	    Double_t myData = fDatapoints[i];
+	    if (myData > fWhiskerUp && myData <= fBoxUp + 1.5*iqr) fWhiskerUp = myData;
+	    if (myData < fWhiskerDown && myData >= fBoxDown - 1.5*iqr) fWhiskerDown = myData;
+	 }
+	 
+      }
+   }
+
+   delete [] prob;
+   delete [] quantiles;
+   
+   
    fIsCalculated = true;
 }
 
@@ -200,17 +247,18 @@ void TCandle::Calculate() {
 
 void TCandle::Paint(Option_t *)
 {
-   //If something was changed before, we need to recalculate some values
+  //If something was changed before, we need to recalculate some values
    if (!fIsCalculated) Calculate();
-
+ std::cout << "Painting candle at: " << fPosCandleAxis << " " << fCandleWidth << " " << fWhiskerUp << " " << fWhiskerDown << std::endl;
+   
    // Save the attributes as they were set originally
    Style_t saveLine   = GetLineStyle();
    Style_t saveMarker = GetMarkerStyle();
 
    Double_t dimLeft = fPosCandleAxis-0.5*fCandleWidth;
    Double_t dimRight = fPosCandleAxis+0.5*fCandleWidth;
-   Double_t iqr = fBoxUp-fBoxDown;
-   Double_t fMedianErr = 1.57*iqr/sqrt(fProj->GetEntries());
+   
+ 
 
    TAttLine::Modify();
    TAttFill::Modify();
@@ -221,6 +269,7 @@ void TCandle::Paint(Option_t *)
    Bool_t doLogX = (!(swapXY) && fLogX) || (swapXY && fLogY);
 
    // From now on this is real painting only, no calculations anymore
+   
 
    if (IsOption(kBox)) { // Draw a simple box
      if (IsOption(kMedianNotched)) { // Check if we have to draw a box with notches
@@ -398,6 +447,7 @@ void TCandle::Paint(Option_t *)
       TAttMarker::Modify();
       gPad->PaintPolyMarker(nOutliers,outliersX, outliersY);
    }
+   std::cout << "painted candle!" << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -27,6 +27,7 @@
 #include "TFrame.h"
 #include "TCanvas.h"
 #include "TMarker.h"
+#include "TCandle.h"
 
 ClassImp(TParallelCoordVar)
 
@@ -561,6 +562,57 @@ void TParallelCoordVar::Paint(Option_t* /*option*/)
 
 void TParallelCoordVar::PaintBoxPlot()
 {
+	
+	TFrame* frame = gPad->GetFrame();
+	Double_t boxSize;
+   if (fParallel->GetNvar() > 1) {
+      if (fX1==fX2) boxSize = fHistoHeight*((frame->GetY2()-frame->GetY1())/(fParallel->GetNvar()-1));
+      else          boxSize = fHistoHeight*((frame->GetX2()-frame->GetX1())/(fParallel->GetNvar()-1));
+      if (boxSize >= 0.03) boxSize = 0.03;
+   }
+   else boxSize = 0.03;
+   
+   Long64_t first = fParallel->GetCurrentFirst();
+   Long64_t nentries = fParallel->GetCurrentN();
+   Double_t* val;
+   TCandle myCandle;
+   if (first==0 && nentries==fNentries) { //Without any selection take the array as it is
+		std::cout << "this case!" << std::endl;
+		myCandle = TCandle(fX1,boxSize*2, fNentries, fVal);
+	} else { //Need to pass only the selection to TCandle
+      val = new Double_t[nentries];
+      Int_t selected = 0;
+      if(fMinInit<=0) {
+         for (Long64_t n=first;n<first+nentries;++n) {
+            if (fVal[n] >= fMinCurrent) {
+               val[selected] = fVal[n];
+               ++selected;
+            }
+         }
+      } else {
+         for (Long64_t n=first;n<first+nentries;++n) {
+            val[selected] = fVal[n];
+            ++selected;
+         }
+      }
+      myCandle = TCandle(fX1,boxSize*2, selected, val);
+	}
+      
+	myCandle.SetLineColor(kBlue);
+	myCandle.SetLineWidth(1);
+	myCandle.SetLineStyle(1);
+	myCandle.Paint("candle2");
+	
+	 gPad->PaintLine(fX1,0.1,fX1,0.2);
+	 std::cout << "fMinCurrent: " << fMinCurrent << std::endl;
+	 std::cout << "fMaxCurrent: " << fMaxCurrent << std::endl;
+	 std::cout << "fX1: " << fX1 << " fX2: " << fX2 << std::endl;
+	 std::cout << "fY1: " << fY1 << " fY2: " << fY2 << std::endl;
+	
+	
+	//if (val) delete [] val;
+	
+	/*
    TLine *line = new TLine();
    line->SetLineColor(GetLineColor());
    line->SetLineWidth(1);
@@ -654,6 +706,7 @@ void TParallelCoordVar::PaintBoxPlot()
 
    delete line;
    delete box;
+   * */
 }
 
 ////////////////////////////////////////////////////////////////////////////////
