@@ -41,10 +41,5 @@ void candleplotstack()
    hs->GetXaxis()->SetTitle("Date [month/year]");
 
    c1->Modified();
-
-   TLegend *leg = new TLegend(0.75,0.75,0.95,0.95);
-   leg->AddEntry(h1,h1->GetTitle(),"l");
-   leg->AddEntry(h2,h2->GetTitle(),"l");
-   leg->AddEntry(h3,h3->GetTitle(),"l");
-   leg->Draw();
+   c1->BuildLegend(0.75,0.75,0.95,0.95,"", "f"); 
 }
