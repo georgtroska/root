@@ -33,8 +33,9 @@ void candleplotstack()
    THStack *hs = new THStack("hs","Machine A+B+C");
    hs->Add(h1);
    hs->Add(h2);
-   hs->Add(h3,"candle1");
+   hs->Add(h3,"candlex(2)");
    hs->Draw("candle3");
+   h3->SetFillColor(kGreen);
 
    hs->GetXaxis()->SetTimeDisplay(1);
    hs->GetXaxis()->SetTimeFormat("%m/%y");
