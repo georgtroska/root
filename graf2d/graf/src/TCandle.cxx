@@ -50,6 +50,8 @@ TCandle::TCandle()
    fWhiskerDown   = 0.;
    fNDatapoints   = 0;
    fDismiss = 0;
+   fLogX          = 0;
+   fLogY          = 0;
 }
 
 
@@ -73,6 +75,8 @@ TCandle::TCandle(const Double_t candlePos, const Double_t candleWidth, Long64_t 
    fProj          = NULL;
    fDismiss       = 0;
    fOption        = kNoOption;
+   fLogX          = 0;
+   fLogY          = 0;
    
    std::cout << "constructing raw-candle" << std::endl;
 }
@@ -100,6 +104,8 @@ TCandle::TCandle(const Double_t candlePos, const Double_t candleWidth, TH1D *pro
    fProj          = proj;
    fDismiss       = 0;
    fOption        = kNoOption;
+   fLogX          = 0;
+   fLogY          = 0;
 
 }
 
@@ -116,9 +122,12 @@ TCandle::~TCandle() {
 int TCandle::ParseOption(char * opt) {
    fOption = kNoOption;
    char *l;
+   
+   std::cout << "parsing..!" <<std::endl;
 
    l = strstr(opt,"CANDLE");
    if (l) {
+      std::cout << "foudn candle!" <<std::endl;
       const CandleOption fallbackCandle = (CandleOption)(kBox + kMedianLine + kMeanCircle + kWhiskerAll + kAnchor);
 
       char direction = ' ';
@@ -144,6 +153,7 @@ int TCandle::ParseOption(char * opt) {
       if (preset == '6')  //Like candle2 but showing all datapoints scattered
          fOption = (CandleOption)(fOption + kBox + kMeanCircle + kMedianLine + kWhisker15 + kAnchor + kPointsAllScat);
 
+std::cout << "huhu"<<std::endl;
       if (preset != ' ' && direction != ' ')
          strncpy(l,"        ",8);
       else if (preset != ' ' || direction != ' ')
@@ -153,6 +163,7 @@ int TCandle::ParseOption(char * opt) {
 
       Bool_t useIndivOption = false;
 
+   std::cout << "here in parsing!" << std::endl;
       if (preset == ' ') { // Check if the user wants to set the properties individually
          char *brOpen = strstr(opt,"(");
          char *brClose = strstr(opt,")");
@@ -171,6 +182,7 @@ int TCandle::ParseOption(char * opt) {
       }
    }
    fIsCalculated = false;
+      std::cout << "parsed..!" <<std::endl;
    return fOption;
 
 }
@@ -250,7 +262,7 @@ void TCandle::Paint(Option_t *)
   //If something was changed before, we need to recalculate some values
    if (!fIsCalculated) Calculate();
  std::cout << "Painting candle at: " << fPosCandleAxis << " " << fCandleWidth << " " << fWhiskerUp << " " << fWhiskerDown << std::endl;
-   
+   std::cout << "option is: " << fOption << std::endl;
    // Save the attributes as they were set originally
    Style_t saveLine   = GetLineStyle();
    Style_t saveMarker = GetMarkerStyle();
@@ -345,7 +357,7 @@ void TCandle::Paint(Option_t *)
       TAttMarker::Modify();
 
    }
-
+std::cout << "doing the mean circle!" << std::endl;
   if (IsOption(kMeanCircle)) { // Paint fMean as a circle
       Double_t myMeanX[1], myMeanY[1];
       if (!swapXY) {
@@ -391,61 +403,66 @@ void TCandle::Paint(Option_t *)
    // only the datapoints outside the whiskers are shown.
    // One can show them in one row as crosses, or scattered randomly. If activated
    // all datapoint are shown in the same way
+   std::cout << "doing the points-stuff!" << std::endl;
    TRandom2 random;
-   if (GetCandleOption(5) > 0) { //Draw outliers
-      const int maxOutliers = kNMAX;
-      Double_t outliersX[maxOutliers];
-      Double_t outliersY[maxOutliers];
-      Double_t myScale = 1.;
-      if (fProj->GetEntries() > maxOutliers/2) myScale = fProj->GetEntries()/(maxOutliers/2.);
-      int nOutliers = 0;
-      for (int bin = 0; bin < fProj->GetNbinsX(); bin++) {
-         // Either show them only outside the whiskers, or all of them
-         if (fProj->GetBinContent(bin) > 0 && (fProj->GetBinCenter(bin) < fWhiskerDown || fProj->GetBinCenter(bin) > fWhiskerUp || (GetCandleOption(5) > 1)) ) {
-         Double_t scaledBinContent = fProj->GetBinContent(bin)/myScale;
-         if (scaledBinContent >0 && scaledBinContent < 1) scaledBinContent = 1; //Outliers have a typical bincontent between 0 and 1, when scaling they would disappear
-            for (int j=0; j < (int)scaledBinContent; j++) {
-               if (nOutliers > maxOutliers) break;
-               if (IsOption(kPointsAllScat)) { //Draw outliers and "all" values scattered
-                  outliersX[nOutliers] = fPosCandleAxis - fCandleWidth/2. + fCandleWidth*random.Rndm();
-                  outliersY[nOutliers] = fProj->GetBinLowEdge(bin) + fProj->GetBinWidth(bin)*random.Rndm();
-               } else { //Draw them in the "candle line"
-                  outliersX[nOutliers] = fPosCandleAxis;
-                  if ((int)scaledBinContent == 1) //If there is only one datapoint available put it in the middle of the bin
-                     outliersY[nOutliers] = fProj->GetBinCenter(bin);
-                  else //If there is more than one datapoint scatter it along the bin, otherwise all marker would be (invisibly) stacked on top of each other
-                     outliersY[nOutliers] = fProj->GetBinLowEdge(bin) + fProj->GetBinWidth(bin)*random.Rndm();
-               }
-               if (swapXY) {
-                  //Swap X and Y
-                  Double_t keepCurrently;
-                  keepCurrently = outliersX[nOutliers];
-                  outliersX[nOutliers] = outliersY[nOutliers];
-                  outliersY[nOutliers] = keepCurrently;
-               }
-               // Continue fMeans, that nOutliers is not increased, so that value will not be shown
-               if (doLogX) {
-                  if (outliersX[nOutliers] > 0) outliersX[nOutliers] = TMath::Log10(outliersX[nOutliers]); else continue;
-               }
-               if (doLogY) {
-                  if (outliersY[nOutliers] > 0) outliersY[nOutliers] = TMath::Log10(outliersY[nOutliers]); else continue;
-               }
-               nOutliers++;
-            }
-         }
-         if (nOutliers > maxOutliers) { //Should never happen, due to myScale!!!
-            Error ("PaintCandlePlot","Not possible to draw all outliers.");
-            break;
-         }
-      }
+   if (fProj && !fIsRaw) {
+      if (GetCandleOption(5) > 0) { //Draw outliers
+	 const int maxOutliers = kNMAX;
+	 Double_t outliersX[maxOutliers];
+	 Double_t outliersY[maxOutliers];
+	 Double_t myScale = 1.;
+	 if (fProj->GetEntries() > maxOutliers/2) myScale = fProj->GetEntries()/(maxOutliers/2.);
+	 int nOutliers = 0;
+	 for (int bin = 0; bin < fProj->GetNbinsX(); bin++) {
+	    // Either show them only outside the whiskers, or all of them
+	    if (fProj->GetBinContent(bin) > 0 && (fProj->GetBinCenter(bin) < fWhiskerDown || fProj->GetBinCenter(bin) > fWhiskerUp || (GetCandleOption(5) > 1)) ) {
+	    Double_t scaledBinContent = fProj->GetBinContent(bin)/myScale;
+	    if (scaledBinContent >0 && scaledBinContent < 1) scaledBinContent = 1; //Outliers have a typical bincontent between 0 and 1, when scaling they would disappear
+	       for (int j=0; j < (int)scaledBinContent; j++) {
+		  if (nOutliers > maxOutliers) break;
+		  if (IsOption(kPointsAllScat)) { //Draw outliers and "all" values scattered
+		     outliersX[nOutliers] = fPosCandleAxis - fCandleWidth/2. + fCandleWidth*random.Rndm();
+		     outliersY[nOutliers] = fProj->GetBinLowEdge(bin) + fProj->GetBinWidth(bin)*random.Rndm();
+		  } else { //Draw them in the "candle line"
+		     outliersX[nOutliers] = fPosCandleAxis;
+		     if ((int)scaledBinContent == 1) //If there is only one datapoint available put it in the middle of the bin
+			outliersY[nOutliers] = fProj->GetBinCenter(bin);
+		     else //If there is more than one datapoint scatter it along the bin, otherwise all marker would be (invisibly) stacked on top of each other
+			outliersY[nOutliers] = fProj->GetBinLowEdge(bin) + fProj->GetBinWidth(bin)*random.Rndm();
+		  }
+		  if (swapXY) {
+		     //Swap X and Y
+		     Double_t keepCurrently;
+		     keepCurrently = outliersX[nOutliers];
+		     outliersX[nOutliers] = outliersY[nOutliers];
+		     outliersY[nOutliers] = keepCurrently;
+		  }
+		  // Continue fMeans, that nOutliers is not increased, so that value will not be shown
+		  if (doLogX) {
+		     if (outliersX[nOutliers] > 0) outliersX[nOutliers] = TMath::Log10(outliersX[nOutliers]); else continue;
+		  }
+		  if (doLogY) {
+		     if (outliersY[nOutliers] > 0) outliersY[nOutliers] = TMath::Log10(outliersY[nOutliers]); else continue;
+		  }
+		  nOutliers++;
+	       }
+	    }
+	    if (nOutliers > maxOutliers) { //Should never happen, due to myScale!!!
+	       Error ("PaintCandlePlot","Not possible to draw all outliers.");
+	       break;
+	    }
+	 }
 
-     if (IsOption(kPointsAllScat)) { //Draw outliers and "all" values scattered
-         SetMarkerStyle(0);
-      } else {
-         SetMarkerStyle(5);
+	if (IsOption(kPointsAllScat)) { //Draw outliers and "all" values scattered
+	    SetMarkerStyle(0);
+	 } else {
+	    SetMarkerStyle(5);
+	 }
+	 TAttMarker::Modify();
+	 gPad->PaintPolyMarker(nOutliers,outliersX, outliersY);
       }
-      TAttMarker::Modify();
-      gPad->PaintPolyMarker(nOutliers,outliersX, outliersY);
+   } else {
+      //FIXME raw candle not implemented!
    }
    std::cout << "painted candle!" << std::endl;
 }
@@ -471,6 +488,7 @@ bool TCandle::IsOption(CandleOption opt) {
 
 void TCandle::PaintBox(Int_t nPoints, Double_t *x, Double_t *y, Bool_t swapXY, Bool_t fill)
 {
+   std::cout << "paining the box!" << std::endl;
    Bool_t doLogY = (!(swapXY) && fLogY) || (swapXY && fLogX);
    Bool_t doLogX = (!(swapXY) && fLogX) || (swapXY && fLogY);
    if (doLogY) {
@@ -500,6 +518,7 @@ void TCandle::PaintBox(Int_t nPoints, Double_t *x, Double_t *y, Bool_t swapXY, B
 
 void TCandle::PaintLine(Double_t x1, Double_t y1, Double_t x2, Double_t y2, Bool_t swapXY)
 {
+   std::cout << "painting a line!" << std::endl;
    Bool_t doLogY = (!(swapXY) && fLogY) || (swapXY && fLogX);
    Bool_t doLogX = (!(swapXY) && fLogX) || (swapXY && fLogY);
    if (doLogY) {

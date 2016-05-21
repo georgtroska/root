@@ -601,7 +601,10 @@ void TParallelCoordVar::PaintBoxPlot()
 	myCandle.SetLineColor(kBlue);
 	myCandle.SetLineWidth(1);
 	myCandle.SetLineStyle(1);
-	myCandle.Paint("candle2");
+	char opt[16];
+	sprintf(opt,"%s","CANDLE2");
+	myCandle.ParseOption(opt);
+	myCandle.Paint();
 	
 	 gPad->PaintLine(fX1,0.1,fX1,0.2);
 	 std::cout << "fMinCurrent: " << fMinCurrent << std::endl;
