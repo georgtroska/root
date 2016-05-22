@@ -28,6 +28,8 @@
 #include "TH1D.h"
 #include "TMath.h"
 
+const Int_t kNMAXPOINTS = 2000;  // Max outliers per candle
+
 class TCandle : public TAttLine, public TAttFill, public TAttMarker {
 public:
    //Candle Option
@@ -69,6 +71,10 @@ protected:
 
    Double_t * fDatapoints;  ///< position of all Datapoints within this candle
    Long64_t fNDatapoints;   ///< Number of Datapoints within this candle
+   
+   Double_t fDrawPointsX[kNMAXPOINTS];	///< x-coord for every outlier, ..
+   Double_t fDrawPointsY[kNMAXPOINTS];	///< y-coord for every outlier, ..
+   Long64_t fNDrawPoints;   ///< max number of outliers or otherpoint to be shown
 
    CandleOption fOption;    ///< Setting the style of the candle
    int fLogX;
@@ -105,6 +111,7 @@ public:
    void           SetHistogram(TH1D *proj) { fProj = proj; fIsCalculated = false;}
 
    virtual void   Paint(Option_t *option="");
+   void			  ConvertToPadCoords(Double_t minAxis, Double_t maxAxis, Double_t axisMinCoord, Double_t axisMaxCoord, Double_t minInit, Double_t maxInit); 
 
    virtual void   SetMean(Double_t mean) { fMean = mean; }
    virtual void   SetMedian(Double_t median) { fMedian = median; }

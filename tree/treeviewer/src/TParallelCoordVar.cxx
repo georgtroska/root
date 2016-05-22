@@ -577,7 +577,6 @@ void TParallelCoordVar::PaintBoxPlot()
    Double_t* val;
    TCandle myCandle;
    if (first==0 && nentries==fNentries) { //Without any selection take the array as it is
-		std::cout << "this case!" << std::endl;
 		myCandle = TCandle(fX1,boxSize*2, fNentries, fVal);
 	} else { //Need to pass only the selection to TCandle
       val = new Double_t[nentries];
@@ -601,17 +600,14 @@ void TParallelCoordVar::PaintBoxPlot()
 	myCandle.SetLineColor(kBlue);
 	myCandle.SetLineWidth(1);
 	myCandle.SetLineStyle(1);
+	myCandle.SetMarkerColor(kBlue);
 	char opt[16];
 	sprintf(opt,"%s","CANDLE2");
 	myCandle.ParseOption(opt);
+	myCandle.ConvertToPadCoords(fMinCurrent, fMaxCurrent, fY1, fY2, fMinInit, fMaxInit);
 	myCandle.Paint();
-	
-	 gPad->PaintLine(fX1,0.1,fX1,0.2);
-	 std::cout << "fMinCurrent: " << fMinCurrent << std::endl;
-	 std::cout << "fMaxCurrent: " << fMaxCurrent << std::endl;
-	 std::cout << "fX1: " << fX1 << " fX2: " << fX2 << std::endl;
-	 std::cout << "fY1: " << fY1 << " fY2: " << fY2 << std::endl;
-	
+
+
 	
 	//if (val) delete [] val;
 	
