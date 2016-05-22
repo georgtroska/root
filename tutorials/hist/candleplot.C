@@ -31,6 +31,8 @@ void candleplot() {
 
    h1->SetBarWidth(0.4);
    h1->SetBarOffset(-0.25);
+   h1->SetFillColor(kYellow);
+   h1->SetFillStyle(1001);
 
    h2->SetBarWidth(0.4);
    h2->SetBarOffset(0.25);
@@ -40,6 +42,7 @@ void candleplot() {
 
    h1->Draw("candle2");
    h2->Draw("candle3 same");
+
 
    gPad->BuildLegend(0.6,0.7,0.7,0.8,"","f");
 }

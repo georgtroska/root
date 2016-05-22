@@ -572,12 +572,14 @@ void TParallelCoordVar::PaintBoxPlot()
    }
    else boxSize = 0.03;
    
+   boxSize *=5;
+   
    Long64_t first = fParallel->GetCurrentFirst();
    Long64_t nentries = fParallel->GetCurrentN();
    Double_t* val;
    TCandle myCandle;
    if (first==0 && nentries==fNentries) { //Without any selection take the array as it is
-		myCandle = TCandle(fX1,boxSize*2, fNentries, fVal);
+		myCandle = TCandle(fX1,boxSize, fNentries, fVal);
 	} else { //Need to pass only the selection to TCandle
       val = new Double_t[nentries];
       Int_t selected = 0;
@@ -594,7 +596,7 @@ void TParallelCoordVar::PaintBoxPlot()
             ++selected;
          }
       }
-      myCandle = TCandle(fX1,boxSize*2, selected, val);
+      myCandle = TCandle(fX1,boxSize, selected, val);
 	}
       
 	myCandle.SetLineColor(kBlue);

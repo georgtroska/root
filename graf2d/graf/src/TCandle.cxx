@@ -52,6 +52,8 @@ TCandle::TCandle()
    fDismiss = 0;
    fLogX          = 0;
    fLogY          = 0;
+   fNDrawPoints	  = 0;
+   fNHistoPoints  = 0;
 }
 
 
@@ -77,8 +79,9 @@ TCandle::TCandle(const Double_t candlePos, const Double_t candleWidth, Long64_t 
    fOption        = kNoOption;
    fLogX          = 0;
    fLogY          = 0;
+   fNDrawPoints	  = 0;
+   fNHistoPoints  = 0;
    
-   std::cout << "constructing raw-candle" << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -106,6 +109,8 @@ TCandle::TCandle(const Double_t candlePos, const Double_t candleWidth, TH1D *pro
    fOption        = kNoOption;
    fLogX          = 0;
    fLogY          = 0;
+   fNDrawPoints	  = 0;
+   fNHistoPoints  = 0;
 
 }
 
@@ -123,11 +128,8 @@ int TCandle::ParseOption(char * opt) {
    fOption = kNoOption;
    char *l;
    
-   std::cout << "parsing..!" <<std::endl;
-
    l = strstr(opt,"CANDLE");
    if (l) {
-      std::cout << "foudn candle!" <<std::endl;
       const CandleOption fallbackCandle = (CandleOption)(kBox + kMedianLine + kMeanCircle + kWhiskerAll + kAnchor);
 
       char direction = ' ';
@@ -153,7 +155,6 @@ int TCandle::ParseOption(char * opt) {
       if (preset == '6')  //Like candle2 but showing all datapoints scattered
          fOption = (CandleOption)(fOption + kBox + kMeanCircle + kMedianLine + kWhisker15 + kAnchor + kPointsAllScat);
 
-std::cout << "huhu"<<std::endl;
       if (preset != ' ' && direction != ' ')
          strncpy(l,"        ",8);
       else if (preset != ' ' || direction != ' ')
@@ -163,7 +164,6 @@ std::cout << "huhu"<<std::endl;
 
       Bool_t useIndivOption = false;
 
-   std::cout << "here in parsing!" << std::endl;
       if (preset == ' ') { // Check if the user wants to set the properties individually
          char *brOpen = strstr(opt,"(");
          char *brClose = strstr(opt,")");
@@ -182,7 +182,6 @@ std::cout << "huhu"<<std::endl;
       }
    }
    fIsCalculated = false;
-      std::cout << "parsed..!" <<std::endl;
    return fOption;
 
 }
@@ -192,6 +191,10 @@ std::cout << "huhu"<<std::endl;
 /// candle options.
 
 void TCandle::Calculate() {
+   
+   //Reset everything
+   fNDrawPoints = 0;
+   fNHistoPoints = 0;
    
    Bool_t swapXY = IsOption(kHorizontal);
    Bool_t doLogY = (!(swapXY) && fLogY) || (swapXY && fLogX);
@@ -225,7 +228,12 @@ void TCandle::Calculate() {
       fMean = fProj->GetMean();
       fMedianErr = 1.57*iqr/sqrt(fProj->GetEntries());
     } else { //Need a calculation for a raw-data candle
-      fMean = 0; /// FIXME!!!!
+      //Calculate the Mean
+      fMean = 0;
+      for (Long64_t i = 0; i < fNDatapoints; ++i) {
+	    fMean += fDatapoints[i];
+      }
+      fMean /= fNDatapoints;
       fMedianErr = 1.57*iqr/sqrt(fNDatapoints);
     }
 
@@ -316,7 +324,7 @@ void TCandle::Calculate() {
 		  fDrawPointsX[fNDrawPoints] = fPosCandleAxis - fCandleWidth/2. + fCandleWidth*random.Rndm();
 		  fDrawPointsY[fNDrawPoints] = myData + (random.Rndm() - 0.5)*maxScatter; //random +- 0.5 of candleheight
 	       } else { //Draw them in the "candle line"
-		  fDrawPointsX[fNDrawPoints] = fPosCandleAxis;
+		  fDrawPointsX[fNDrawPoints] = fPosCandleAxis; 
 		  fDrawPointsY[fNDrawPoints] = myData + (random.Rndm() - 0.5)*maxScatter; //random +- 0.5 of candleheight
 	       }
 	       if (swapXY) {
@@ -345,6 +353,29 @@ void TCandle::Calculate() {
       }
 	    
    }
+   
+   if (IsOption(kHistoRight)) {
+       if (!fIsRaw && fProj) { //Need a calculation for a projected histo
+	  fNHistoPoints = 0;
+	  Double_t maxContent = fProj->GetMaximum();
+	  Double_t maxHistoHeight = fCandleWidth*0.8;
+	  fHistoPointsX[0] = fPosCandleAxis;
+	  fHistoPointsY[0] = fProj->GetXaxis()->GetXmin();
+	  fNHistoPoints++;
+	   for (int bin = 1; bin <= fProj->GetNbinsX(); bin++) {
+	      Double_t myBinValue = fProj->GetBinContent(bin);
+	      fHistoPointsX[fNHistoPoints] = fPosCandleAxis + myBinValue/maxContent*maxHistoHeight;
+	      fHistoPointsY[fNHistoPoints] = fProj->GetBinLowEdge(bin);
+	      if (fHistoPointsX[fNHistoPoints] != fHistoPointsX[fNHistoPoints-1] || fHistoPointsY[fNHistoPoints] != fHistoPointsY[fNHistoPoints-1]) fNHistoPoints++;
+	      fHistoPointsX[fNHistoPoints] = fPosCandleAxis + myBinValue/maxContent*maxHistoHeight;
+	      fHistoPointsY[fNHistoPoints] = fProj->GetBinLowEdge(bin)+fProj->GetBinWidth(bin);
+	      if (fHistoPointsX[fNHistoPoints] != fHistoPointsX[fNHistoPoints-1] || fHistoPointsY[fNHistoPoints] != fHistoPointsY[fNHistoPoints-1]) fNHistoPoints++;
+	   }
+       } else { //Raw histo
+	  
+       }
+   }
+   
    fIsCalculated = true;
 }
 
@@ -355,11 +386,12 @@ void TCandle::Paint(Option_t *)
 {
   //If something was changed before, we need to recalculate some values
    if (!fIsCalculated) Calculate();
- std::cout << "Painting candle at: " << fPosCandleAxis << " " << fCandleWidth << " " << fBoxUp << " " << fBoxDown << " " << fWhiskerUp << " " << fWhiskerDown << std::endl;
-   std::cout << "option is: " << fOption << std::endl;
+
    // Save the attributes as they were set originally
    Style_t saveLine   = GetLineStyle();
    Style_t saveMarker = GetMarkerStyle();
+   Style_t saveFillStyle = GetFillStyle();
+   Style_t saveFillColor = GetFillColor();
 
    Double_t dimLeft = fPosCandleAxis-0.5*fCandleWidth;
    Double_t dimRight = fPosCandleAxis+0.5*fCandleWidth;
@@ -377,34 +409,32 @@ void TCandle::Paint(Option_t *)
    // From now on this is real painting only, no calculations anymore
    
 
+   if (IsOption(kHistoRight)) {
+      //SetFillStyle(1001);
+      //SetFillColor(kYellow);
+      //TAttFill::Modify();
+      gPad->PaintFillArea(fNHistoPoints, fHistoPointsX, fHistoPointsY);
+      gPad->PaintPolyLine(fNHistoPoints, fHistoPointsX, fHistoPointsY);
+      //SetFillStyle(saveFillStyle);
+      //SetFillColor(saveFillColor);
+      //TAttFill::Modify();
+   }
+
    if (IsOption(kBox)) { // Draw a simple box
      if (IsOption(kMedianNotched)) { // Check if we have to draw a box with notches
          Double_t x[] = {dimLeft,  dimLeft, dimLeft+fCandleWidth/3., dimLeft, dimLeft, dimRight,
                          dimRight, dimRight-fCandleWidth/3., dimRight, dimRight, dimLeft};
          Double_t y[] = {fBoxDown, fMedian-fMedianErr, fMedian, fMedian+fMedianErr, fBoxUp, fBoxUp,
                          fMedian+fMedianErr, fMedian, fMedian-fMedianErr, fBoxDown, fBoxDown};
-         PaintBox(11, x, y, swapXY, kFALSE);
+         PaintBox(11, x, y, swapXY);
       } else { // draw a simple box
          Double_t x[] = {dimLeft, dimLeft, dimRight, dimRight, dimLeft};
          Double_t y[] = {fBoxDown,  fBoxUp, fBoxUp,  fBoxDown,   fBoxDown};
-         PaintBox(5, x, y, swapXY, kFALSE);
+         PaintBox(5, x, y, swapXY);
       }
-   } else if (IsOption(kBoxFilled)) { // Draw a filled box
-      if (IsOption(kMedianNotched)) { // Check if we have to draw a box with notches
-         Double_t x[] = {dimLeft,  dimLeft, dimLeft+fCandleWidth/3., dimLeft, dimLeft, dimRight,
-                         dimRight, dimRight-fCandleWidth/3., dimRight, dimRight, dimLeft};
-         Double_t y[] = {fBoxDown, fMedian-fMedianErr, fMedian, fMedian+fMedianErr, fBoxUp, fBoxUp,
-                         fMedian+fMedianErr, fMedian, fMedian-fMedianErr, fBoxDown, fBoxDown};
-         PaintBox(11, x, y, swapXY, kTRUE);
-      } else { // draw a simple box
-         Double_t x[] = {dimLeft, dimLeft, dimRight, dimRight, dimLeft};
-         Double_t y[] = {fBoxDown,  fBoxUp, fBoxUp,  fBoxDown,   fBoxDown};
-         PaintBox(5, x, y, swapXY, kTRUE);
-      }
-   }
+   } 
 
    if (IsOption(kAnchor)) { // Draw the anchor line
-      std::cout << "Drawing anchor!" << std::endl;
       PaintLine(dimLeft, fWhiskerUp, dimRight, fWhiskerUp, swapXY);
       PaintLine(dimLeft, fWhiskerDown, dimRight, fWhiskerDown, swapXY);
    }
@@ -452,7 +482,6 @@ void TCandle::Paint(Option_t *)
       TAttMarker::Modify();
 
    }
-std::cout << "doing the mean circle!" << std::endl;
   if (IsOption(kMeanCircle)) { // Paint fMean as a circle
       Double_t myMeanX[1], myMeanY[1];
       if (!swapXY) {
@@ -498,7 +527,6 @@ std::cout << "doing the mean circle!" << std::endl;
    // only the datapoints outside the whiskers are shown.
    // One can show them in one row as crosses, or scattered randomly. If activated
    // all datapoint are shown in the same way
-   std::cout << "doing the points-stuff!" << std::endl;
    
    if (GetCandleOption(5) > 0) { //Draw outliers
      if (IsOption(kPointsAllScat)) { //Draw outliers and "all" values scattered
@@ -508,8 +536,11 @@ std::cout << "doing the mean circle!" << std::endl;
       }
       TAttMarker::Modify();
       gPad->PaintPolyMarker(fNDrawPoints,fDrawPointsX, fDrawPointsY);
+      
+      std::cout << fNDrawPoints << std::endl;
    }
-   std::cout << "painted candle!" << std::endl;
+   
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -531,9 +562,8 @@ bool TCandle::IsOption(CandleOption opt) {
 ////////////////////////////////////////////////////////////////////////////////
 /// Paint a box for candle.
 
-void TCandle::PaintBox(Int_t nPoints, Double_t *x, Double_t *y, Bool_t swapXY, Bool_t fill)
+void TCandle::PaintBox(Int_t nPoints, Double_t *x, Double_t *y, Bool_t swapXY)
 {
-   std::cout << "paining the box!" << std::endl;
    Bool_t doLogY = (!(swapXY) && fLogY) || (swapXY && fLogX);
    Bool_t doLogX = (!(swapXY) && fLogX) || (swapXY && fLogY);
    if (doLogY) {
@@ -549,11 +579,11 @@ void TCandle::PaintBox(Int_t nPoints, Double_t *x, Double_t *y, Bool_t swapXY, B
       }
    }
    if (!swapXY) {
-      if (fill) gPad->PaintFillArea(nPoints, x, y);
+     gPad->PaintFillArea(nPoints, x, y);
 
       gPad->PaintPolyLine(nPoints, x, y);
    } else {
-      if (fill) gPad->PaintFillArea(nPoints, y, x);
+      gPad->PaintFillArea(nPoints, y, x);
       gPad->PaintPolyLine(nPoints, y, x);
    }
 }
@@ -563,7 +593,6 @@ void TCandle::PaintBox(Int_t nPoints, Double_t *x, Double_t *y, Bool_t swapXY, B
 
 void TCandle::PaintLine(Double_t x1, Double_t y1, Double_t x2, Double_t y2, Bool_t swapXY)
 {
-   std::cout << "painting a line!" << std::endl;
    Bool_t doLogY = (!(swapXY) && fLogY) || (swapXY && fLogX);
    Bool_t doLogX = (!(swapXY) && fLogX) || (swapXY && fLogY);
    if (doLogY) {
@@ -617,7 +646,7 @@ void TCandle::ConvertToPadCoords(Double_t minAxis, Double_t maxAxis, Double_t ax
       maxinit = fMaxInit;
    }
    
-   std::cout << "DOING UGLY CONVERSION!" << std::endl;
+   std::cout << "DOING UGLY CONVERSION! PLEASE FIXME!!!" << std::endl;
    fMean = axisMinCoord + ((fMean-a)/b)*(axisMaxCoord-axisMinCoord);
    fMedian = axisMinCoord + ((fMedian-a)/b)*(axisMaxCoord-axisMinCoord);
    fMedianErr  = axisMinCoord + ((fMedianErr-a)/b)*(axisMaxCoord-axisMinCoord);

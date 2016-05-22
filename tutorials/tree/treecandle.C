@@ -22,7 +22,9 @@ void treecandle() {
 	c1->cd(1);
 	t->Draw("a:b:c","","candle");
 	c1->cd(2);
-	h1->Draw("candle2");
+	//h1->SetFillStyle(3001);
+	h1->SetFillColor(kYellow);
+	h1->Draw("candlex(2112311)");
 	h1->GetXaxis()->SetBinLabel(1,"a");
 	h1->GetXaxis()->SetBinLabel(2,"b");
 	h1->GetXaxis()->SetBinLabel(3,"c");

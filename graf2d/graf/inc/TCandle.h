@@ -36,7 +36,6 @@ public:
    enum CandleOption : int {
       kNoOption = 0,
       kBox = 1,
-      kBoxFilled = 2,
       kMedianLine = 10,
       kMedianNotched = 20,
       kMedianCircle = 30,
@@ -48,7 +47,10 @@ public:
       kPointsOutliers = 100000,
       kPointsAll = 200000,
       kPointsAllScat = 300000,
-      kHorizontal = 1000000 // if this bit is not set it is vertical!
+      kHistoLeft = 1000000,
+      kHistoRight = 2000000,
+      kHistoViolin = 3000000,
+      kHorizontal = 1000000000 // if this bit is not set it is vertical!
    };
 
 protected:
@@ -75,6 +77,10 @@ protected:
    Double_t fDrawPointsX[kNMAXPOINTS];	///< x-coord for every outlier, ..
    Double_t fDrawPointsY[kNMAXPOINTS];	///< y-coord for every outlier, ..
    Long64_t fNDrawPoints;   ///< max number of outliers or otherpoint to be shown
+   
+   Double_t fHistoPointsX[kNMAXPOINTS];
+   Double_t fHistoPointsY[kNMAXPOINTS];
+   int	fNHistoPoints;
 
    CandleOption fOption;    ///< Setting the style of the candle
    int fLogX;
@@ -84,7 +90,7 @@ protected:
 
    int  GetCandleOption(const int pos) {return (fOption/(int)TMath::Power(10,pos))%10;}
    bool IsOption(CandleOption opt);
-   void PaintBox(Int_t nPoints, Double_t *x, Double_t *y, Bool_t swapXY, Bool_t fill);
+   void PaintBox(Int_t nPoints, Double_t *x, Double_t *y, Bool_t swapXY);
    void PaintLine(Double_t x1, Double_t y1, Double_t x2, Double_t y2, Bool_t swapXY);
 
 public:
