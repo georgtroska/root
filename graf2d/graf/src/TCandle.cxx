@@ -171,7 +171,7 @@ std::cout << "huhu"<<std::endl;
          if (brOpen && brClose) {
             useIndivOption = true;
             strncpy(indivOption, brOpen, brClose-brOpen +1); //Now the string "(....)" including brackets is in this array
-            sscanf(indivOption,"(%d)", &fOption);
+            sscanf(indivOption,"(%d)", (int*) &fOption);
             strncpy(brOpen,"                ",brClose-brOpen+1); //Cleanup
 
          }
