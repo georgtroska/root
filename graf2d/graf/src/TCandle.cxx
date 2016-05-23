@@ -217,13 +217,13 @@ void TCandle::Calculate() {
    if (quantiles[1] >= quantiles[3]) return;
 
    // Definition of the candle in the standard case
-   
+   fBoxUp = quantiles[3];
    fBoxDown = quantiles[1];
    fWhiskerUp = quantiles[4]; //Standard case
    fWhiskerDown = quantiles[0]; //Standard case
    fMedian = quantiles[2];
    Double_t iqr = fBoxUp-fBoxDown;
-   fBoxUp = quantiles[3];
+   
    if (!fIsRaw && fProj) { //Need a calculation for a projected histo
       fMean = fProj->GetMean();
       fMedianErr = 1.57*iqr/sqrt(fProj->GetEntries());
@@ -239,24 +239,24 @@ void TCandle::Calculate() {
 
    if (IsOption(kWhisker15)) { // Improved whisker definition, with 1.5*iqr
       if (!fIsRaw && fProj) { //Need a calculation for a projected histo
-	 int bin = fProj->FindBin(fBoxDown-1.5*iqr);
-	 // extending only to the lowest data value within this range
-	 while (fProj->GetBinContent(bin) == 0 && bin <= fProj->GetNbinsX()) bin++;
-	 fWhiskerDown = fProj->GetBinCenter(bin);
+		 int bin = fProj->FindBin(fBoxDown-1.5*iqr);
+		 // extending only to the lowest data value within this range
+		 while (fProj->GetBinContent(bin) == 0 && bin <= fProj->GetNbinsX()) bin++;
+		 fWhiskerDown = fProj->GetBinCenter(bin);
 
-	 bin = fProj->FindBin(fBoxUp+1.5*iqr);
-	 while (fProj->GetBinContent(bin) == 0 && bin >= 1) bin--;
-	 fWhiskerUp = fProj->GetBinCenter(bin);
+		 bin = fProj->FindBin(fBoxUp+1.5*iqr);
+		 while (fProj->GetBinContent(bin) == 0 && bin >= 1) bin--;
+		 fWhiskerUp = fProj->GetBinCenter(bin);
       } else { //Need a calculation for a raw-data candle
-	 fWhiskerUp = fBoxDown;
-	 fWhiskerDown = fBoxUp;
+		 fWhiskerUp = fBoxDown;
+		 fWhiskerDown = fBoxUp;
 
-	 //Need to find highest value up to 1.5*iqr from the BoxUp-pos, and the lowest value up to -1.5*iqr from the boxLow-pos
-	 for (Long64_t i = 0; i < fNDatapoints; ++i) {
-	    Double_t myData = fDatapoints[i];
-	    if (myData > fWhiskerUp && myData <= fBoxUp + 1.5*iqr) fWhiskerUp = myData;
-	    if (myData < fWhiskerDown && myData >= fBoxDown - 1.5*iqr) fWhiskerDown = myData;
-	 }
+		 //Need to find highest value up to 1.5*iqr from the BoxUp-pos, and the lowest value up to -1.5*iqr from the boxLow-pos
+		 for (Long64_t i = 0; i < fNDatapoints; ++i) {
+			Double_t myData = fDatapoints[i];
+			if (myData > fWhiskerUp && myData <= fBoxUp + 1.5*iqr) fWhiskerUp = myData;
+			if (myData < fWhiskerDown && myData >= fBoxDown - 1.5*iqr) fWhiskerDown = myData;
+		 }
 	 
       }
    }
