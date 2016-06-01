@@ -4670,6 +4670,7 @@ void THistPainter::PaintCandlePlot(Option_t *)
 	myCandle.SetOption((TCandle::CandleOption)Hoption.Candle);
 	myCandle.SetMarkerColor(fH->GetLineColor());
 	myCandle.SetLineColor(fH->GetLineColor());
+	myCandle.SetLineWidth(fH->GetLineWidth());
 	myCandle.SetFillColor(fH->GetFillColor());
 	myCandle.SetFillStyle(fH->GetFillStyle());
 	myCandle.SetMarkerSize(fH->GetMarkerSize());
@@ -4678,7 +4679,7 @@ void THistPainter::PaintCandlePlot(Option_t *)
 	
    Bool_t swapXY = myCandle.IsHorizontal();
    const Double_t standardCandleWidth = 0.66;
-
+   
    if (!swapXY) { // Vertical candle
       for (Int_t i=Hparam.xfirst; i<=Hparam.xlast; i++) {
          Double_t binPosX = fXaxis->GetBinLowEdge(i);

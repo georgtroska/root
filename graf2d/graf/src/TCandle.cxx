@@ -359,10 +359,17 @@ void TCandle::Calculate() {
 	  fNHistoPoints = 0;
 	  Double_t maxContent = fProj->GetMaximum();
 	  Double_t maxHistoHeight = fCandleWidth*0.8;
-	  fHistoPointsX[0] = fPosCandleAxis;
-	  fHistoPointsY[0] = fProj->GetXaxis()->GetXmin();
-	  fNHistoPoints++;
-	   for (int bin = 1; bin <= fProj->GetNbinsX(); bin++) {
+	 // fHistoPointsX[fNHistoPoints] = fPosCandleAxis;
+	  //fHistoPointsY[fNHistoPoints] = fProj->GetXaxis()->GetXmin();
+	  bool isFirst = true;
+	  int lastNonZero = 0;
+	   for (int bin = 0; bin <= fProj->GetNbinsX(); bin++) {
+		   if (isFirst && fProj->GetBinContent(bin) > 0) {
+				fHistoPointsX[fNHistoPoints] = fPosCandleAxis;
+				fHistoPointsY[fNHistoPoints] = fProj->GetBinLowEdge(bin);
+				fNHistoPoints++;
+				isFirst = false;
+		   }
 	      Double_t myBinValue = fProj->GetBinContent(bin);
 	      fHistoPointsX[fNHistoPoints] = fPosCandleAxis + myBinValue/maxContent*maxHistoHeight;
 	      fHistoPointsY[fNHistoPoints] = fProj->GetBinLowEdge(bin);
@@ -370,7 +377,9 @@ void TCandle::Calculate() {
 	      fHistoPointsX[fNHistoPoints] = fPosCandleAxis + myBinValue/maxContent*maxHistoHeight;
 	      fHistoPointsY[fNHistoPoints] = fProj->GetBinLowEdge(bin)+fProj->GetBinWidth(bin);
 	      if (fHistoPointsX[fNHistoPoints] != fHistoPointsX[fNHistoPoints-1] || fHistoPointsY[fNHistoPoints] != fHistoPointsY[fNHistoPoints-1]) fNHistoPoints++;
+	      if (fProj->GetBinContent(bin) > 0) lastNonZero = fNHistoPoints;
 	   }
+	   fNHistoPoints = lastNonZero;
        } else { //Raw histo
 	  
        }
@@ -409,16 +418,11 @@ void TCandle::Paint(Option_t *)
    // From now on this is real painting only, no calculations anymore
    
 
-   if (IsOption(kHistoRight)) {
-      //SetFillStyle(1001);
-      //SetFillColor(kYellow);
-      //TAttFill::Modify();
-      gPad->PaintFillArea(fNHistoPoints, fHistoPointsX, fHistoPointsY);
-      gPad->PaintPolyLine(fNHistoPoints, fHistoPointsX, fHistoPointsY);
-      //SetFillStyle(saveFillStyle);
-      //SetFillColor(saveFillColor);
-      //TAttFill::Modify();
-   }
+	if (IsOption(kHistoRight)) {
+		gPad->PaintFillArea(fNHistoPoints, fHistoPointsX, fHistoPointsY);
+		gPad->PaintPolyLine(fNHistoPoints, fHistoPointsX, fHistoPointsY);
+	}
+   
 
    if (IsOption(kBox)) { // Draw a simple box
      if (IsOption(kMedianNotched)) { // Check if we have to draw a box with notches
@@ -537,7 +541,6 @@ void TCandle::Paint(Option_t *)
       TAttMarker::Modify();
       gPad->PaintPolyMarker(fNDrawPoints,fDrawPointsX, fDrawPointsY);
       
-      std::cout << fNDrawPoints << std::endl;
    }
    
 
@@ -547,9 +550,9 @@ void TCandle::Paint(Option_t *)
 /// Return true is this option is activated in fOption
 
 bool TCandle::IsOption(CandleOption opt) {
-   int myOpt = 9;
+   long myOpt = 9;
    int pos = 0;
-   for (pos = 0; pos < 7; pos++) {
+   for (pos = 0; pos < 16; pos++) {
       if (myOpt > opt) break;
       else myOpt *=10;
    }
@@ -657,6 +660,9 @@ void TCandle::ConvertToPadCoords(Double_t minAxis, Double_t maxAxis, Double_t ax
    
    for (int i = 0; i < fNDrawPoints; i++) {
       fDrawPointsY[i] = axisMinCoord + ((fDrawPointsY[i]-a)/b)*(axisMaxCoord-axisMinCoord);
+  }
+   for (int i = 0; i < fNHistoPoints; i++) {
+      fHistoPointsY[i] = axisMinCoord + ((fHistoPointsY[i]-a)/b)*(axisMaxCoord-axisMinCoord);
    }
    
 }

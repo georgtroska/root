@@ -42,6 +42,7 @@ void candleplotwhiskers() {
    mygaus_1_right->SetLineColor(kGreen);
    c1->cd(1);
    h1->SetLineWidth(3);
+   h1->SetFillStyle(0);
    h1->Draw("candley2 scat");
 
    c1->cd(2);

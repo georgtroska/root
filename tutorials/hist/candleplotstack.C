@@ -13,9 +13,9 @@ void candleplotstack()
    TRandom *rand      = new TRandom();
    TDatime *dateBegin = new TDatime(2010,1,1,0,0,0);
    TDatime *dateEnd   = new TDatime(2011,1,1,0,0,0);
-   TH2I *h1 = new TH2I("h1","Machine A",12,dateBegin->Convert(),dateEnd->Convert(),1000,0,1000);
-   TH2I *h2 = new TH2I("h2","Machine B",12,dateBegin->Convert(),dateEnd->Convert(),1000,0,1000);
-   TH2I *h3 = new TH2I("h3","Machine C",12,dateBegin->Convert(),dateEnd->Convert(),1000,0,1000);
+   TH2I *h1 = new TH2I("h1","Machine A",6,dateBegin->Convert(),dateEnd->Convert(),1000,0,1000);
+   TH2I *h2 = new TH2I("h2","Machine B",6,dateBegin->Convert(),dateEnd->Convert(),1000,0,1000);
+   TH2I *h3 = new TH2I("h3","Machine C",6,dateBegin->Convert(),dateEnd->Convert(),1000,0,1000);
 
    float Rand;
    for (int i = dateBegin->Convert(); i < dateEnd->Convert(); i+=86400*30) {
@@ -35,6 +35,9 @@ void candleplotstack()
    hs->Add(h2);
    hs->Add(h3,"candle2");
    hs->Draw("candle3");
+   hs->GetXaxis()->SetNdivisions(410);
+   
+   gPad->SetGrid(1,0);
 
    hs->GetXaxis()->SetTimeDisplay(1);
    hs->GetXaxis()->SetTimeFormat("%m/%y");

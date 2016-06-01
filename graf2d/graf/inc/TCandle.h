@@ -33,7 +33,7 @@ const Int_t kNMAXPOINTS = 2000;  // Max outliers per candle
 class TCandle : public TAttLine, public TAttFill, public TAttMarker {
 public:
    //Candle Option
-   enum CandleOption : int {
+   enum CandleOption : long {
       kNoOption = 0,
       kBox = 1,
       kMedianLine = 10,

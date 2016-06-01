@@ -2,7 +2,7 @@ void treecandle() {
 	gStyle->SetOptStat(0);
 	TCanvas *c1 = new TCanvas();
 	c1->Divide(1,2);
-	TH2I *h1 = new TH2I("h1","a:b:c",3,1,4,100,-10,10);
+	TH2I *h1 = new TH2I("h1","a:b:c",3,1,4,30,-10,10);
 	TTree *t = new TTree("tree","tree");
 	float a, b, c;
 	t->Branch("a", &a);
