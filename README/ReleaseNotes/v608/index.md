@@ -115,6 +115,9 @@ Add a new mode for `TClass::SetCanSplit` (2) which indicates that this class and
 ## TTree Libraries
 
 * Do not automatically setup read cache during TTree::Fill(). This fixes [ROOT-8031].
+* Make sure the option "PARA" in TTRe::Draw is used with at least tow variables [ROOT-8196].
+* The with `goff` option one can use as many variables as needed. There no more
+  limitation, like with the options `para`and `candle`.
 
 ### Fast Cloning
 
@@ -207,6 +210,11 @@ We added a cache specifically for the fast option of the TTreeCloner to signific
 * New optional parameter "option" in TPad::BuildLegend to set the TLegend option (Georg Troska).
 * TCandle: a new candle plot painter class. It is now used in THistPainter and THStack
   to paint candle plots (Georg Troska).
+* Fix two issues with the fill patterns in `TTextDump` (reported [here](https://sft.its.cern.ch/jira/browse/ROOT-8206)):
+    - The pattern number 3 was not implemented.
+    - Filled area drawn with pattern where surrounded by a solid line.
+* `TColor::GetFreeColorIndex()` allows to make sure the new color is created with an
+  unused color index.
 
 ## 3D Graphics Libraries
 
@@ -290,6 +298,7 @@ We added a cache specifically for the fast option of the TTreeCloner to signific
 
 
 ## Tutorials
+* New tutorial `treegetval.C` illustrating how to retrieve  `TTree` variables in arrays.
 
 
 ## Class Reference Guide
