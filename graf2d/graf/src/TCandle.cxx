@@ -354,7 +354,8 @@ void TCandle::Calculate() {
 	    
    }
    
-   if (IsOption(kHistoRight)) {
+   if (IsOption(kHistoRight) || IsOption(kHistoLeft)) {
+	   //We are starting with kHistoRight, left will be modified from right later
        if (!fIsRaw && fProj) { //Need a calculation for a projected histo
 	  fNHistoPoints = 0;
 	  Double_t maxContent = fProj->GetMaximum();
@@ -363,23 +364,42 @@ void TCandle::Calculate() {
 	  //fHistoPointsY[fNHistoPoints] = fProj->GetXaxis()->GetXmin();
 	  bool isFirst = true;
 	  int lastNonZero = 0;
-	   for (int bin = 0; bin <= fProj->GetNbinsX(); bin++) {
-		   if (isFirst && fProj->GetBinContent(bin) > 0) {
-				fHistoPointsX[fNHistoPoints] = fPosCandleAxis;
-				fHistoPointsY[fNHistoPoints] = fProj->GetBinLowEdge(bin);
-				fNHistoPoints++;
-				isFirst = false;
+	   for (int bin = 1; bin < fProj->GetNbinsX(); bin++) {
+			if (isFirst) {
+				if (fProj->GetBinContent(bin) > 0) {
+					fHistoPointsX[fNHistoPoints] = fPosCandleAxis;
+					fHistoPointsY[fNHistoPoints] = fProj->GetBinLowEdge(bin);
+					fNHistoPoints++;
+					isFirst = false;
+				} else {
+					continue;
+				}
 		   }
 	      Double_t myBinValue = fProj->GetBinContent(bin);
 	      fHistoPointsX[fNHistoPoints] = fPosCandleAxis + myBinValue/maxContent*maxHistoHeight;
 	      fHistoPointsY[fNHistoPoints] = fProj->GetBinLowEdge(bin);
-	      if (fHistoPointsX[fNHistoPoints] != fHistoPointsX[fNHistoPoints-1] || fHistoPointsY[fNHistoPoints] != fHistoPointsY[fNHistoPoints-1]) fNHistoPoints++;
+	      //if (fHistoPointsX[fNHistoPoints] != fHistoPointsX[fNHistoPoints-1] || fHistoPointsY[fNHistoPoints] != fHistoPointsY[fNHistoPoints-1]) 
+	      fNHistoPoints++;
 	      fHistoPointsX[fNHistoPoints] = fPosCandleAxis + myBinValue/maxContent*maxHistoHeight;
 	      fHistoPointsY[fNHistoPoints] = fProj->GetBinLowEdge(bin)+fProj->GetBinWidth(bin);
-	      if (fHistoPointsX[fNHistoPoints] != fHistoPointsX[fNHistoPoints-1] || fHistoPointsY[fNHistoPoints] != fHistoPointsY[fNHistoPoints-1]) fNHistoPoints++;
+	      //if (fHistoPointsX[fNHistoPoints] != fHistoPointsX[fNHistoPoints-1] || fHistoPointsY[fNHistoPoints] != fHistoPointsY[fNHistoPoints-1]) 
+	      fNHistoPoints++;
 	      if (fProj->GetBinContent(bin) > 0) lastNonZero = fNHistoPoints;
 	   }
-	   fNHistoPoints = lastNonZero;
+	   
+	   fHistoPointsX[fNHistoPoints] = fPosCandleAxis;
+	   fHistoPointsY[fNHistoPoints] = fHistoPointsY[fNHistoPoints-1];
+	   fNHistoPoints = lastNonZero+1; //+1 so that the line down to 0 is added as well
+	   /*
+	   fHistoPointsX[fNHistoPoints] = fHistoPointsX[0];
+	   fHistoPointsY[fNHistoPoints] = fHistoPointsY[0];
+	   fNHistoPoints++;
+	   */
+	   if (IsOption(kHistoLeft)) {
+		   for (int i = 0; i < fNHistoPoints; i++) {
+			   fHistoPointsX[i] = 2*fPosCandleAxis - fHistoPointsX[i];
+		   }
+	   }
        } else { //Raw histo
 	  
        }
@@ -418,7 +438,7 @@ void TCandle::Paint(Option_t *)
    // From now on this is real painting only, no calculations anymore
    
 
-	if (IsOption(kHistoRight)) {
+	if (IsOption(kHistoRight) || IsOption(kHistoLeft)) {
 		gPad->PaintFillArea(fNHistoPoints, fHistoPointsX, fHistoPointsY);
 		gPad->PaintPolyLine(fNHistoPoints, fHistoPointsX, fHistoPointsY);
 	}

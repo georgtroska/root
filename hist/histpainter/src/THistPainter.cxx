@@ -4688,7 +4688,7 @@ void THistPainter::PaintCandlePlot(Option_t *)
          if (hproj->GetEntries() !=0) {
             Double_t width = fH->GetBarWidth();
             Double_t offset = fH->GetBarOffset()*binWidth;
-            if (width > 0.999) width = standardCandleWidth;
+            if (width > 0.999 && width < 1.001) width = standardCandleWidth;
             myCandle.SetAxisPosition(binPosX+binWidth/2. + offset);
             myCandle.SetWidth(width*binWidth);
             myCandle.SetHistogram(hproj);
@@ -4703,7 +4703,7 @@ void THistPainter::PaintCandlePlot(Option_t *)
          if (hproj->GetEntries() !=0) {
             Double_t width = fH->GetBarWidth();
             Double_t offset = fH->GetBarOffset()*binWidth;
-            if (width > 0.999) width = standardCandleWidth;
+            if (width > 0.999 && width < 1.001) width = standardCandleWidth;
             myCandle.SetAxisPosition(binPosY+binWidth/2. + offset);
             myCandle.SetWidth(width*binWidth);
             myCandle.SetHistogram(hproj);
