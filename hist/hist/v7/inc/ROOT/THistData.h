@@ -133,11 +133,13 @@ public:
    \class TBinStat
    No-op; this class does not provide per-bin statistics.
   */
-  template <bool>
   class TBinStat {
   public:
     TBinStat(const THistStatTotalSumOfWeights&, int) {}
   };
+
+  using ConstBinStat_t = TBinStat;
+  using BinStat_t =  TBinStat;
 
 private:
   /// Sum of weights.
@@ -351,6 +353,7 @@ public:
   public:
     TBinStat(const THistStatRuntime&, int) {}
   };
+
   using ConstBinStat_t = TBinStat;
   using BinStat_t =  TBinStat;
 
@@ -386,9 +389,24 @@ template <int DIMENSIONS, class PRECISION,
   template <class P_> class STORAGE,
   template <int D_, class P_, template <class P__> class S_> class... STAT>
 class TConstHistBinStat: public STAT<DIMENSIONS, PRECISION, STORAGE>::ConstBinStat_t... {
+private:
+  template <class T>
+  static auto HaveGetUncertainty(T* This) -> decltype(This->GetUncertainty()) { return 0; }
+  template <class T>
+  static int HaveGetUncertainty(...) { return 0; }
+  static constexpr const bool fgHaveGetUncertainty = sizeof(HaveGetUncertainty<TConstHistBinStat>(nullptr)) == sizeof(char);
+
 public:
   TConstHistBinStat(const THistData<DIMENSIONS, PRECISION, STORAGE, STAT...>& data, int index):
     STAT<DIMENSIONS, PRECISION, STORAGE>::ConstBinStat_t(data, index)... {}
+
+  /// Calculate the bin content's uncertainty for the given bin, using Poisson
+  /// statistics on the absolute bin content. Only available if no base provides
+  /// this functionality. Requires GetContent().
+  template <class T = typename std::enable_if<!fgHaveGetUncertainty>::type>
+  PRECISION GetUncertainty() const {
+    return std::sqrt(std::fabs(this->GetContent()));
+  }
 };
 
 /** \class THistBinStat
@@ -398,9 +416,24 @@ template <int DIMENSIONS, class PRECISION,
   template <class PRECISION_> class STORAGE,
   template <int D_, class P_, template <class P__> class S_> class... STAT>
 class THistBinStat: public STAT<DIMENSIONS, PRECISION, STORAGE>::BinStat_t... {
+private:
+  template <class T>
+  static auto HaveGetUncertainty(T* This) -> decltype(This->GetUncertainty()) { return 0; }
+  template <class T>
+  static int HaveGetUncertainty(...) { return 0; }
+  static constexpr const bool fgHaveGetUncertainty = sizeof(HaveGetUncertainty<THistBinStat>(nullptr)) == sizeof(char);
+
 public:
   THistBinStat(THistData<DIMENSIONS, PRECISION, STORAGE, STAT...>& data, int index):
     STAT<DIMENSIONS, PRECISION, STORAGE>::BinStat_t(data, index)... {}
+
+  /// Calculate the bin content's uncertainty for the given bin, using Poisson
+  /// statistics on the absolute bin content. Only available if no base provides
+  /// this functionality. Requires GetContent().
+  template <class T = typename std::enable_if<!fgHaveGetUncertainty>::type>
+  PRECISION GetUncertainty() const {
+    return std::sqrt(std::fabs(this->GetContent()));
+  }
 };
 
 
@@ -413,11 +446,10 @@ template<int DIMENSIONS, class PRECISION,
 class THistData: public STAT<DIMENSIONS, PRECISION, STORAGE>... {
 private:
   template <class T>
-  static auto HaveGetBinUncertainty(THistData* This) -> decltype(This->GetBinUncertainty(12))
-  { return 0; }
-  template <class T> static int HaveGetBinUncertainty(...) { return 0; }
-  static constexpr const bool fgHaveGetBinUncertainty
-    = sizeof(HaveGetBinUncertainty<THistData>(nullptr)) == sizeof(char);
+  static auto HaveGetBinUncertainty(T* This) -> decltype(This->GetBinUncertainty(12)) { return 0; }
+  template <class T>
+  static int HaveGetBinUncertainty(...) { return 0; }
+  static constexpr const bool fgHaveGetBinUncertainty = sizeof(HaveGetBinUncertainty<THistData>(nullptr)) == sizeof(char);
 
 public:
   /// Matching THist
@@ -447,8 +479,21 @@ public:
   /// Fill weight at x to the bin content at binidx.
   void Fill(const CoordArray_t& x, int binidx, Weight_t weight = 1.) {
     // Call Fill() on all base classes.
-    using expand_type = int[];
-    (void)expand_type{ (STAT<DIMENSIONS, PRECISION, STORAGE>::Fill(x, binidx, weight), 0)... };
+    // This combines a couple of C++ spells:
+    // - "STAT": is a template parameter pack of template template arguments. It
+    //           has multiple (or one or no) elements; each is a template name
+    //           that needs to be instantiated before it can be used.
+    // - "...":  template parameter pack expansion; the expression is evaluated
+    //           for each STAT. The expression is
+    //           (STAT<DIMENSIONS, PRECISION, STORAGE>::Fill(x, binidx, weight), 0)
+    // - "trigger_base_fill{}":
+    //           initialization, provides a context in which template parameter
+    //           pack expansion happens.
+    // - ", 0":  because Fill() returns void it cannot be used as initializer
+    //           expression. The trailing ", 0" gives it the type of the trailing
+    //           comma-separated expression - int.
+    using trigger_base_fill = int[];
+    (void)trigger_base_fill{ (STAT<DIMENSIONS, PRECISION, STORAGE>::Fill(x, binidx, weight), 0)... };
   }
 
   /// Get a view on the statistics values of a bin.
