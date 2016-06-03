@@ -315,9 +315,10 @@ void TCandle::Calculate() {
       } else { //Raw data candle
 	 if (fNDatapoints > maxOutliers/2) myScale = fNDatapoints/(maxOutliers/2.);
 	 fNDrawPoints = 0;
-	 for (int i = 0; i < fNDatapoints; i = i + (int) myScale) { //If the amount of data is too large take only every 2nd or 3rd to reduce the amount
+	 for (int i = 0; i < fNDatapoints; i++ ) { 
 	    Double_t myData = fDatapoints[i];
 	    Double_t maxScatter = (fWhiskerUp-fWhiskerDown)/100;
+	    if (!(i % (int) myScale == 0 || myData < fWhiskerDown || myData > fWhiskerUp )) continue; //If the amount of data is too large take only every 2nd or 3rd to reduce the amount, but do not reduce at outliers!
 	    // Either show them only outside the whiskers, or all of them
 	    if (myData < fWhiskerDown || myData > fWhiskerUp || (GetCandleOption(5) > 1)) {
 	       if (IsOption(kPointsAllScat)) { //Draw outliers and "all" values scattered
