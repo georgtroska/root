@@ -354,7 +354,7 @@ void TCandle::Calculate() {
 	    
    }
    
-   if (IsOption(kHistoRight) || IsOption(kHistoLeft)) {
+   if (IsOption(kHistoRight) || IsOption(kHistoLeft) || IsOption(kHistoViolin)) {
 	   //We are starting with kHistoRight, left will be modified from right later
        if (!fIsRaw && fProj) { //Need a calculation for a projected histo
 	  fNHistoPoints = 0;
@@ -400,6 +400,14 @@ void TCandle::Calculate() {
 			   fHistoPointsX[i] = 2*fPosCandleAxis - fHistoPointsX[i];
 		   }
 	   }
+	   if (IsOption(kHistoViolin)) {
+		   for (int i = 0; i < fNHistoPoints; i++) {
+			   fHistoPointsX[fNHistoPoints + i] = 2*fPosCandleAxis - fHistoPointsX[fNHistoPoints -i-1];
+			   fHistoPointsY[fNHistoPoints + i] = fHistoPointsY[fNHistoPoints -i-1];
+		   }
+		   fNHistoPoints *= 2;
+		   //fNHistoPoints -= 2;
+	   }
        } else { //Raw histo
 	  
        }
@@ -438,7 +446,7 @@ void TCandle::Paint(Option_t *)
    // From now on this is real painting only, no calculations anymore
    
 
-	if (IsOption(kHistoRight) || IsOption(kHistoLeft)) {
+	if (IsOption(kHistoRight) || IsOption(kHistoLeft) || IsOption(kHistoViolin)) {
 		gPad->PaintFillArea(fNHistoPoints, fHistoPointsX, fHistoPointsY);
 		gPad->PaintPolyLine(fNHistoPoints, fHistoPointsX, fHistoPointsY);
 	}
