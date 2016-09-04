@@ -41,7 +41,7 @@ class THist<DIMENSIONS, PRECISION, STAT...>
 /**
  \class THist
  Histogram class for histograms with `DIMENSIONS` dimensions, where each
- bin count is stored by a value of type `DATA::Weight_t`. DATA stores statistical
+ bin count is stored by a value of type `PRECISION`. STAT stores statistical
  data of the entries filled into the histogram (bin content, uncertainties etc).
 
  A histogram counts occurrences of values or n-dimensional combinations thereof.
@@ -61,7 +61,7 @@ public:
   /// The coordinates type: a `DIMENSIONS`-dimensional `std::array` of `double`.
   using CoordArray_t = typename ImplBase_t::CoordArray_t;
   /// The type of weights
-  using Weight_t = typename ImplBase_t::Weight_t;
+  using Weight_t = PRECISION;
   /// Pointer type to `HistImpl_t::Fill`, for faster access.
   using FillFunc_t = typename ImplBase_t::FillFunc_t;
   /// Range.
@@ -90,10 +90,10 @@ public:
   /// double curlies.
   ///
   ///     THist<2,int> h2i({{ {10, 0., 1.}, {{-1., 0., 1., 10., 100.}} }});
-  explicit THist(std::array<TAxisConfig, THist::GetNDim()> axes);
+  explicit THist(std::array<TAxisConfig, DIMENSIONS> axes);
 
   /// Constructor overload taking the histogram title
-  THist(std::string_view histTitle, std::array<TAxisConfig, THist::GetNDim()> axes);
+  THist(std::string_view histTitle, std::array<TAxisConfig, DIMENSIONS> axes);
 
   /// Constructor overload that's only available for a 1-dimensional histogram.
   template <int ENABLEIF_NDIM = DIMENSIONS,
@@ -164,7 +164,7 @@ public:
   Weight_t GetBinContent(const CoordArray_t &x) const { return fImpl->GetBinContent(x); }
 
   /// Get the uncertainty on the content of the bin at `x`.
-  Weight_t GetBinUncertainty(const CoordArray_t &x) const { return fImpl->GetBinUncertainty(x); }
+  double GetBinUncertainty(const CoordArray_t &x) const { return fImpl->GetBinUncertainty(x); }
 
   const_iterator begin() const { return const_iterator(*fImpl); }
 
@@ -264,7 +264,7 @@ struct THistImplGen<NDIM, NDIM, DATA, PROCESSEDAXISCONFIG...> {
 
 template<int DIMENSIONS, class PRECISION,
          template <int D_, class P_, template <class P__> class S_> class... STAT>
-THist<DIMENSIONS, PRECISION, STAT...>::THist(std::string_view title, std::array<TAxisConfig, THist::GetNDim()> axes):
+THist<DIMENSIONS, PRECISION, STAT...>::THist(std::string_view title, std::array<TAxisConfig, DIMENSIONS> axes):
   fImpl{std::move(Internal::THistImplGen<THist::GetNDim(), 0,
         Detail::THistData<DIMENSIONS, PRECISION, Detail::THistDataDefaultStorage, STAT...>>()(title, axes))}
 {
@@ -274,7 +274,7 @@ THist<DIMENSIONS, PRECISION, STAT...>::THist(std::string_view title, std::array<
 
 template<int DIMENSIONS, class PRECISION,
          template <int D_, class P_, template <class P__> class S_> class... STAT>
-THist<DIMENSIONS, PRECISION, STAT...>::THist(std::array<TAxisConfig, THist::GetNDim()> axes):
+THist<DIMENSIONS, PRECISION, STAT...>::THist(std::array<TAxisConfig, DIMENSIONS> axes):
   THist("", axes) {}
 
 
@@ -295,23 +295,23 @@ HistFromImpl(std::unique_ptr<typename THist<DIMENSIONS, PRECISION, STAT...>::Imp
 ///\{ Convenience typedefs (ROOT6-compatible type names)
 
 // Keep them as typedefs, to make sure old-style documentation tools can understand them.
-typedef THist<1, double, THistStatContent, THistStatUncertainty> TH1D;
-typedef THist<1, float, THistStatContent, THistStatUncertainty> TH1F;
-typedef THist<1, char, THistStatContent> TH1C;
-typedef THist<1, int, THistStatContent> TH1I;
-typedef THist<1, int64_t, THistStatContent> TH1LL;
+using TH1D  = THist<1, double, THistStatContent, THistStatUncertainty>;
+using TH1F  = THist<1, float, THistStatContent, THistStatUncertainty>;
+using TH1C  = THist<1, char, THistStatContent>;
+using TH1I  = THist<1, int, THistStatContent>;
+using TH1LL = THist<1, int64_t, THistStatContent>;
 
-typedef THist<2, double, THistStatContent, THistStatUncertainty> TH2D;
-typedef THist<2, float, THistStatContent, THistStatUncertainty> TH2F;
-typedef THist<2, char, THistStatContent> TH2C;
-typedef THist<2, int, THistStatContent> TH2I;
-typedef THist<2, int64_t, THistStatContent> TH2LL;
+using TH2D  = THist<2, double, THistStatContent, THistStatUncertainty>;
+using TH2F  = THist<2, float, THistStatContent, THistStatUncertainty>;
+using TH2C  = THist<2, char, THistStatContent>;
+using TH2I  = THist<2, int, THistStatContent>;
+using TH2LL = THist<2, int64_t, THistStatContent>;
 
-typedef THist<3, double, THistStatContent, THistStatUncertainty> TH3D;
-typedef THist<3, float, THistStatContent, THistStatUncertainty> TH3F;
-typedef THist<3, char, THistStatContent> TH3C;
-typedef THist<3, int, THistStatContent> TH3I;
-typedef THist<3, int64_t, THistStatContent> TH3LL;
+using TH3D  = THist<3, double, THistStatContent, THistStatUncertainty>;
+using TH3F  = THist<3, float, THistStatContent, THistStatUncertainty>;
+using TH3C  = THist<3, char, THistStatContent>;
+using TH3I  = THist<3, int, THistStatContent>;
+using TH3LL = THist<3, int64_t, THistStatContent>;
 ///\}
 
 
@@ -335,7 +335,7 @@ void Add(THist<DIMENSIONS, PRECISION_TO, STAT_TO...> &to,
     // TODO: something nice with the uncertainty - depending on whether `to` cares
   };
   from.GetImpl()->ApplyXC(add);
-};
+}
 
 
 /// Interface to graphics taking a unique_ptr<THist>.

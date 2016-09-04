@@ -111,7 +111,19 @@ namespace cling {
     return ASTTransformer::Result(D, true);
   }
 
-  bool DeclCollector::Transform(DeclGroupRef& DGR) const {
+  bool DeclCollector::Transform(DeclGroupRef& DGR) {
+    // Do not tranform recursively, e.g. when emitting a DeclExtracted decl.
+    if (m_Transforming)
+      return true;
+
+    struct TransformingRAII {
+      bool& m_Transforming;
+      TransformingRAII(bool& Transforming): m_Transforming(Transforming) {
+        m_Transforming = true;
+      }
+      ~TransformingRAII() { m_Transforming = false; }
+    } transformingUpdater(m_Transforming);
+
     llvm::SmallVector<Decl*, 4> ReplacedDecls;
     bool HaveReplacement = false;
     for (Decl* D: DGR) {
@@ -135,6 +147,7 @@ namespace cling {
     if (DGR.isNull())
       return true;
 
+    assert(m_CurTransaction && "Missing transction");
     Transaction::DelayCallInfo DCI(DGR, Transaction::kCCIHandleTopLevelDecl);
     m_CurTransaction->append(DCI);
     if (!m_Consumer
@@ -173,6 +186,7 @@ namespace cling {
   }
 
   void DeclCollector::HandleInterestingDecl(DeclGroupRef DGR) {
+    assert(m_CurTransaction && "Missing transction");
     Transaction::DelayCallInfo DCI(DGR, Transaction::kCCIHandleInterestingDecl);
     m_CurTransaction->append(DCI);
     if (m_Consumer
@@ -181,6 +195,7 @@ namespace cling {
   }
 
   void DeclCollector::HandleTagDeclDefinition(TagDecl* TD) {
+    assert(m_CurTransaction && "Missing transction");
     Transaction::DelayCallInfo DCI(DeclGroupRef(TD),
                                    Transaction::kCCIHandleTagDeclDefinition);
     m_CurTransaction->append(DCI);
@@ -191,6 +206,7 @@ namespace cling {
   }
 
   void DeclCollector::HandleInvalidTagDeclDefinition(clang::TagDecl *TD){
+    assert(m_CurTransaction && "Missing transction");
     Transaction::DelayCallInfo DCI(DeclGroupRef(TD),
                                    Transaction::kCCIHandleTagDeclDefinition);
     m_CurTransaction->append(DCI);
@@ -202,6 +218,7 @@ namespace cling {
   }
 
   void DeclCollector::HandleVTable(CXXRecordDecl* RD) {
+    assert(m_CurTransaction && "Missing transction");
     Transaction::DelayCallInfo DCI(DeclGroupRef(RD),
                                    Transaction::kCCIHandleVTable);
     m_CurTransaction->append(DCI);
@@ -219,6 +236,7 @@ namespace cling {
   }
 
   void DeclCollector::CompleteTentativeDefinition(VarDecl* VD) {
+    assert(m_CurTransaction && "Missing transction");
     // C has tentative definitions which we might need to deal with when running
     // in C mode.
     Transaction::DelayCallInfo DCI(DeclGroupRef(VD),
@@ -236,6 +254,7 @@ namespace cling {
   }
 
   void DeclCollector::HandleCXXImplicitFunctionInstantiation(FunctionDecl *D) {
+    assert(m_CurTransaction && "Missing transction");
     Transaction::DelayCallInfo DCI(DeclGroupRef(D),
                                    Transaction::kCCIHandleCXXImplicitFunctionInstantiation);
     m_CurTransaction->append(DCI);
@@ -246,6 +265,7 @@ namespace cling {
   }
 
   void DeclCollector::HandleCXXStaticMemberVarInstantiation(VarDecl *D) {
+    assert(m_CurTransaction && "Missing transction");
     Transaction::DelayCallInfo DCI(DeclGroupRef(D),
                                    Transaction::kCCIHandleCXXStaticMemberVarInstantiation);
     m_CurTransaction->append(DCI);
@@ -257,6 +277,7 @@ namespace cling {
 
   void DeclCollector::MacroDefined(const clang::Token &MacroNameTok,
                                    const clang::MacroDirective *MD) {
+    assert(m_CurTransaction && "Missing transction");
     Transaction::MacroDirectiveInfo MDE(MacroNameTok.getIdentifierInfo(), MD);
     m_CurTransaction->append(MDE);
   }

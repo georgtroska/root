@@ -28,10 +28,14 @@
 
  These NIM papers are also available as doc or ps files from:
 
- - [Spectrum.doc](ftp://root.cern.ch/root/Spectrum.doc)
- - [SpectrumDec.ps.gz](ftp://root.cern.ch/root/SpectrumDec.ps.gz)
- - [SpectrumSrc.ps.gz](ftp://root.cern.ch/root/SpectrumSrc.ps.gz)
- - [SpectrumBck.ps.gz](ftp://root.cern.ch/root/SpectrumBck.ps.gz)
+ - [Spectrum.doc](https://root.cern.ch/download/Spectrum.doc)
+ - [SpectrumDec.ps.gz](https://root.cern.ch/download/SpectrumDec.ps.gz)
+ - [SpectrumSrc.ps.gz](https://root.cern.ch/download/SpectrumSrc.ps.gz)
+ - [SpectrumBck.ps.gz](https://root.cern.ch/download/SpectrumBck.ps.gz)
+
+ See also the
+ [online documentation](https://root.cern.ch/guides/tspectrum-manual) and
+ [tutorials](https://root.cern.ch/doc/master/group__tutorial__spectrum.html).
 */
 
 Int_t TSpectrum::fgIterations    = 3;
@@ -57,7 +61,7 @@ TSpectrum::TSpectrum() :TNamed("Spectrum", "Miroslav Morhac peak finder")
 
 ////////////////////////////////////////////////////////////////////////////////
 ///   - maxpositions: maximum number of peaks
-///   - resolution: determines resolution of the neighbouring peaks
+///   - resolution: *NOT USED* determines resolution of the neighbouring peaks
 ///                   default value is 1 correspond to 3 sigma distance
 ///                   between peaks. Higher values allow higher resolution
 ///                   (smaller distance between peaks.
@@ -337,6 +341,7 @@ Int_t TSpectrum::Search(const TH1 * hin, Double_t sigma, Option_t * option,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+/// *NOT USED*
 ///  resolution: determines resolution of the neighbouring peaks
 ///              default value is 1 correspond to 3 sigma distance
 ///              between peaks. Higher values allow higher resolution

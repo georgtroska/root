@@ -22,7 +22,7 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
-#include "llvm/PassManager.h"
+#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/Triple.h"
 #include "llvm/Support/raw_ostream.h"
@@ -83,15 +83,13 @@ std::unique_ptr<TargetMachine>
   if (!TheTarget) {
     llvm::errs() << "cling::IncrementalExecutor: unable to find target:\n"
                  << Error;
+    return std::unique_ptr<TargetMachine>();
   }
 
   std::string MCPU;
   std::string FeaturesStr;
 
   TargetOptions Options = TargetOptions();
-  Options.NoFramePointerElim = 1;
-  Options.JITEmitDebugInfo = 1;
-  Reloc::Model RelocModel = Reloc::Default;
   CodeModel::Model CMModel = CodeModel::JITDefault;
   CodeGenOpt::Level OptLevel = CodeGenOpt::Default;
   switch (CGOpt.OptimizationLevel) {
@@ -106,7 +104,8 @@ std::unique_ptr<TargetMachine>
   TM.reset(TheTarget->createTargetMachine(TheTriple.getTriple(),
                                           MCPU, FeaturesStr,
                                           Options,
-                                          RelocModel, CMModel,
+                                          Optional<Reloc::Model>(),
+                                          CMModel,
                                           OptLevel));
   return TM;
 }
@@ -241,7 +240,7 @@ IncrementalExecutor::runStaticInitializersOnce(const Transaction& T) {
   if (InitList == 0)
     return kExeSuccess;
 
-  SmallVector<Function*, 2> initFuncs;
+  //SmallVector<Function*, 2> initFuncs;
 
   for (unsigned i = 0, e = InitList->getNumOperands(); i != e; ++i) {
     llvm::ConstantStruct *CS
@@ -259,18 +258,21 @@ IncrementalExecutor::runStaticInitializersOnce(const Transaction& T) {
 
     // Execute the ctor/dtor function!
     if (llvm::Function *F = llvm::dyn_cast<llvm::Function>(FP)) {
-      executeInit(F->getName());
-
+      const llvm::StringRef fName = F->getName();
+      executeInit(fName);
+/*
       initFuncs.push_back(F);
-      if (F->getName().startswith("_GLOBAL__sub_I_")) {
+      if (fName.startswith("_GLOBAL__sub_I_")) {
         BasicBlock& BB = F->getEntryBlock();
         for (BasicBlock::iterator I = BB.begin(), E = BB.end(); I != E; ++I)
           if (CallInst* call = dyn_cast<CallInst>(I))
             initFuncs.push_back(call->getCalledFunction());
       }
+*/
     }
   }
 
+/*
   for (SmallVector<Function*,2>::iterator I = initFuncs.begin(),
          E = initFuncs.end(); I != E; ++I) {
     // Cleanup also the dangling init functions. They are in the form:
@@ -291,6 +293,7 @@ IncrementalExecutor::runStaticInitializersOnce(const Transaction& T) {
     (*I)->removeDeadConstantUsers();
     (*I)->eraseFromParent();
   }
+*/
 
   return kExeSuccess;
 }

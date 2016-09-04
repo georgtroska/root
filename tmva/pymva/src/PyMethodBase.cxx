@@ -26,6 +26,7 @@
 #include <numpy/arrayobject.h>
 
 #include <fstream>
+#include <wchar.h>
 
 using namespace TMVA;
 
@@ -43,15 +44,19 @@ PyObject *PyMethodBase::fMain = NULL;
 PyObject *PyMethodBase::fGlobalNS = NULL;
 PyObject *PyMethodBase::fLocalNS = NULL;
 
-
+class PyGILRAII {
+   PyGILState_STATE m_GILState;
+public:
+   PyGILRAII():m_GILState(PyGILState_Ensure()){}
+   ~PyGILRAII(){PyGILState_Release(m_GILState);}
+};
 
 //_______________________________________________________________________
 PyMethodBase::PyMethodBase(const TString &jobName,
                            Types::EMVA methodType,
                            const TString &methodTitle,
                            DataSetInfo &dsi,
-                           const TString &theOption ,
-                           TDirectory *theBaseDir): MethodBase(jobName, methodType, methodTitle, dsi, theOption, theBaseDir),
+                           const TString &theOption ): MethodBase(jobName, methodType, methodTitle, dsi, theOption),
    fClassifier(NULL)
 {
    if (!PyIsInitialized()) {
@@ -62,8 +67,7 @@ PyMethodBase::PyMethodBase(const TString &jobName,
 //_______________________________________________________________________
 PyMethodBase::PyMethodBase(Types::EMVA methodType,
                            DataSetInfo &dsi,
-                           const TString &weightFile,
-                           TDirectory *theBaseDir): MethodBase(methodType, dsi, weightFile, theBaseDir),
+                           const TString &weightFile): MethodBase(methodType, dsi, weightFile),
    fClassifier(NULL)
 {
    if (!PyIsInitialized()) {
@@ -90,8 +94,15 @@ PyObject *PyMethodBase::Eval(TString code)
 void PyMethodBase::PyInitialize()
 {
    TMVA::MsgLogger Log;
-   if (!PyIsInitialized()) {
+
+   bool pyIsInitialized = PyIsInitialized();
+   if (!pyIsInitialized) {
       Py_Initialize();
+   }
+
+    PyGILRAII thePyGILRAII;
+
+   if (!pyIsInitialized) {
       _import_array();
    }
    
@@ -175,15 +186,15 @@ void PyMethodBase::PySetProgramName(TString name)
    Py_SetProgramName((wchar_t *)name.Data());
    #endif
 }
+
+size_t mystrlen(const char* s) { return strlen(s); }
+size_t mystrlen(const wchar_t* s) { return wcslen(s); }
+
 //_______________________________________________________________________
 TString PyMethodBase::Py_GetProgramName()
 {
-   #if PY_MAJOR_VERSION < 3 
-   return ::Py_GetProgramName();
-   #else
-   return (char*)::Py_GetProgramName();
-   #endif
-  
+auto progName = ::Py_GetProgramName();
+return std::string(progName, progName + mystrlen(progName));  
 }
 //_______________________________________________________________________
 int  PyMethodBase::PyIsInitialized()

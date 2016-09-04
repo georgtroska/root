@@ -16,13 +16,13 @@
  * (http://tmva.sourceforge.net/LICENSE)                                          *
  *                                                                                *
  **********************************************************************************/
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#include <iomanip>
-#include <fstream>
-
 #include <Python.h>
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
+
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#include <iomanip>
+#include <fstream>
 
 #include "TMath.h"
 #include "Riostream.h"
@@ -53,9 +53,8 @@ ClassImp(MethodPyAdaBoost)
 MethodPyAdaBoost::MethodPyAdaBoost(const TString &jobName,
                                    const TString &methodTitle,
                                    DataSetInfo &dsi,
-                                   const TString &theOption,
-                                   TDirectory *theTargetDir) :
-   PyMethodBase(jobName, Types::kPyAdaBoost, methodTitle, dsi, theOption, theTargetDir),
+                                   const TString &theOption) :
+   PyMethodBase(jobName, Types::kPyAdaBoost, methodTitle, dsi, theOption),
    base_estimator("None"),
    n_estimators(50),
    learning_rate(1.0),
@@ -65,8 +64,8 @@ MethodPyAdaBoost::MethodPyAdaBoost(const TString &jobName,
 }
 
 //_______________________________________________________________________
-MethodPyAdaBoost::MethodPyAdaBoost(DataSetInfo &theData, const TString &theWeightFile, TDirectory *theTargetDir)
-   : PyMethodBase(Types::kPyAdaBoost, theData, theWeightFile, theTargetDir),
+MethodPyAdaBoost::MethodPyAdaBoost(DataSetInfo &theData, const TString &theWeightFile)
+   : PyMethodBase(Types::kPyAdaBoost, theData, theWeightFile),
      base_estimator("None"),
      n_estimators(50),
      learning_rate(1.0),
@@ -239,12 +238,14 @@ void MethodPyAdaBoost::Train()
 
    fClassifier = PyObject_CallMethod(fClassifier, (char *)"fit", (char *)"(OOO)", fTrainData, fTrainDataClasses, fTrainDataWeights);
 
-   TString path = GetWeightFileDir() + "/PyAdaBoostModel.PyData";
-   Log() << Endl;
-   Log() << gTools().Color("bold") << "--- Saving State File In:" << gTools().Color("reset") << path << Endl;
-   Log() << Endl;
-
-  Serialize(path,fClassifier);
+   if (IsModelPersistence())
+   {
+        TString path = GetWeightFileDir() + "/PyAdaBoostModel.PyData";
+        Log() << Endl;
+        Log() << gTools().Color("bold") << "--- Saving State File In:" << gTools().Color("reset") << path << Endl;
+        Log() << Endl;
+        Serialize(path,fClassifier);
+   }
 }
 
 //_______________________________________________________________________
@@ -260,7 +261,7 @@ Double_t MethodPyAdaBoost::GetMvaValue(Double_t *errLower, Double_t *errUpper)
    // cannot determine error
    NoErrorCalc(errLower, errUpper);
 
-   if (!fClassifier) ReadModelFromFile();
+   if (IsModelPersistence()) ReadModelFromFile();
 
    Double_t mvaValue;
    const TMVA::Event *e = Data()->GetEvent();

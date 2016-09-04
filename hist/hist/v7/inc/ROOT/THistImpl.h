@@ -99,7 +99,7 @@ public:
 
   /// The bin's uncertainty. size() of the vector is a multiple of 2:
   /// several kinds of uncertainty, same number of entries for lower and upper.
-  virtual double GetBinUncertaintyAsDouble(int binidx) const = 0;
+  virtual double GetBinUncertainty(int binidx) const = 0;
 
   /// The bin content, cast to double.
   virtual double GetBinContentAsDouble(int binidx) const = 0;
@@ -177,13 +177,15 @@ public:
 
   /// Apply a function (lambda) to all bins of the histogram. The function takes
   /// the bin coordinate, content and uncertainty ("error") of the content.
-  virtual void ApplyXCE(std::function<void(const CoordArray_t&, Weight_t, Weight_t)>) const = 0;
+  virtual void ApplyXCE(std::function<void(const CoordArray_t&, Weight_t, double)>) const = 0;
 
   /// Get the bin content (sum of weights) for the bin at coordinate x.
   virtual Weight_t GetBinContent(const CoordArray_t& x) const = 0;
 
+  using THistImplPrecisionAgnosticBase<DATA::GetNDim()>::GetBinUncertainty;
+
   /// Get the bin uncertainty for the bin at coordinate x.
-  virtual Weight_t GetBinUncertainty(const CoordArray_t& x) const = 0;
+  virtual double GetBinUncertainty(const CoordArray_t& x) const = 0;
 
   /// Get the number of bins in this histogram, including possible under- and
   /// overflow bins.
@@ -263,17 +265,18 @@ template <int I, class HISTIMPL, class AXES, bool GROW>
 struct TGetBinIndex {
   int operator()(HISTIMPL* hist, const AXES& axes,
                  const typename HISTIMPL::CoordArray_t& x, TAxisBase::EFindStatus& status) const {
-    int bin = std::get<I>(axes).FindBin(x[I]);
-    if (GROW && std::get<I>(axes).CanGrow()
-        && (bin < 0 || bin > std::get<I>(axes).GetNBinsNoOver())) {
-      hist->GrowAxis(I, x[I]);
+    constexpr const int thisAxis = HISTIMPL::GetNDim() - I - 1;
+    int bin = std::get<thisAxis>(axes).FindBin(x[thisAxis]);
+    if (GROW && std::get<thisAxis>(axes).CanGrow()
+        && (bin < 0 || bin > std::get<thisAxis>(axes).GetNBinsNoOver())) {
+      hist->GrowAxis(I, x[thisAxis]);
       status = TAxisBase::EFindStatus::kCanGrow;
 
       // Abort bin calculation; we don't care. Let THist::GetBinIndex() retry!
       return bin;
     }
     return bin + TGetBinIndex<I - 1, HISTIMPL, AXES, GROW>()(hist, axes, x, status)
-                 * std::get<I>(axes).GetNBins();
+                 * std::get<thisAxis>(axes).GetNBins();
   }
 };
 
@@ -399,14 +402,14 @@ public:
   /// the bin coordinate and content.
   void ApplyXC(std::function<void(const CoordArray_t&, Weight_t)> op) const final {
     for (auto&& binref: *this)
-      op(binref.GetBinCenter(), binref.GetContent());
+      op(binref.GetCenter(), binref.GetContent());
   }
 
   /// Apply a function (lambda) to all bins of the histogram. The function takes
   /// the bin coordinate, content and uncertainty ("error") of the content.
-  virtual void ApplyXCE(std::function<void(const CoordArray_t&, Weight_t, Weight_t)> op) const final {
+  virtual void ApplyXCE(std::function<void(const CoordArray_t&, Weight_t, double)> op) const final {
     for (auto&& binref: *this)
-      op(binref.GetBinCenter(), binref.GetContent(), binref.GetUncertainty());
+      op(binref.GetCenter(), binref.GetContent(), binref.GetUncertainty());
   }
 
 
@@ -510,16 +513,14 @@ public:
   }
 
   /// Return the uncertainties for the given bin.
-  double GetBinUncertaintyAsDouble(int binidx) const final {
+  double GetBinUncertainty(int binidx) const final {
     return this->GetStat().GetBinUncertainty(binidx);
   }
 
   /// Get the bin uncertainty for the bin at coordinate x.
-  Weight_t GetBinUncertainty(const CoordArray_t& x) const final {
-    int bin = GetBinIndex(x);
-    if (bin >= 0)
-      return this->GetStat().GetBinUncertainty(bin);
-    return 0.;
+  double GetBinUncertainty(const CoordArray_t& x) const final {
+    const int bin = GetBinIndex(x);
+    return this->GetBinUncertainty(bin);
   }
 
 
