@@ -217,6 +217,22 @@ public:
    TAxis *GetUpperRefXaxis() const;
    TAxis *GetUpperRefYaxis() const;
 
+   ////////////////////////////////////////////////////////////////////////////////
+   /// Get the output of the calculation in the form of a graph. The type of
+   /// the return value depends on the input option that was given in the constructor.
+
+   TGraph *GetCalculationOutputGraph() const { return fRatioGraph; }
+
+   ////////////////////////////////////////////////////////////////////////////////
+   /// Returns the graph for the 1 sigma confidence interval in the fit residual case
+
+   TGraphErrors *GetConfidenceInterval1() const { return fConfidenceInterval1; }
+
+   ////////////////////////////////////////////////////////////////////////////////
+   /// Returns the graph for the 2 sigma confidence interval in the fit residual case
+
+   TGraphErrors *GetConfidenceInterval2() const { return fConfidenceInterval2; }
+
    TPad * GetUpperPad() const { return fUpperPad; }
    TPad * GetLowerPad() const { return fLowerPad; }
 
