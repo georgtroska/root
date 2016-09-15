@@ -1073,20 +1073,6 @@ TCling::TCling(const char *name, const char *title)
       // clingArgsStorage.push_back("-Xclang");
       // clingArgsStorage.push_back("-fmodules");
 
-      std::string include;
-#ifndef ROOTINCDIR
-      if (const char* rootsys = gSystem->Getenv("ROOTSYS")) {
-         include = rootsys;
-         include += "/include";
-      } else {
-        ::Fatal("TCling::TCling", "ROOTSYS not set!");
-        exit(1);
-      }
-#else // ROOTINCDIR
-      include = ROOTINCDIR;
-#endif // ROOTINCDIR
-      clingArgsStorage.push_back("-I");
-      clingArgsStorage.push_back(include);
       clingArgsStorage.push_back("-Wno-undefined-inline");
       clingArgsStorage.push_back("-fsigned-char");
    }
@@ -1889,7 +1875,7 @@ static int HandleInterpreterException(cling::MetaProcessor* metaProcessor,
    }
    catch (cling::InvalidDerefException& ex)
    {
-      Info("Handle", "%s.\n%s", ex.what(), "Execution of your code was aborted.");
+      Error("HandleInterpreterException", "%s.\n%s", ex.what(), "Execution of your code was aborted.");
       ex.diagnose();
    }
    return 0;
@@ -2016,11 +2002,11 @@ Long_t TCling::ProcessLine(const char* line, EErrorCode* error/*=0*/)
          size_t unnamedMacroOpenCurly;
          {
             std::string code;
-            std::string line;
+            std::string codeline;
             std::ifstream in(fname);
             while (in) {
-               std::getline(in, line);
-               code += line + "\n";
+               std::getline(in, codeline);
+               code += codeline + "\n";
             }
             unnamedMacroOpenCurly
               = cling::utils::isUnnamedMacro(code, fInterpreter->getCI()->getLangOpts());

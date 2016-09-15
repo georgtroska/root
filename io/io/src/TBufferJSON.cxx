@@ -59,6 +59,7 @@
 #include "TStreamer.h"
 #include "TStreamerInfoActions.h"
 #include "RVersion.h"
+#include "Riostream.h"
 #include "TClonesArray.h"
 #include "TVirtualMutex.h"
 #include "TInterpreter.h"
@@ -282,6 +283,47 @@ TString TBufferJSON::ConvertToJSON(const void *ptr, TDataMember *member,
    buf.SetCompact(compact);
 
    return buf.JsonWriteMember(ptr, member, mcl, arraylen);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Convert object into JSON and store in text file
+/// Returns size of the produce file
+/// Used in TObject::SaveAs()
+
+Int_t TBufferJSON::ExportToFile(const char* filename, const TObject *obj, const char* option)
+{
+   if (!obj || !filename || (*filename==0)) return 0;
+
+   Int_t compact = 0;
+   if (option && (*option >= '0') && (*option <='3')) compact = TString(option,1).Atoi();
+
+   TString json = TBufferJSON::ConvertToJSON(obj, compact);
+
+   std::ofstream ofs (filename);
+   ofs << json.Data();
+   ofs.close();
+
+   return json.Length();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Convert object into JSON and store in text file
+/// Returns size of the produce file
+
+Int_t TBufferJSON::ExportToFile(const char* filename, const void *obj, const TClass *cl, const char* option)
+{
+   if (!obj || !cl || !filename || (*filename==0)) return 0;
+
+   Int_t compact = 0;
+   if (option && (*option >= '0') && (*option <='3')) compact = TString(option,1).Atoi();
+
+   TString json = TBufferJSON::ConvertToJSON(obj, cl, compact);
+
+   std::ofstream ofs (filename);
+   ofs << json.Data();
+   ofs.close();
+
+   return json.Length();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

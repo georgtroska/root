@@ -164,11 +164,11 @@ TSimpleAnalysis::TSimpleAnalysis(const std::string& output,
 static std::string ExtractTreeName(std::string& firstInputFile)
 {
    std::string treeName = "";
-   TFile inputFile (firstInputFile.c_str());
+   std::unique_ptr<TFile> inputFile{TFile::Open(firstInputFile.c_str())};
 
    // Loop over all the keys inside the first input file
-   for (TObject* keyAsObj : *inputFile.GetListOfKeys()) {
-      TKey* key = dynamic_cast<TKey*>(keyAsObj);
+   for (TObject* keyAsObj : *inputFile->GetListOfKeys()) {
+      TKey* key = static_cast<TKey*>(keyAsObj);
       TClass* clObj = TClass::GetClass(key->GetClassName());
       if (!clObj)
          continue;
@@ -199,18 +199,26 @@ static std::string ExtractTreeName(std::string& firstInputFile)
 bool TSimpleAnalysis::Run()
 {
    // Silence possible error message from TFile constructor if this is a tree name.
-   int oldLevel = gErrorIgnoreLevel;
-   gErrorIgnoreLevel = kFatal;
    // Disambiguate tree name from first input file:
    // just try to open it, if that works it's an input file.
-   if (TFile::Open(fTreeName.c_str())) {
-      fInputFiles.insert(fInputFiles.begin(), fTreeName);
-      fTreeName.clear();
-      fTreeName = ExtractTreeName(fInputFiles[0]);
-      if (fTreeName.empty())
-         return false;
+   if (!fTreeName.empty()) {
+      int oldLevel = gErrorIgnoreLevel;
+      gErrorIgnoreLevel = kFatal;
+      if (TFile* probe = TFile::Open(fTreeName.c_str())) {
+         if (!probe->IsZombie()) {
+            fInputFiles.insert(fInputFiles.begin(), fTreeName);
+            fTreeName.clear();
+         }
+         delete probe;
+      }
+      gErrorIgnoreLevel = oldLevel;
    }
-   gErrorIgnoreLevel = oldLevel;
+   // If fTreeName is empty we try to find the name of the tree through reading
+   // of the first input file
+   if (fTreeName.empty())
+      fTreeName = ExtractTreeName(fInputFiles[0]);
+   if (fTreeName.empty())  // No tree name found
+      return false;
 
    // Do the chain of the fInputFiles
    TChain chain(fTreeName.c_str());
@@ -236,6 +244,7 @@ bool TSimpleAnalysis::Run()
       const std::string& expr = histo.second.first;
       const std::string& histoName = histo.first;
       const std::string& cut = histo.second.second;
+
       chain.Draw((expr + ">>" + histoName).c_str(), cut.c_str(), "goff");
       TH1F *ptrHisto = (TH1F*)gDirectory->Get(histoName.c_str());
       if (!ptrHisto)
@@ -262,7 +271,7 @@ bool TSimpleAnalysis::HandleInputFileNameConfig(const std::string& line)
 ////////////////////////////////////////////////////////////////////////////////
 /// Skip subsequent empty lines read from fIn and returns the next not empty line.
 ///
-/// param[in] numbLine number of the input file line
+/// param[in] numbLine - number of the input file line
 
 std::string TSimpleAnalysis::GetLine(int& numbLine)
 {
@@ -287,9 +296,9 @@ bool TSimpleAnalysis::Configure()
    int numbLine = 0;
 
    // Error if the input file does not exist
-   fIn.open(fInputName);
+   fIn.open(fConfigFile);
    if (!fIn) {
-      ::Error("TSimpleAnalysis", "File %s not found", fInputName.c_str());
+      ::Error("TSimpleAnalysis", "File %s not found", fConfigFile.c_str());
       return false;
    }
 
@@ -331,7 +340,7 @@ bool TSimpleAnalysis::Configure()
       // Report any errors if occour during the configuration proceedings
       if (!errMessage.empty()) {
          ::Error("TSimpleAnalysis::Configure", "%s in %s:%d", errMessage.c_str(),
-                 fInputName.c_str(), numbLine);
+                 fConfigFile.c_str(), numbLine);
          return false;
       }
    }  // while (!fIn.eof())
@@ -342,7 +351,7 @@ bool TSimpleAnalysis::Configure()
 /// Function that allows to create the TSimpleAnalysis object and execute its
 /// Configure and Analyze functions.
 ///
-/// param[in] configurationFile name of the input file used to create the TSimpleAnalysis object
+/// param[in] configurationFile - name of the input file used to create the TSimpleAnalysis object
 
 bool RunSimpleAnalysis (const char* configurationFile) {
    TSimpleAnalysis obj(configurationFile);
