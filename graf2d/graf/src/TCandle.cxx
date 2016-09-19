@@ -170,8 +170,10 @@ int TCandle::ParseOption(char * opt) {
          char indivOption[32];
          if (brOpen && brClose) {
             useIndivOption = true;
+            bool isHorizontal = IsHorizontal();
             strncpy(indivOption, brOpen, brClose-brOpen +1); //Now the string "(....)" including brackets is in this array
             sscanf(indivOption,"(%d)", (int*) &fOption);
+            if (isHorizontal) {fOption = (CandleOption)(fOption + kHorizontal);}
             strncpy(brOpen,"                ",brClose-brOpen+1); //Cleanup
 
          }
@@ -365,11 +367,17 @@ void TCandle::Calculate() {
 	  //fHistoPointsY[fNHistoPoints] = fProj->GetXaxis()->GetXmin();
 	  bool isFirst = true;
 	  int lastNonZero = 0;
-	   for (int bin = 1; bin < fProj->GetNbinsX(); bin++) {
+	   for (int bin = 1; bin <= fProj->GetNbinsX(); bin++) {
 			if (isFirst) {
 				if (fProj->GetBinContent(bin) > 0) {
 					fHistoPointsX[fNHistoPoints] = fPosCandleAxis;
 					fHistoPointsY[fNHistoPoints] = fProj->GetBinLowEdge(bin);
+					 if (doLogX) {
+						if (fHistoPointsX[fNHistoPoints] > 0) fHistoPointsX[fNHistoPoints] = TMath::Log10(fHistoPointsX[fNHistoPoints]); else continue;
+					}
+					if (doLogY) {
+						if (fHistoPointsY[fNHistoPoints] > 0) fHistoPointsY[fNHistoPoints] = TMath::Log10(fHistoPointsY[fNHistoPoints]); else continue;
+					}
 					fNHistoPoints++;
 					isFirst = false;
 				} else {
@@ -379,11 +387,18 @@ void TCandle::Calculate() {
 	      Double_t myBinValue = fProj->GetBinContent(bin);
 	      fHistoPointsX[fNHistoPoints] = fPosCandleAxis + myBinValue/maxContent*maxHistoHeight;
 	      fHistoPointsY[fNHistoPoints] = fProj->GetBinLowEdge(bin);
-	      //if (fHistoPointsX[fNHistoPoints] != fHistoPointsX[fNHistoPoints-1] || fHistoPointsY[fNHistoPoints] != fHistoPointsY[fNHistoPoints-1]) 
 	      fNHistoPoints++;
 	      fHistoPointsX[fNHistoPoints] = fPosCandleAxis + myBinValue/maxContent*maxHistoHeight;
 	      fHistoPointsY[fNHistoPoints] = fProj->GetBinLowEdge(bin)+fProj->GetBinWidth(bin);
-	      //if (fHistoPointsX[fNHistoPoints] != fHistoPointsX[fNHistoPoints-1] || fHistoPointsY[fNHistoPoints] != fHistoPointsY[fNHistoPoints-1]) 
+	       if (doLogX) {
+				if (fHistoPointsX[fNHistoPoints -1] > 0) fHistoPointsX[fNHistoPoints - 1] = TMath::Log10(fHistoPointsX[fNHistoPoints - 1]); else continue;
+				if (fHistoPointsX[fNHistoPoints] > 0) fHistoPointsX[fNHistoPoints] = TMath::Log10(fHistoPointsX[fNHistoPoints]); else continue;
+	       }
+	       if (doLogY) {
+				if (fHistoPointsY[fNHistoPoints -1] > 0) fHistoPointsY[fNHistoPoints - 1] = TMath::Log10(fHistoPointsY[fNHistoPoints - 1]); else continue;
+				if (fHistoPointsY[fNHistoPoints] > 0) fHistoPointsY[fNHistoPoints] = TMath::Log10(fHistoPointsY[fNHistoPoints]); else continue;
+	       }
+	      
 	      fNHistoPoints++;
 	      if (fProj->GetBinContent(bin) > 0) lastNonZero = fNHistoPoints;
 	   }
@@ -448,8 +463,13 @@ void TCandle::Paint(Option_t *)
    
 
 	if (IsOption(kHistoRight) || IsOption(kHistoLeft) || IsOption(kHistoViolin)) {
-		gPad->PaintFillArea(fNHistoPoints, fHistoPointsX, fHistoPointsY);
-		gPad->PaintPolyLine(fNHistoPoints, fHistoPointsX, fHistoPointsY);
+		if (!swapXY) {
+			gPad->PaintFillArea(fNHistoPoints, fHistoPointsX, fHistoPointsY);
+			gPad->PaintPolyLine(fNHistoPoints, fHistoPointsX, fHistoPointsY);
+		} else {
+			gPad->PaintFillArea(fNHistoPoints, fHistoPointsY, fHistoPointsX);
+			gPad->PaintPolyLine(fNHistoPoints, fHistoPointsY, fHistoPointsX);
+		}
 	}
    
 
