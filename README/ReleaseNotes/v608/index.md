@@ -20,6 +20,7 @@ The following people have contributed to this new version:
  Olivier Couet, CERN/SFT,\
  Gerri Ganis, CERN/SFT,\
  Andrei Gheata, CERN/SFT,\
+ Luca Giommi, CERN/SFT,\
  Christopher Jones, Fermilab, CMS,\
  Wim Lavrijsen, LBNL, PyRoot,\
  Sergey Linev, GSI, http,\
@@ -112,12 +113,14 @@ Add a new mode for `TClass::SetCanSplit` (2) which indicates that this class and
 * Add tutorial showing how to fill randomly histograms using the `TProcPool` class.
 * Add tutorial showing how to fill randomly histograms from multiple threads.
 * Add the ROOT::TSPinMutex class, a spin mutex compliant with C++11 requirements.
-*
+* Add a new Implicit Multi-Threading (IMT) use case, incarnated in method TTreeProcessor::Process. TTProcessor::Process allows to process the entries of a TTree in parallel. The user provides a function that receives one parameter, a TTreeReader, that can be used to iterate over a subrange of entries. Each subrange corresponds to a cluster in the TTree and is processed by a task, which can potentially be run in parallel with other tasks.
+* Add a new implementation of a RW lock, ROOT::TRWSpinLock, which is based on a ROOT::TSPinMutex. TRWSpinLock tries to make faster the scenario when readers come and go but there is no writer, while still preventing starvation of writers.
 
 ## I/O Libraries
 
 * Support I/O of std::unique_ptrs and STL collections thereof.
 * Support I/O of std::array.
+* Support I/O of std::tuple. The dictionary for those is never auto generated and thus requires explicit request of the dictionary for each std::tuple class template instantiation used, like most other class templates.
 * Custom streamers need to #include TBuffer.h explicitly (see [section Core Libraries](#core-libs))
 * Check and flag short reads as errors in the xroot plugins. This fixes [ROOT-3341].
 * Added support for AWS temporary security credentials to TS3WebFile by allowing the security token to be given.
@@ -125,6 +128,7 @@ Add a new mode for `TClass::SetCanSplit` (2) which indicates that this class and
 
 ## TTree Libraries
 
+* TChains can now be histogrammed without any C++ code, using the command line too rootdrawtree. It is based on the new class TSimpleAnalysis.
 * Do not automatically setup read cache during TTree::Fill(). This fixes [ROOT-8031].
 * Make sure the option "PARA" in TTRe::Draw is used with at least tow variables [ROOT-8196].
 * The with `goff` option one can use as many variables as needed. There no more
@@ -269,6 +273,9 @@ We added a cache specifically for the fast option of the TTreeCloner to signific
    context when handling optionTime with `%F`. This was reported
    [here](https://sft.its.cern.ch/jira/browse/ROOT-8309). The fixed was suggested
    by Philippe Gras (philippe.gras@cea.fr).
+* `TGaxis::PaintAxis()` misplaced the `x10` at the end of the axis for non vertical
+   or horizontal axis
+   [here](https://root.cern.ch/phpBB3/viewtopic.php?f=3&t=22363).
 
 ## 3D Graphics Libraries
 
@@ -314,7 +321,31 @@ We added a cache specifically for the fast option of the TTreeCloner to signific
   This has been implemented by Jeromy Tompkins <Tompkins@nscl.msu.edu>
 
 ## Geometry Libraries
+  A new module geom/vecgeom was introduced to give transparent access to VecGeom 
+  solid primitives. VecGeom is a high performance geometry package (link) providing 
+  SIMD vectorization for the CPU-intensive geometry algorithms used for geometry
+  navigation. The module creates a new library libConverterVG.so depending on the
+  VecGeom main library and loaded using the ROOT plug-in mechanism.
 
+  The main functionality provided by the new vecgeom module is to make a conversion 
+  in memory of all the shapes in a loaded TGeo geometry into a special adapter
+  shape TGeoVGShape, redirecting all navigation calls to the corresponding VecGeom 
+  solid. The library loading and geometry conversion can be done with a single call 
+  `TVirtualGeoConverter::Instance()->ConvertGeometry()`
+  
+
+  After the conversion is done, all existing TGeo functionality is available as for
+  a native geometry, only that most of the converted solids provide better navigation 
+  performance, despite the overhead introduced by the new adapter shape.
+
+  Prerequisites: installation of VecGeom. 
+  The installation instructions are available at <http://geant.web.cern.ch/content/installation>
+  Due to the fact that VecGeom provides for the moment static libraries 
+  and depends on ROOT, is is advised to compile first ROOT without VecGeom support, 
+  then compile VecGeom against this ROOT version, then re-configure ROOT to enable 
+  VecGeom and Vc support, using the flags -Dvc=ON -Dvecgeom=on
+  
+  This has been implemented by Mihaela Gheata <Mihaela.Gheata@cern.ch>
 
 ## Database Libraries
 
@@ -395,7 +426,8 @@ We added a cache specifically for the fast option of the TTreeCloner to signific
    - Move gl2ps.h to its own subdir
 - Added new 'builtin-unuran' option (provided by Mattias Ellert)
 - Added new 'builtin-gl2ps' option (provided by Mattias Ellert)
-- Added new 'macos_native' option (only for MacOS) to disable looking for binaries, libraires and headers for dependent 
-  packages at locations other than native MacOS installations. Needed when wanting to ignore packages from Fink, Brew or Ports. 
+- Added new 'macos_native' option (only for MacOS) to disable looking for binaries, libraires and headers for dependent
+  packages at locations other than native MacOS installations. Needed when wanting to ignore packages from Fink, Brew or Ports.
+- Added new 'cuda' option to enable looking for CUDA in the system.
 
 

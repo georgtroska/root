@@ -5,6 +5,13 @@ cmake_minimum_required(VERSION 3.4.3)
 if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
   project(Cling)
 
+  if(WIN32)
+    # We need cmake to support exporting of symbols not only from libraries but
+    # from executables too. This way cling can find symbols from its own
+    # executable during runtime.
+    cmake_minimum_required(VERSION 3.6.2)
+  endif(WIN32)
+
   # Rely on llvm-config.
   set(CONFIG_OUTPUT)
   find_program(LLVM_CONFIG "llvm-config")
@@ -374,7 +381,6 @@ endif()
 if(DEFINED ROOT_BINARY_DIR)
   if( CLING_INCLUDE_TESTS )
      set(cling_include_deflt "${CMAKE_INSTALL_PREFIX}/include${cling_path_delim}\
-${cling_include_deflt}${cling_path_delim}\
 ${CMAKE_CURRENT_SOURCE_DIR}/include${cling_path_delim}\
 ${CMAKE_CURRENT_SOURCE_DIR}/../llvm/src/tools/clang/include${cling_path_delim}\
 ${CMAKE_CURRENT_SOURCE_DIR}/../llvm/src/include"
@@ -383,17 +389,16 @@ ${CMAKE_CURRENT_SOURCE_DIR}/../llvm/src/include"
 else()
   if( CLING_INCLUDE_TESTS )
     set(cling_include_deflt "${CMAKE_INSTALL_PREFIX}/include${cling_path_delim}\
-${cling_include_deflt}${cling_path_delim}\
 ${CMAKE_CURRENT_SOURCE_DIR}/include${cling_path_delim}\
 ${CMAKE_CURRENT_SOURCE_DIR}/../clang/include${cling_path_delim}\
 ${CMAKE_CURRENT_SOURCE_DIR}/../../include"
     )
-  endif()
-  if (WIN32)
-    set(cling_include_deflt "${cling_include_deflt}${cling_path_delim}\
+    if (WIN32)
+      set(cling_include_deflt "${cling_include_deflt}${cling_path_delim}\
 ${CMAKE_BINARY_DIR}/include${cling_path_delim}\
 ${CMAKE_BINARY_DIR}/tools/clang/include"
-    )
+      )
+    endif()
   endif()
 endif()
 
