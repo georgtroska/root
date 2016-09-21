@@ -23,6 +23,7 @@ void candlehisto()
          h1->Fill(i,myRand);
       }
    }
+   
    for (int i = 1; i < 7; i++) {
       c1->cd(i);
       char str[16];
@@ -32,14 +33,19 @@ void candlehisto()
    }
 
    TCanvas *c2 = new TCanvas("c2","Candle Individual",1200,800);
-   c2->Divide(3,1);
-   char myopt[16][8] = {"1000000","2000000","3000000","21","31","30","111","311","301","1111","2321","12111","112111","212111","312111"};
-   for (int i = 0; i < 3; i++) {
+   c2->Divide(3,2);
+   char myopt[16][8] = {"1000000","2000000","3000000","1112111","112111","112111","111","311","301","1111","2321","12111","112111","212111","312111"};
+   for (int i = 0; i < 5; i++) {
       c2->cd(i+1);
       char str[16];
       sprintf(str, "candlex(%s)",myopt[i]);
       TH2I * myhist = (TH2I*)h1->DrawCopy(str);
-	 myhist->SetFillColor(kYellow);
+      myhist->SetFillColor(kYellow);
+      if (i == 4) {
+		  TH2I * myhist2 = (TH2I*)h1->DrawCopy("candlex(1000000) same");
+		   myhist2->SetFillColor(kRed);
+	  }
+	
 	 
 	 //myhist->SetFillStyle(0);
 	//myhist->SetBarWidth(1.5);
