@@ -552,7 +552,7 @@ void TParallelCoordVar::Init()
 
 void TParallelCoordVar::Paint(Option_t* /*option*/)
 {
-   PaintHistogram();
+   //PaintHistogram();
    if (TestBit(kShowBox)) PaintBoxPlot();
    PaintLabels();
 }
@@ -604,7 +604,7 @@ void TParallelCoordVar::PaintBoxPlot()
 	myCandle.SetLineStyle(1);
 	myCandle.SetMarkerColor(kBlue);
 	char opt[16];
-	sprintf(opt,"%s","CANDLE2");
+	sprintf(opt,"%s","CANDLE(2112311)");
 	myCandle.ParseOption(opt);
 	myCandle.ConvertToPadCoords(fMinCurrent, fMaxCurrent, fY1, fY2, fMinInit, fMaxInit);
 	myCandle.Paint();

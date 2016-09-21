@@ -118,6 +118,7 @@ TCandle::TCandle(const Double_t candlePos, const Double_t candleWidth, TH1D *pro
 /// TCandle default destructor.
 
 TCandle::~TCandle() {
+	if (fIsRaw && fProj) delete fProj;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -201,6 +202,10 @@ void TCandle::Calculate() {
    Bool_t swapXY = IsOption(kHorizontal);
    Bool_t doLogY = (!(swapXY) && fLogY) || (swapXY && fLogX);
    Bool_t doLogX = (!(swapXY) && fLogX) || (swapXY && fLogY);
+   
+   //Will be min and max values of raw-data
+   Double_t min = 1e15;
+   Double_t max = -1e15;
   
    // Determining the quantiles
    Double_t *prob = new Double_t[5];
@@ -234,6 +239,8 @@ void TCandle::Calculate() {
       fMean = 0;
       for (Long64_t i = 0; i < fNDatapoints; ++i) {
 	    fMean += fDatapoints[i];
+	    if (fDatapoints[i] < min) min = fDatapoints[i];
+	    if (fDatapoints[i] > max) max = fDatapoints[i];
       }
       fMean /= fNDatapoints;
       fMedianErr = 1.57*iqr/sqrt(fNDatapoints);
@@ -359,7 +366,15 @@ void TCandle::Calculate() {
    
    if (IsOption(kHistoRight) || IsOption(kHistoLeft) || IsOption(kHistoViolin)) {
 	   //We are starting with kHistoRight, left will be modified from right later
-       if (!fIsRaw && fProj) { //Need a calculation for a projected histo
+	   if (fIsRaw) { //This is a raw-data candle
+		   if (!fProj) {
+			   fProj = new TH1D("hpa","hpa",100,min,max+0.0001*(max-min));
+			   for (Long64_t i = 0; i < fNDatapoints; ++i) {
+					fProj->Fill(fDatapoints[i]);
+				}
+		   }
+	   }
+    //   if (!fIsRaw && fProj) { //Need a calculation for a projected histo
 	  fNHistoPoints = 0;
 	  Double_t maxContent = fProj->GetMaximum();
 	  Double_t maxHistoHeight = fCandleWidth*0.8;
@@ -424,9 +439,9 @@ void TCandle::Calculate() {
 		   fNHistoPoints *= 2;
 		   //fNHistoPoints -= 2;
 	   }
-       } else { //Raw histo
-	  
-       }
+      /* } else { //Raw histo
+			std::cout << "Calculation of raw histo is still missing! " << std::endl;
+       }*/
    }
    
    fIsCalculated = true;
