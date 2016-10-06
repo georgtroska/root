@@ -562,9 +562,9 @@ void TParallelCoordVar::Paint(Option_t* /*option*/)
 
 void TParallelCoordVar::PaintBoxPlot()
 {
-	
-	TFrame* frame = gPad->GetFrame();
-	Double_t boxSize;
+   
+   TFrame* frame = gPad->GetFrame();
+   Double_t boxSize;
    if (fParallel->GetNvar() > 1) {
       if (fX1==fX2) boxSize = fHistoHeight*((frame->GetY2()-frame->GetY1())/(fParallel->GetNvar()-1));
       else          boxSize = fHistoHeight*((frame->GetX2()-frame->GetX1())/(fParallel->GetNvar()-1));
@@ -579,8 +579,8 @@ void TParallelCoordVar::PaintBoxPlot()
    Double_t* val;
    TCandle myCandle;
    if (first==0 && nentries==fNentries) { //Without any selection take the array as it is
-		myCandle = TCandle(fX1,boxSize, fNentries, fVal);
-	} else { //Need to pass only the selection to TCandle
+      myCandle = TCandle(fX1,boxSize, fNentries, fVal);
+   } else { //Need to pass only the selection to TCandle
       val = new Double_t[nentries];
       Int_t selected = 0;
       if(fMinInit<=0) {
@@ -597,117 +597,17 @@ void TParallelCoordVar::PaintBoxPlot()
          }
       }
       myCandle = TCandle(fX1,boxSize, selected, val);
-	}
+   }
       
-	myCandle.SetLineColor(kBlue);
-	myCandle.SetLineWidth(1);
-	myCandle.SetLineStyle(1);
-	myCandle.SetMarkerColor(kBlue);
-	char opt[16];
-	sprintf(opt,"%s","CANDLE(2112311)");
-	myCandle.ParseOption(opt);
-	myCandle.ConvertToPadCoords(fMinCurrent, fMaxCurrent, fY1, fY2, fMinInit, fMaxInit);
-	myCandle.Paint();
-
-
-	
-	//if (val) delete [] val;
-	
-	/*
-   TLine *line = new TLine();
-   line->SetLineColor(GetLineColor());
-   line->SetLineWidth(1);
-   TBox *box = new TBox();
-   box->SetLineWidth(1);
-   box->SetLineColor(GetLineColor());
-   box->SetLineStyle(1);
-   box->SetFillStyle(0);
-
-   TFrame* frame = gPad->GetFrame();
-
-   Double_t boxSize;
-   if (fParallel->GetNvar() > 1) {
-      if (fX1==fX2) boxSize = fHistoHeight*((frame->GetY2()-frame->GetY1())/(fParallel->GetNvar()-1));
-      else          boxSize = fHistoHeight*((frame->GetX2()-frame->GetX1())/(fParallel->GetNvar()-1));
-      if (boxSize >= 0.03) boxSize = 0.03;
-   }
-   else boxSize = 0.03;
-
-   Double_t qua1,med,qua3,max,min;
-   Double_t a,b,maxinit,mininit;
-   if (TestBit(kLogScale)) {
-      a = TMath::Log10(fMinCurrent);
-      b = TMath::Log10(fMaxCurrent/fMinCurrent);
-      if(fMinInit > 0) mininit = TMath::Log10(fMinInit);
-      else             mininit = TMath::Log10(fMinCurrent);
-      maxinit = TMath::Log10(fMaxInit);
-   } else {
-      a = fMinCurrent;
-      b = fMaxCurrent-fMinCurrent;
-      mininit = fMinInit;
-      maxinit = fMaxInit;
-   }
-   if(fX1==fX2) {
-      qua1 = fY1 + ((fQua1-a)/b)*(fY2-fY1);
-      qua3 = fY1 + ((fQua3-a)/b)*(fY2-fY1);
-      med  = fY1 + ((fMed-a)/b)*(fY2-fY1);
-      max  = fY1 + ((maxinit-a)/b)*(fY2-fY1);
-      min  = fY1 + ((mininit-a)/b)*(fY2-fY1);
-   } else {
-      qua1 = fX1 + ((fQua1-a)/b)*(fX2-fX1);
-      qua3 = fX1 + ((fQua3-a)/b)*(fX2-fX1);
-      med  = fX1 + ((fMed-a)/b)*(fX2-fX1);
-      max  = fX1 + ((maxinit-a)/b)*(fX2-fX1);
-      min  = fX1 + ((mininit-a)/b)*(fX2-fX1);
-   }
-
-   // min and max lines.
-   if (fX1==fX2) {
-      line->PaintLine(fX1-boxSize,min,fX1+boxSize,min);
-      line->PaintLine(fX2-boxSize,max,fX2+boxSize,max);
-   } else {
-      line->PaintLine(min,fY1-boxSize,min,fY1+boxSize);
-      line->PaintLine(max,fY2-boxSize,max,fY2+boxSize);
-   }
-
-   // lines from min and max to the box.
-   line->SetLineStyle(7);
-   if (fX1==fX2) {
-      if (min<frame->GetY1()) min = frame->GetY1();
-      if (max>frame->GetY2()) max = frame->GetY2();
-      line->PaintLine(fX1,min,fX1,qua1);
-      line->PaintLine(fX1,qua3,fX1,max);
-   } else {
-      if (min<frame->GetX1()) min = frame->GetX1();
-      if (max>frame->GetX2()) max = frame->GetX2();
-      line->PaintLine(min,fY1,qua1,fY2);
-      line->PaintLine(qua3,fY1,max,fY2);
-   }
-
-   // Box
-   if(fX1==fX2) box->PaintBox(fX1-boxSize,qua1,fX1+boxSize,qua3);
-   else box->PaintBox(qua1,fY1-boxSize,qua3,fY1+boxSize);
-
-   // Median line
-   line->SetLineStyle(1);
-   if(fX1==fX2) line->PaintLine(fX1-boxSize,med,fX1+boxSize,med);
-   else line->PaintLine(med,fY1-boxSize,med,fY1+boxSize);
-
-   // Paint average
-   if (!TestBit(kLogScale) || (TestBit(kLogScale) && fMean > 0)) {
-      Double_t mean;
-      if (TestBit(kLogScale)) mean = TMath::Log10(fMean);
-      else mean = fMean;
-      TMarker *mark = NULL;
-      if(fX1==fX2) mark = new TMarker(fX1,fY1 + ((mean-a)/b)*(fY2-fY1),24);
-      else         mark = new TMarker(fX1 + ((mean-a)/b)*(fX2-fX1),fY1,24);
-      mark->Paint();
-      delete mark;
-   }
-
-   delete line;
-   delete box;
-   * */
+   myCandle.SetLineColor(kBlue);
+   myCandle.SetLineWidth(1);
+   myCandle.SetLineStyle(1);
+   myCandle.SetMarkerColor(kBlue);
+   char opt[16];
+   sprintf(opt,"%s","CANDLE(2112311)"); // Need a possibility here, to pass a candle-option
+   myCandle.ParseOption(opt);
+   myCandle.ConvertToPadCoords(fMinCurrent, fMaxCurrent, fY1, fY2, fMinInit, fMaxInit);
+   myCandle.Paint();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

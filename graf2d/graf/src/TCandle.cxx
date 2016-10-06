@@ -52,15 +52,17 @@ TCandle::TCandle()
    fDismiss = 0;
    fLogX          = 0;
    fLogY          = 0;
-   fNDrawPoints	  = 0;
+   fNDrawPoints     = 0;
    fNHistoPoints  = 0;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+/// TCandle constructor for raw-data candles.
 
 TCandle::TCandle(const Double_t candlePos, const Double_t candleWidth, Long64_t n, Double_t * points) 
-	: TAttLine(), TAttFill(), TAttMarker()
+   : TAttLine(), TAttFill(), TAttMarker()
 {
-	//Preliminary values only, need to be calculated before paint
+   //Preliminary values only, need to be calculated before paint
    fMean          = 0;
    fMedian        = 0;
    fMedianErr     = 0;
@@ -79,7 +81,7 @@ TCandle::TCandle(const Double_t candlePos, const Double_t candleWidth, Long64_t 
    fOption        = kNoOption;
    fLogX          = 0;
    fLogY          = 0;
-   fNDrawPoints	  = 0;
+   fNDrawPoints     = 0;
    fNHistoPoints  = 0;
    
 }
@@ -109,7 +111,7 @@ TCandle::TCandle(const Double_t candlePos, const Double_t candleWidth, TH1D *pro
    fOption        = kNoOption;
    fLogX          = 0;
    fLogY          = 0;
-   fNDrawPoints	  = 0;
+   fNDrawPoints     = 0;
    fNHistoPoints  = 0;
 
 }
@@ -118,7 +120,7 @@ TCandle::TCandle(const Double_t candlePos, const Double_t candleWidth, TH1D *pro
 /// TCandle default destructor.
 
 TCandle::~TCandle() {
-	if (fIsRaw && fProj) delete fProj;
+   if (fIsRaw && fProj) delete fProj;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -238,9 +240,9 @@ void TCandle::Calculate() {
       //Calculate the Mean
       fMean = 0;
       for (Long64_t i = 0; i < fNDatapoints; ++i) {
-	    fMean += fDatapoints[i];
-	    if (fDatapoints[i] < min) min = fDatapoints[i];
-	    if (fDatapoints[i] > max) max = fDatapoints[i];
+       fMean += fDatapoints[i];
+       if (fDatapoints[i] < min) min = fDatapoints[i];
+       if (fDatapoints[i] > max) max = fDatapoints[i];
       }
       fMean /= fNDatapoints;
       fMedianErr = 1.57*iqr/sqrt(fNDatapoints);
@@ -248,25 +250,25 @@ void TCandle::Calculate() {
 
    if (IsOption(kWhisker15)) { // Improved whisker definition, with 1.5*iqr
       if (!fIsRaw && fProj) { //Need a calculation for a projected histo
-		 int bin = fProj->FindBin(fBoxDown-1.5*iqr);
-		 // extending only to the lowest data value within this range
-		 while (fProj->GetBinContent(bin) == 0 && bin <= fProj->GetNbinsX()) bin++;
-		 fWhiskerDown = fProj->GetBinCenter(bin);
+       int bin = fProj->FindBin(fBoxDown-1.5*iqr);
+       // extending only to the lowest data value within this range
+       while (fProj->GetBinContent(bin) == 0 && bin <= fProj->GetNbinsX()) bin++;
+       fWhiskerDown = fProj->GetBinCenter(bin);
 
-		 bin = fProj->FindBin(fBoxUp+1.5*iqr);
-		 while (fProj->GetBinContent(bin) == 0 && bin >= 1) bin--;
-		 fWhiskerUp = fProj->GetBinCenter(bin);
+       bin = fProj->FindBin(fBoxUp+1.5*iqr);
+       while (fProj->GetBinContent(bin) == 0 && bin >= 1) bin--;
+       fWhiskerUp = fProj->GetBinCenter(bin);
       } else { //Need a calculation for a raw-data candle
-		 fWhiskerUp = fBoxDown;
-		 fWhiskerDown = fBoxUp;
+       fWhiskerUp = fBoxDown;
+       fWhiskerDown = fBoxUp;
 
-		 //Need to find highest value up to 1.5*iqr from the BoxUp-pos, and the lowest value up to -1.5*iqr from the boxLow-pos
-		 for (Long64_t i = 0; i < fNDatapoints; ++i) {
-			Double_t myData = fDatapoints[i];
-			if (myData > fWhiskerUp && myData <= fBoxUp + 1.5*iqr) fWhiskerUp = myData;
-			if (myData < fWhiskerDown && myData >= fBoxDown - 1.5*iqr) fWhiskerDown = myData;
-		 }
-	 
+       //Need to find highest value up to 1.5*iqr from the BoxUp-pos, and the lowest value up to -1.5*iqr from the boxLow-pos
+       for (Long64_t i = 0; i < fNDatapoints; ++i) {
+         Double_t myData = fDatapoints[i];
+         if (myData > fWhiskerUp && myData <= fBoxUp + 1.5*iqr) fWhiskerUp = myData;
+         if (myData < fWhiskerDown && myData >= fBoxDown - 1.5*iqr) fWhiskerDown = myData;
+       }
+    
       }
    }
 
@@ -280,167 +282,167 @@ void TCandle::Calculate() {
       const int maxOutliers = kNMAXPOINTS;
       Double_t myScale = 1.;
       if (!fIsRaw && fProj) { //Need a calculation for a projected histo
-	 if (fProj->GetEntries() > maxOutliers/2) myScale = fProj->GetEntries()/(maxOutliers/2.);
-	 fNDrawPoints = 0;
-	 for (int bin = 0; bin < fProj->GetNbinsX(); bin++) {
-	    // Either show them only outside the whiskers, or all of them
-	    if (fProj->GetBinContent(bin) > 0 && (fProj->GetBinCenter(bin) < fWhiskerDown || fProj->GetBinCenter(bin) > fWhiskerUp || (GetCandleOption(5) > 1)) ) {
-	    Double_t scaledBinContent = fProj->GetBinContent(bin)/myScale;
-	    if (scaledBinContent >0 && scaledBinContent < 1) scaledBinContent = 1; //Outliers have a typical bincontent between 0 and 1, when scaling they would disappear
-	       for (int j=0; j < (int)scaledBinContent; j++) {
-		  if (fNDrawPoints > maxOutliers) break;
-		  if (IsOption(kPointsAllScat)) { //Draw outliers and "all" values scattered
-		     fDrawPointsX[fNDrawPoints] = fPosCandleAxis - fCandleWidth/2. + fCandleWidth*random.Rndm();
-		     fDrawPointsY[fNDrawPoints] = fProj->GetBinLowEdge(bin) + fProj->GetBinWidth(bin)*random.Rndm();
-		  } else { //Draw them in the "candle line"
-		     fDrawPointsX[fNDrawPoints] = fPosCandleAxis;
-		     if ((int)scaledBinContent == 1) //If there is only one datapoint available put it in the middle of the bin
-			fDrawPointsY[fNDrawPoints] = fProj->GetBinCenter(bin);
-		     else //If there is more than one datapoint scatter it along the bin, otherwise all marker would be (invisibly) stacked on top of each other
-			fDrawPointsY[fNDrawPoints] = fProj->GetBinLowEdge(bin) + fProj->GetBinWidth(bin)*random.Rndm();
-		  }
-		  if (swapXY) {
-		     //Swap X and Y
-		     Double_t keepCurrently;
-		     keepCurrently = fDrawPointsX[fNDrawPoints];
-		     fDrawPointsX[fNDrawPoints] = fDrawPointsY[fNDrawPoints];
-		     fDrawPointsY[fNDrawPoints] = keepCurrently;
-		  }
-		  // Continue fMeans, that fNDrawPoints is not increased, so that value will not be shown
-		  if (doLogX) {
-		     if (fDrawPointsX[fNDrawPoints] > 0) fDrawPointsX[fNDrawPoints] = TMath::Log10(fDrawPointsX[fNDrawPoints]); else continue;
-		  }
-		  if (doLogY) {
-		     if (fDrawPointsY[fNDrawPoints] > 0) fDrawPointsY[fNDrawPoints] = TMath::Log10(fDrawPointsY[fNDrawPoints]); else continue;
-		  }
-		  fNDrawPoints++;
-	       }
-	    }
-	    if (fNDrawPoints > maxOutliers) { //Should never happen, due to myScale!!!
-	       Error ("PaintCandlePlot","Not possible to draw all outliers.");
-	       break;
-	    }
-	 }
+    if (fProj->GetEntries() > maxOutliers/2) myScale = fProj->GetEntries()/(maxOutliers/2.);
+    fNDrawPoints = 0;
+    for (int bin = 0; bin < fProj->GetNbinsX(); bin++) {
+       // Either show them only outside the whiskers, or all of them
+       if (fProj->GetBinContent(bin) > 0 && (fProj->GetBinCenter(bin) < fWhiskerDown || fProj->GetBinCenter(bin) > fWhiskerUp || (GetCandleOption(5) > 1)) ) {
+       Double_t scaledBinContent = fProj->GetBinContent(bin)/myScale;
+       if (scaledBinContent >0 && scaledBinContent < 1) scaledBinContent = 1; //Outliers have a typical bincontent between 0 and 1, when scaling they would disappear
+          for (int j=0; j < (int)scaledBinContent; j++) {
+        if (fNDrawPoints > maxOutliers) break;
+        if (IsOption(kPointsAllScat)) { //Draw outliers and "all" values scattered
+           fDrawPointsX[fNDrawPoints] = fPosCandleAxis - fCandleWidth/2. + fCandleWidth*random.Rndm();
+           fDrawPointsY[fNDrawPoints] = fProj->GetBinLowEdge(bin) + fProj->GetBinWidth(bin)*random.Rndm();
+        } else { //Draw them in the "candle line"
+           fDrawPointsX[fNDrawPoints] = fPosCandleAxis;
+           if ((int)scaledBinContent == 1) //If there is only one datapoint available put it in the middle of the bin
+         fDrawPointsY[fNDrawPoints] = fProj->GetBinCenter(bin);
+           else //If there is more than one datapoint scatter it along the bin, otherwise all marker would be (invisibly) stacked on top of each other
+         fDrawPointsY[fNDrawPoints] = fProj->GetBinLowEdge(bin) + fProj->GetBinWidth(bin)*random.Rndm();
+        }
+        if (swapXY) {
+           //Swap X and Y
+           Double_t keepCurrently;
+           keepCurrently = fDrawPointsX[fNDrawPoints];
+           fDrawPointsX[fNDrawPoints] = fDrawPointsY[fNDrawPoints];
+           fDrawPointsY[fNDrawPoints] = keepCurrently;
+        }
+        // Continue fMeans, that fNDrawPoints is not increased, so that value will not be shown
+        if (doLogX) {
+           if (fDrawPointsX[fNDrawPoints] > 0) fDrawPointsX[fNDrawPoints] = TMath::Log10(fDrawPointsX[fNDrawPoints]); else continue;
+        }
+        if (doLogY) {
+           if (fDrawPointsY[fNDrawPoints] > 0) fDrawPointsY[fNDrawPoints] = TMath::Log10(fDrawPointsY[fNDrawPoints]); else continue;
+        }
+        fNDrawPoints++;
+          }
+       }
+       if (fNDrawPoints > maxOutliers) { //Should never happen, due to myScale!!!
+          Error ("PaintCandlePlot","Not possible to draw all outliers.");
+          break;
+       }
+    }
       } else { //Raw data candle
-	 if (fNDatapoints > maxOutliers/2) myScale = fNDatapoints/(maxOutliers/2.);
-	 fNDrawPoints = 0;
-	 for (int i = 0; i < fNDatapoints; i++ ) { 
-	    Double_t myData = fDatapoints[i];
-	    Double_t maxScatter = (fWhiskerUp-fWhiskerDown)/100;
-	    if (!(i % (int) myScale == 0 || myData < fWhiskerDown || myData > fWhiskerUp )) continue; //If the amount of data is too large take only every 2nd or 3rd to reduce the amount, but do not reduce at outliers!
-	    // Either show them only outside the whiskers, or all of them
-	    if (myData < fWhiskerDown || myData > fWhiskerUp || (GetCandleOption(5) > 1)) {
-	       if (IsOption(kPointsAllScat)) { //Draw outliers and "all" values scattered
-		  fDrawPointsX[fNDrawPoints] = fPosCandleAxis - fCandleWidth/2. + fCandleWidth*random.Rndm();
-		  fDrawPointsY[fNDrawPoints] = myData + (random.Rndm() - 0.5)*maxScatter; //random +- 0.5 of candleheight
-	       } else { //Draw them in the "candle line"
-		  fDrawPointsX[fNDrawPoints] = fPosCandleAxis; 
-		  fDrawPointsY[fNDrawPoints] = myData + (random.Rndm() - 0.5)*maxScatter; //random +- 0.5 of candleheight
-	       }
-	       if (swapXY) {
-		  //Swap X and Y
-		  Double_t keepCurrently;
-		  keepCurrently = fDrawPointsX[fNDrawPoints];
-		  fDrawPointsX[fNDrawPoints] = fDrawPointsY[fNDrawPoints];
-		  fDrawPointsY[fNDrawPoints] = keepCurrently;
-	       }
-	       // Continue fMeans, that fNDrawPoints is not increased, so that value will not be shown
-	       if (doLogX) {
-		  if (fDrawPointsX[fNDrawPoints] > 0) fDrawPointsX[fNDrawPoints] = TMath::Log10(fDrawPointsX[fNDrawPoints]); else continue;
-	       }
-	       if (doLogY) {
-		  if (fDrawPointsY[fNDrawPoints] > 0) fDrawPointsY[fNDrawPoints] = TMath::Log10(fDrawPointsY[fNDrawPoints]); else continue;
-	       }
-	    }
-	    fNDrawPoints++;
-	    if (fNDrawPoints > maxOutliers) { //Should never happen, due to myScale!!!
-	       Error ("PaintCandlePlot","Not possible to draw all outliers.");
-	       break;
-	    }
-	   
-	 }
-	 
+    if (fNDatapoints > maxOutliers/2) myScale = fNDatapoints/(maxOutliers/2.);
+    fNDrawPoints = 0;
+    for (int i = 0; i < fNDatapoints; i++ ) { 
+       Double_t myData = fDatapoints[i];
+       Double_t maxScatter = (fWhiskerUp-fWhiskerDown)/100;
+       if (!(i % (int) myScale == 0 || myData < fWhiskerDown || myData > fWhiskerUp )) continue; //If the amount of data is too large take only every 2nd or 3rd to reduce the amount, but do not reduce at outliers!
+       // Either show them only outside the whiskers, or all of them
+       if (myData < fWhiskerDown || myData > fWhiskerUp || (GetCandleOption(5) > 1)) {
+          if (IsOption(kPointsAllScat)) { //Draw outliers and "all" values scattered
+        fDrawPointsX[fNDrawPoints] = fPosCandleAxis - fCandleWidth/2. + fCandleWidth*random.Rndm();
+        fDrawPointsY[fNDrawPoints] = myData + (random.Rndm() - 0.5)*maxScatter; //random +- 0.5 of candleheight
+          } else { //Draw them in the "candle line"
+        fDrawPointsX[fNDrawPoints] = fPosCandleAxis; 
+        fDrawPointsY[fNDrawPoints] = myData + (random.Rndm() - 0.5)*maxScatter; //random +- 0.5 of candleheight
+          }
+          if (swapXY) {
+        //Swap X and Y
+        Double_t keepCurrently;
+        keepCurrently = fDrawPointsX[fNDrawPoints];
+        fDrawPointsX[fNDrawPoints] = fDrawPointsY[fNDrawPoints];
+        fDrawPointsY[fNDrawPoints] = keepCurrently;
+          }
+          // Continue fMeans, that fNDrawPoints is not increased, so that value will not be shown
+          if (doLogX) {
+        if (fDrawPointsX[fNDrawPoints] > 0) fDrawPointsX[fNDrawPoints] = TMath::Log10(fDrawPointsX[fNDrawPoints]); else continue;
+          }
+          if (doLogY) {
+        if (fDrawPointsY[fNDrawPoints] > 0) fDrawPointsY[fNDrawPoints] = TMath::Log10(fDrawPointsY[fNDrawPoints]); else continue;
+          }
+       }
+       fNDrawPoints++;
+       if (fNDrawPoints > maxOutliers) { //Should never happen, due to myScale!!!
+          Error ("PaintCandlePlot","Not possible to draw all outliers.");
+          break;
+       }
+      
+    }
+    
       }
-	    
+       
    }
    
    if (IsOption(kHistoRight) || IsOption(kHistoLeft) || IsOption(kHistoViolin)) {
-	   //We are starting with kHistoRight, left will be modified from right later
-	   if (fIsRaw) { //This is a raw-data candle
-		   if (!fProj) {
-			   fProj = new TH1D("hpa","hpa",100,min,max+0.0001*(max-min));
-			   for (Long64_t i = 0; i < fNDatapoints; ++i) {
-					fProj->Fill(fDatapoints[i]);
-				}
-		   }
-	   }
+      //We are starting with kHistoRight, left will be modified from right later
+      if (fIsRaw) { //This is a raw-data candle
+         if (!fProj) {
+            fProj = new TH1D("hpa","hpa",100,min,max+0.0001*(max-min));
+            for (Long64_t i = 0; i < fNDatapoints; ++i) {
+               fProj->Fill(fDatapoints[i]);
+            }
+         }
+      }
     //   if (!fIsRaw && fProj) { //Need a calculation for a projected histo
-	  fNHistoPoints = 0;
-	  Double_t maxContent = fProj->GetMaximum();
-	  Double_t maxHistoHeight = fCandleWidth*0.8;
-	 // fHistoPointsX[fNHistoPoints] = fPosCandleAxis;
-	  //fHistoPointsY[fNHistoPoints] = fProj->GetXaxis()->GetXmin();
-	  bool isFirst = true;
-	  int lastNonZero = 0;
-	   for (int bin = 1; bin <= fProj->GetNbinsX(); bin++) {
-			if (isFirst) {
-				if (fProj->GetBinContent(bin) > 0) {
-					fHistoPointsX[fNHistoPoints] = fPosCandleAxis;
-					fHistoPointsY[fNHistoPoints] = fProj->GetBinLowEdge(bin);
-					 if (doLogX) {
-						if (fHistoPointsX[fNHistoPoints] > 0) fHistoPointsX[fNHistoPoints] = TMath::Log10(fHistoPointsX[fNHistoPoints]); else continue;
-					}
-					if (doLogY) {
-						if (fHistoPointsY[fNHistoPoints] > 0) fHistoPointsY[fNHistoPoints] = TMath::Log10(fHistoPointsY[fNHistoPoints]); else continue;
-					}
-					fNHistoPoints++;
-					isFirst = false;
-				} else {
-					continue;
-				}
-		   }
-	      Double_t myBinValue = fProj->GetBinContent(bin);
-	      fHistoPointsX[fNHistoPoints] = fPosCandleAxis + myBinValue/maxContent*maxHistoHeight;
-	      fHistoPointsY[fNHistoPoints] = fProj->GetBinLowEdge(bin);
-	      fNHistoPoints++;
-	      fHistoPointsX[fNHistoPoints] = fPosCandleAxis + myBinValue/maxContent*maxHistoHeight;
-	      fHistoPointsY[fNHistoPoints] = fProj->GetBinLowEdge(bin)+fProj->GetBinWidth(bin);
-	       if (doLogX) {
-				if (fHistoPointsX[fNHistoPoints -1] > 0) fHistoPointsX[fNHistoPoints - 1] = TMath::Log10(fHistoPointsX[fNHistoPoints - 1]); else continue;
-				if (fHistoPointsX[fNHistoPoints] > 0) fHistoPointsX[fNHistoPoints] = TMath::Log10(fHistoPointsX[fNHistoPoints]); else continue;
-	       }
-	       if (doLogY) {
-				if (fHistoPointsY[fNHistoPoints -1] > 0) fHistoPointsY[fNHistoPoints - 1] = TMath::Log10(fHistoPointsY[fNHistoPoints - 1]); else continue;
-				if (fHistoPointsY[fNHistoPoints] > 0) fHistoPointsY[fNHistoPoints] = TMath::Log10(fHistoPointsY[fNHistoPoints]); else continue;
-	       }
-	      
-	      fNHistoPoints++;
-	      if (fProj->GetBinContent(bin) > 0) lastNonZero = fNHistoPoints;
-	   }
-	   
-	   fHistoPointsX[fNHistoPoints] = fPosCandleAxis;
-	   fHistoPointsY[fNHistoPoints] = fHistoPointsY[fNHistoPoints-1];
-	   fNHistoPoints = lastNonZero+1; //+1 so that the line down to 0 is added as well
-	   /*
-	   fHistoPointsX[fNHistoPoints] = fHistoPointsX[0];
-	   fHistoPointsY[fNHistoPoints] = fHistoPointsY[0];
-	   fNHistoPoints++;
-	   */
-	   if (IsOption(kHistoLeft)) {
-		   for (int i = 0; i < fNHistoPoints; i++) {
-			   fHistoPointsX[i] = 2*fPosCandleAxis - fHistoPointsX[i];
-		   }
-	   }
-	   if (IsOption(kHistoViolin)) {
-		   for (int i = 0; i < fNHistoPoints; i++) {
-			   fHistoPointsX[fNHistoPoints + i] = 2*fPosCandleAxis - fHistoPointsX[fNHistoPoints -i-1];
-			   fHistoPointsY[fNHistoPoints + i] = fHistoPointsY[fNHistoPoints -i-1];
-		   }
-		   fNHistoPoints *= 2;
-		   //fNHistoPoints -= 2;
-	   }
+     fNHistoPoints = 0;
+     Double_t maxContent = fProj->GetMaximum();
+     Double_t maxHistoHeight = fCandleWidth*0.8;
+    // fHistoPointsX[fNHistoPoints] = fPosCandleAxis;
+     //fHistoPointsY[fNHistoPoints] = fProj->GetXaxis()->GetXmin();
+     bool isFirst = true;
+     int lastNonZero = 0;
+      for (int bin = 1; bin <= fProj->GetNbinsX(); bin++) {
+         if (isFirst) {
+            if (fProj->GetBinContent(bin) > 0) {
+               fHistoPointsX[fNHistoPoints] = fPosCandleAxis;
+               fHistoPointsY[fNHistoPoints] = fProj->GetBinLowEdge(bin);
+                if (doLogX) {
+                  if (fHistoPointsX[fNHistoPoints] > 0) fHistoPointsX[fNHistoPoints] = TMath::Log10(fHistoPointsX[fNHistoPoints]); else continue;
+               }
+               if (doLogY) {
+                  if (fHistoPointsY[fNHistoPoints] > 0) fHistoPointsY[fNHistoPoints] = TMath::Log10(fHistoPointsY[fNHistoPoints]); else continue;
+               }
+               fNHistoPoints++;
+               isFirst = false;
+            } else {
+               continue;
+            }
+         }
+         Double_t myBinValue = fProj->GetBinContent(bin);
+         fHistoPointsX[fNHistoPoints] = fPosCandleAxis + myBinValue/maxContent*maxHistoHeight;
+         fHistoPointsY[fNHistoPoints] = fProj->GetBinLowEdge(bin);
+         fNHistoPoints++;
+         fHistoPointsX[fNHistoPoints] = fPosCandleAxis + myBinValue/maxContent*maxHistoHeight;
+         fHistoPointsY[fNHistoPoints] = fProj->GetBinLowEdge(bin)+fProj->GetBinWidth(bin);
+          if (doLogX) {
+            if (fHistoPointsX[fNHistoPoints -1] > 0) fHistoPointsX[fNHistoPoints - 1] = TMath::Log10(fHistoPointsX[fNHistoPoints - 1]); else continue;
+            if (fHistoPointsX[fNHistoPoints] > 0) fHistoPointsX[fNHistoPoints] = TMath::Log10(fHistoPointsX[fNHistoPoints]); else continue;
+          }
+          if (doLogY) {
+            if (fHistoPointsY[fNHistoPoints -1] > 0) fHistoPointsY[fNHistoPoints - 1] = TMath::Log10(fHistoPointsY[fNHistoPoints - 1]); else continue;
+            if (fHistoPointsY[fNHistoPoints] > 0) fHistoPointsY[fNHistoPoints] = TMath::Log10(fHistoPointsY[fNHistoPoints]); else continue;
+          }
+         
+         fNHistoPoints++;
+         if (fProj->GetBinContent(bin) > 0) lastNonZero = fNHistoPoints;
+      }
+      
+      fHistoPointsX[fNHistoPoints] = fPosCandleAxis;
+      fHistoPointsY[fNHistoPoints] = fHistoPointsY[fNHistoPoints-1];
+      fNHistoPoints = lastNonZero+1; //+1 so that the line down to 0 is added as well
+      /*
+      fHistoPointsX[fNHistoPoints] = fHistoPointsX[0];
+      fHistoPointsY[fNHistoPoints] = fHistoPointsY[0];
+      fNHistoPoints++;
+      */
+      if (IsOption(kHistoLeft)) {
+         for (int i = 0; i < fNHistoPoints; i++) {
+            fHistoPointsX[i] = 2*fPosCandleAxis - fHistoPointsX[i];
+         }
+      }
+      if (IsOption(kHistoViolin)) {
+         for (int i = 0; i < fNHistoPoints; i++) {
+            fHistoPointsX[fNHistoPoints + i] = 2*fPosCandleAxis - fHistoPointsX[fNHistoPoints -i-1];
+            fHistoPointsY[fNHistoPoints + i] = fHistoPointsY[fNHistoPoints -i-1];
+         }
+         fNHistoPoints *= 2;
+         //fNHistoPoints -= 2;
+      }
       /* } else { //Raw histo
-			std::cout << "Calculation of raw histo is still missing! " << std::endl;
+         std::cout << "Calculation of raw histo is still missing! " << std::endl;
        }*/
    }
    
@@ -477,15 +479,15 @@ void TCandle::Paint(Option_t *)
    // From now on this is real painting only, no calculations anymore
    
 
-	if (IsOption(kHistoRight) || IsOption(kHistoLeft) || IsOption(kHistoViolin)) {
-		if (!swapXY) {
-			gPad->PaintFillArea(fNHistoPoints, fHistoPointsX, fHistoPointsY);
-			gPad->PaintPolyLine(fNHistoPoints, fHistoPointsX, fHistoPointsY);
-		} else {
-			gPad->PaintFillArea(fNHistoPoints, fHistoPointsY, fHistoPointsX);
-			gPad->PaintPolyLine(fNHistoPoints, fHistoPointsY, fHistoPointsX);
-		}
-	}
+   if (IsOption(kHistoRight) || IsOption(kHistoLeft) || IsOption(kHistoViolin)) {
+      if (!swapXY) {
+         gPad->PaintFillArea(fNHistoPoints, fHistoPointsX, fHistoPointsY);
+         gPad->PaintPolyLine(fNHistoPoints, fHistoPointsX, fHistoPointsY);
+      } else {
+         gPad->PaintFillArea(fNHistoPoints, fHistoPointsY, fHistoPointsX);
+         gPad->PaintPolyLine(fNHistoPoints, fHistoPointsY, fHistoPointsX);
+      }
+   }
    
 
    if (IsOption(kBox)) { // Draw a simple box
@@ -598,9 +600,9 @@ void TCandle::Paint(Option_t *)
    
    if (GetCandleOption(5) > 0) { //Draw outliers
      if (IsOption(kPointsAllScat)) { //Draw outliers and "all" values scattered
-	 SetMarkerStyle(0);
+    SetMarkerStyle(0);
       } else {
-	 SetMarkerStyle(5);
+    SetMarkerStyle(5);
       }
       TAttMarker::Modify();
       gPad->PaintPolyMarker(fNDrawPoints,fDrawPointsX, fDrawPointsY);
@@ -693,6 +695,9 @@ void TCandle::Streamer(TBuffer &R__b)
       R__b.WriteClassBuffer(TCandle::Class(),this);
    }
 }
+
+////////////////////////////////////////////////////////////////////////////////
+/// The coordinates in the TParallelCoordVar-class are in Pad-Coordinates, so we need to convert them
 
 void TCandle::ConvertToPadCoords(Double_t minAxis, Double_t maxAxis, Double_t axisMinCoord, Double_t axisMaxCoord, Double_t fMinInit, Double_t fMaxInit) {
    

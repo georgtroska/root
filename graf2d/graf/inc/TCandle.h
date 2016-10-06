@@ -55,36 +55,36 @@ public:
 
 protected:
 
-   bool fIsRaw;             ///< 0: for TH1 projection, 1: using raw data
+   bool fIsRaw;                           ///< 0: for TH1 projection, 1: using raw data
    bool fIsCalculated;
    TH1D * fProj;
-   bool fDismiss;           ///< True if the candle cannot be painted
+   bool fDismiss;                         ///< True if the candle cannot be painted
 
-   Double_t fPosCandleAxis; ///< x-pos for a vertical candle
-   Double_t fCandleWidth;   ///< The candle width
+   Double_t fPosCandleAxis;               ///< x-pos for a vertical candle
+   Double_t fCandleWidth;                 ///< The candle width
 
-   Double_t fMean;          ///< Position of the mean
-   Double_t fMedian;        ///< Position of the median
-   Double_t fMedianErr;     ///< The size of the notch
-   Double_t fBoxUp;         ///< Position of the upper box end
-   Double_t fBoxDown;       ///< Position of the lower box end
-   Double_t fWhiskerUp;     ///< Position of the upper whisker end
-   Double_t fWhiskerDown;   ///< Position of the lower whisker end
+   Double_t fMean;                        ///< Position of the mean
+   Double_t fMedian;                      ///< Position of the median
+   Double_t fMedianErr;                   ///< The size of the notch
+   Double_t fBoxUp;                       ///< Position of the upper box end
+   Double_t fBoxDown;                     ///< Position of the lower box end
+   Double_t fWhiskerUp;                   ///< Position of the upper whisker end
+   Double_t fWhiskerDown;                 ///< Position of the lower whisker end
 
-   Double_t * fDatapoints;  ///< position of all Datapoints within this candle
-   Long64_t fNDatapoints;   ///< Number of Datapoints within this candle
+   Double_t * fDatapoints;                ///< position of all Datapoints within this candle
+   Long64_t fNDatapoints;                 ///< Number of Datapoints within this candle
    
-   Double_t fDrawPointsX[kNMAXPOINTS];	///< x-coord for every outlier, ..
-   Double_t fDrawPointsY[kNMAXPOINTS];	///< y-coord for every outlier, ..
-   Long64_t fNDrawPoints;   ///< max number of outliers or otherpoint to be shown
+   Double_t fDrawPointsX[kNMAXPOINTS];    ///< x-coord for every outlier, ..
+   Double_t fDrawPointsY[kNMAXPOINTS];    ///< y-coord for every outlier, ..
+   Long64_t fNDrawPoints;                 ///< max number of outliers or otherpoint to be shown
    
-   Double_t fHistoPointsX[kNMAXPOINTS];
-   Double_t fHistoPointsY[kNMAXPOINTS];
-   int	fNHistoPoints;
+   Double_t fHistoPointsX[kNMAXPOINTS];   ///< x-coord for the polyline of the histo
+   Double_t fHistoPointsY[kNMAXPOINTS];   ///< y-coord for the polyline of the histo
+   int  fNHistoPoints;
 
-   CandleOption fOption;    ///< Setting the style of the candle
-   int fLogX;
-   int fLogY;
+   CandleOption fOption;                  ///< Setting the style of the candle
+   int fLogX;                             ///< make the candle appear logx-like
+   int fLogY;                             ///< make the candle appear logy-like
 
    void Calculate();
 
@@ -117,7 +117,7 @@ public:
    void           SetHistogram(TH1D *proj) { fProj = proj; fIsCalculated = false;}
 
    virtual void   Paint(Option_t *option="");
-   void			  ConvertToPadCoords(Double_t minAxis, Double_t maxAxis, Double_t axisMinCoord, Double_t axisMaxCoord, Double_t minInit, Double_t maxInit); 
+   void           ConvertToPadCoords(Double_t minAxis, Double_t maxAxis, Double_t axisMinCoord, Double_t axisMaxCoord, Double_t minInit, Double_t maxInit); 
 
    virtual void   SetMean(Double_t mean) { fMean = mean; }
    virtual void   SetMedian(Double_t median) { fMedian = median; }
