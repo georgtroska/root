@@ -33,9 +33,11 @@ The following people have contributed to this new version:
  Paul Russo, Fermilab,\
  Enric Tejedor Saavedra, CERN/SFT,\
  Liza Sakellari, CERN/SFT,\
+ Alex Saperstein, ANL,\
  Manuel Tobias Schiller, CERN/LHCb,\
  David Smith, CERN/IT,\
  Matevz Tadel, UCSD/CMS, Eve,\
+ Peter van Gemmeren, ANL, ATLAS,\
  Vassil Vassilev, Fermilab/CMS,\
  Wouter Verkerke, NIKHEF/Atlas, RooFit
 
@@ -47,6 +49,7 @@ The following people have contributed to this new version:
 * Significant update of the valgrind suppression file to hide intentional lack
 of delete of some entities at the end of the process.
 * Resolved several memory leaks.
+* Added deprecation system: when compiling against interfaces marked R__DEPRECATED, the compiler will issue a warning showing the ROOT version when the interface will be removed.
 
 ## Core Libraries
 
@@ -108,9 +111,9 @@ Add a new mode for `TClass::SetCanSplit` (2) which indicates that this class and
 ## Parallelism
 
 * Three methods have been added to manage implicit multi-threading in ROOT: `ROOT::EnableImplicitMT(numthreads)`, `ROOT::DisableImplicitMT` and `ROOT::IsImplicitMTEnabled`. They can be used to enable, disable and check the status of the global implicit multi-threading in ROOT, respectively.
-* Even if the default reduce function specified in the invocation of the `MapReduce` method of `TProcPool` returns a pointer to a `TObject`, the return value of `MapReduce` is properly casted to the type returned by the map function.
+* Even if the default reduce function specified in the invocation of the `MapReduce` method of `TProcessExecutor` returns a pointer to a `TObject`, the return value of `MapReduce` is properly casted to the type returned by the map function.
 * Add a new class named `TThreadedObject` which helps making objects thread private and merging them.
-* Add tutorial showing how to fill randomly histograms using the `TProcPool` class.
+* Add tutorial showing how to fill randomly histograms using the `TProcessExecutor` class.
 * Add tutorial showing how to fill randomly histograms from multiple threads.
 * Add the ROOT::TSPinMutex class, a spin mutex compliant with C++11 requirements.
 * Add a new Implicit Multi-Threading (IMT) use case, incarnated in method TTreeProcessor::Process. TTProcessor::Process allows to process the entries of a TTree in parallel. The user provides a function that receives one parameter, a TTreeReader, that can be used to iterate over a subrange of entries. Each subrange corresponds to a cluster in the TTree and is processed by a task, which can potentially be run in parallel with other tasks.
@@ -128,12 +131,13 @@ Add a new mode for `TClass::SetCanSplit` (2) which indicates that this class and
 
 ## TTree Libraries
 
-* TChains can now be histogrammed without any C++ code, using the command line too rootdrawtree. It is based on the new class TSimpleAnalysis.
+* TChains can now be histogrammed without any C++ code, using the command line tool `rootdrawtree`. It is based on the new class `TSimpleAnalysis`.
 * Do not automatically setup read cache during TTree::Fill(). This fixes [ROOT-8031].
 * Make sure the option "PARA" in TTRe::Draw is used with at least tow variables [ROOT-8196].
 * The with `goff` option one can use as many variables as needed. There no more
   limitation, like with the options `para`and `candle`.
 * Fix detection of errors that appears in nested TTreeFormula [ROOT-8218]
+* Better basket size optimization by taking into account meta data and rounding up to next 512 bytes, ensuring a complete cluster fits into a single basket.
 
 ### Fast Cloning
 
@@ -405,6 +409,7 @@ We added a cache specifically for the fast option of the TTreeCloner to signific
 ## Class Reference Guide
 
 ## Build, Configuration and Testing Infrastructure
+- `root-config` does not suppress deprecation warnings (-Wno-deprecated-declarations) anymore. This means compilers will now diagnose the use of deprecated interfaces in user code.
 - Added new 'builtin_vc' option to bundle a version of Vc within ROOT.
   The default is OFF, however if the Vc package is not found in the system the option is switched to
   ON if the option 'vc' option is ON.

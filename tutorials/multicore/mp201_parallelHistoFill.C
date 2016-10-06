@@ -9,13 +9,14 @@
 /// \macro_code
 ///
 /// \author Danilo Piparo
+/// \date January 2016
 
 const UInt_t poolSize = 4U;
 
 Int_t mp201_parallelHistoFill()
 {
    TH1::AddDirectory(false);
-   TProcPool pool(poolSize);
+   ROOT::TProcessExecutor pool(poolSize);
    auto fillRandomHisto = [](int seed = 0) {
       TRandom3 rndm(seed);
       auto h = new TH1F("myHist", "Filled in parallel", 128, -8, 8);
@@ -26,7 +27,7 @@ Int_t mp201_parallelHistoFill()
    };
 
    auto seeds = ROOT::TSeqI(23);
-   PoolUtils::ReduceObjects<TH1F *> redfunc;
+   ROOT::ExecutorUtils::ReduceObjects<TH1F *> redfunc;
    auto sumRandomHisto = pool.MapReduce(fillRandomHisto, seeds, redfunc);
 
    auto c = new TCanvas();
