@@ -451,11 +451,7 @@ TEnum* TCling::CreateEnum(void *VD, TClass *cl) const
       return 0;
    }
    const char* name = buf.c_str();
-   if (cl) {
-      enumType = new TEnum(name, VD, cl);
-   } else {
-      enumType = new TEnum(name, VD, cl);
-   }
+   enumType = new TEnum(name, VD, cl);
    UpdateEnumConstants(enumType, cl);
 
    return enumType;
@@ -1063,8 +1059,20 @@ TCling::TCling(const char *name, const char *title)
    if (!fromRootCling) {
       ROOT::TMetaUtils::SetPathsForRelocatability(clingArgsStorage);
 
-      interpInclude = ROOT::TMetaUtils::GetInterpreterExtraIncludePath(false);
+      // Add -I early so ASTReader can find the headers.
+      std::string interpInclude = ROOT::TMetaUtils::GetInterpreterExtraIncludePath(false);
       clingArgsStorage.push_back(interpInclude);
+
+      // Add include path to etc/cling. FIXME: This is a short term solution. The
+      // llvm/clang header files shouldn't be there at all. We have to get rid of
+      // that dependency and avoid copying the header files.
+      clingArgsStorage.push_back(interpInclude + "/cling");
+
+      // Add the root include directory and etc/ to list searched by default.
+      clingArgsStorage.push_back(std::string("-I") + ROOT::TMetaUtils::GetROOTIncludeDir(false));
+
+      // Add the current path to the include path
+      // TCling::AddIncludePath(".");
 
       std::string pchFilename = interpInclude.substr(2) + "/allDict.cxx.pch";
       if (gSystem->Getenv("ROOT_PCH")) {
@@ -1103,18 +1111,6 @@ TCling::TCling(const char *name, const char *title)
 
    if (!fromRootCling) {
       fInterpreter->installLazyFunctionCreator(llvmLazyFunctionCreator);
-
-      // Add include path to etc/cling. FIXME: This is a short term solution. The
-      // llvm/clang header files shouldn't be there at all. We have to get rid of
-      // that dependency and avoid copying the header files.
-      // Use explicit TCling::AddIncludePath() to avoid vtable: we're in the c'tor!
-      TCling::AddIncludePath((interpInclude.substr(2) + "/cling").c_str());
-
-      // Add the current path to the include path
-      // TCling::AddIncludePath(".");
-
-      // Add the root include directory and etc/ to list searched by default.
-      TCling::AddIncludePath(ROOT::TMetaUtils::GetROOTIncludeDir(false).c_str());
    }
 
    // Don't check whether modules' files exist.
@@ -3678,14 +3674,15 @@ void TCling::CreateListOfMethodArgs(TFunction* m) const
    if (m->fMethodArgs) {
       return;
    }
-   m->fMethodArgs = new TList;
+   TList *arglist = new TList;
    TClingMethodArgInfo t(fInterpreter, (TClingMethodInfo*)m->fInfo);
    while (t.Next()) {
       if (t.IsValid()) {
          TClingMethodArgInfo* a = new TClingMethodArgInfo(t);
-         m->fMethodArgs->Add(new TMethodArg((MethodArgInfo_t*)a, m));
+         arglist->Add(new TMethodArg((MethodArgInfo_t*)a, m));
       }
    }
+   m->fMethodArgs = arglist;
 }
 
 
@@ -6427,6 +6424,16 @@ void TCling::CodeComplete(const std::string& line, size_t& cursor,
                           std::vector<std::string>& completions)
 {
    fInterpreter->codeComplete(line, cursor, completions);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Get the interpreter value corresponding to the statement.
+int TCling::Evaluate(const char* code, TInterpreterValue& value)
+{
+   auto V = reinterpret_cast<cling::Value*>(value.GetValAddr());
+   auto interpreter = this->GetInterpreter();
+   auto compRes = interpreter->evaluate(code, *V);
+   return compRes!=cling::Interpreter::kSuccess ? 0 : 1 ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

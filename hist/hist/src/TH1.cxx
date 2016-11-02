@@ -2863,7 +2863,7 @@ void TH1::Draw(Option_t *option)
       }
    }
 
-   // If there is no pad or an empty pad the the "same" is ignored.
+   // If there is no pad or an empty pad the "same" option is ignored.
    if (gPad) {
       if (!gPad->IsEditable()) gROOT->MakeDefCanvas();
       if (index>=0) {
@@ -5540,8 +5540,8 @@ void TH1::Paint(Option_t *option)
 /// ~~~ {.cpp}
 ///     h1->Rebin();  //merges two bins in one in h1: previous contents of h1 are lost
 ///     h1->Rebin(5); //merges five bins in one in h1
-///     TH1F *hnew = h1->Rebin(5,"hnew"); // creates a new histogram hnew
-///                                       // merging 5 bins of h1 in one bin
+///     TH1F *hnew = dynamic_cast<TH1F*>(h1->Rebin(5,"hnew")); // creates a new histogram hnew
+///                                                            // merging 5 bins of h1 in one bin
 /// ~~~
 ///
 /// NOTE:  If ngroup is not an exact divider of the number of bins,
@@ -7809,8 +7809,8 @@ void TH1::GetMinimumAndMaximum(Double_t& min, Double_t& max) const
    Int_t ylast   = fYaxis.GetLast();
    Int_t zfirst  = fZaxis.GetFirst();
    Int_t zlast   = fZaxis.GetLast();
-   min=FLT_MAX;
-   max=FLT_MIN;
+   min=TMath::Infinity(); 
+   max=-TMath::Infinity(); 
    Double_t value;
    for (binz=zfirst;binz<=zlast;binz++) {
       for (biny=yfirst;biny<=ylast;biny++) {

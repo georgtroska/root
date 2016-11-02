@@ -4532,7 +4532,7 @@ void THistPainter::PaintBoxes(Option_t *)
    Double_t dxmin = 0.51*(gPad->PadtoX(ux1)-gPad->PadtoX(ux0));
    Double_t dymin = 0.51*(gPad->PadtoY(uy0)-gPad->PadtoY(uy1));
 
-   Double_t zmin = fH->GetMinimum();
+   Double_t zmin = TMath::Max(fH->GetMinimum(),0.);
    Double_t zmax = TMath::Max(TMath::Abs(fH->GetMaximum()),
                               TMath::Abs(fH->GetMinimum()));
 
@@ -4543,31 +4543,33 @@ void THistPainter::PaintBoxes(Option_t *)
       TIter next(gPad->GetListOfPrimitives());
       while ((h2 = (TH2 *)next())) {
          if (!h2->InheritsFrom(TH2::Class())) continue;
-         zmin = h2->GetMinimum();
+         zmin = TMath::Max(h2->GetMinimum(), 0.);
          zmax = TMath::Max(TMath::Abs(h2->GetMaximum()),
                            TMath::Abs(h2->GetMinimum()));
          if (Hoption.Logz) {
-            zmax = TMath::Log10(zmax);
             if (zmin <= 0) {
                zmin = TMath::Log10(zmax*0.001);
             } else {
                zmin = TMath::Log10(zmin);
             }
+            zmax = TMath::Log10(zmax);
          }
          break;
       }
-   }
-
-   if (Hoption.Logz) {
-      if (zmin > 0) {
-         zmin = TMath::Log10(zmin*0.1);
-         zmax = TMath::Log10(zmax);
-      } else {
-         return;
+   } else {
+      if (Hoption.Logz) {
+         if (zmin > 0) {
+            zmin = TMath::Log10(zmin);
+            zmax = TMath::Log10(zmax);
+         } else {
+            return;
+         }
       }
    }
 
    Double_t zratio, dz = zmax - zmin;
+   Bool_t kZminNeg     = kFALSE;
+   if (fH->GetMinimum()<0) kZminNeg = kTRUE;
    Bool_t kZNeg        = kFALSE;
 
    // Define the dark and light colors the "button style" boxes.
@@ -4592,8 +4594,9 @@ void THistPainter::PaintBoxes(Option_t *)
          z     = Hparam.factor*fH->GetBinContent(bin);
          kZNeg = kFALSE;
 
-         if (z <  zmin) continue; // Can be the case with
-         if (z >  zmax) z = zmax; // option Same
+         if (TMath::Abs(z) <  zmin) continue; // Can be the case with ...
+         if (TMath::Abs(z) >  zmax) z = zmax; // ... option Same
+         if (kZminNeg && z==0) continue;      // Do not draw empty bins if case of histo with netgative bins.
 
          if (z < 0) {
             if (Hoption.Logz) continue;
@@ -4703,7 +4706,6 @@ void THistPainter::PaintCandlePlot(Option_t *)
 	myCandle.SetOption((TCandle::CandleOption)Hoption.Candle);
 	myCandle.SetMarkerColor(fH->GetLineColor());
 	myCandle.SetLineColor(fH->GetLineColor());
-	myCandle.SetLineWidth(fH->GetLineWidth());
 	myCandle.SetFillColor(fH->GetFillColor());
 	myCandle.SetFillStyle(fH->GetFillStyle());
 	myCandle.SetMarkerSize(fH->GetMarkerSize());
@@ -4712,7 +4714,7 @@ void THistPainter::PaintCandlePlot(Option_t *)
 
    Bool_t swapXY = myCandle.IsHorizontal();
    const Double_t standardCandleWidth = 0.66;
-   
+
    if (!swapXY) { // Vertical candle
       for (Int_t i=Hparam.xfirst; i<=Hparam.xlast; i++) {
          Double_t binPosX = fXaxis->GetBinLowEdge(i);
@@ -4721,7 +4723,7 @@ void THistPainter::PaintCandlePlot(Option_t *)
          if (hproj->GetEntries() !=0) {
             Double_t width = fH->GetBarWidth();
             Double_t offset = fH->GetBarOffset()*binWidth;
-            if (width > 0.999 && width < 1.001) width = standardCandleWidth;
+            if (width > 0.999) width = standardCandleWidth;
             myCandle.SetAxisPosition(binPosX+binWidth/2. + offset);
             myCandle.SetWidth(width*binWidth);
             myCandle.SetHistogram(hproj);
@@ -4736,7 +4738,7 @@ void THistPainter::PaintCandlePlot(Option_t *)
          if (hproj->GetEntries() !=0) {
             Double_t width = fH->GetBarWidth();
             Double_t offset = fH->GetBarOffset()*binWidth;
-            if (width > 0.999 && width < 1.001) width = standardCandleWidth;
+            if (width > 0.999) width = standardCandleWidth;
             myCandle.SetAxisPosition(binPosY+binWidth/2. + offset);
             myCandle.SetWidth(width*binWidth);
             myCandle.SetHistogram(hproj);
