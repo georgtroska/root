@@ -236,6 +236,8 @@ void TCandle::Calculate() {
    if (!fIsRaw && fProj) { //Need a calculation for a projected histo
       fMean = fProj->GetMean();
       fMedianErr = 1.57*iqr/sqrt(fProj->GetEntries());
+      fAxisMin = fProj->GetXaxis()->GetXmin();
+      fAxisMax = fProj->GetXaxis()->GetXmax();
     } else { //Need a calculation for a raw-data candle
       //Calculate the Mean
       fMean = 0;
@@ -462,6 +464,7 @@ void TCandle::Paint(Option_t *)
    Style_t saveMarker = GetMarkerStyle();
    Style_t saveFillStyle = GetFillStyle();
    Style_t saveFillColor = GetFillColor();
+   Style_t saveLineColor = GetLineColor();
 
    Double_t dimLeft = fPosCandleAxis-0.5*fCandleWidth;
    Double_t dimRight = fPosCandleAxis+0.5*fCandleWidth;
@@ -478,14 +481,29 @@ void TCandle::Paint(Option_t *)
 
    // From now on this is real painting only, no calculations anymore
    
+   if (IsOption(kHistoZeroIndicator)) {
+      SetLineColor(saveFillColor);
+      TAttLine::Modify();
+      PaintLine(fPosCandleAxis, fAxisMin, fPosCandleAxis, fAxisMax, swapXY);
+      SetLineColor(saveLineColor);
+      TAttLine::Modify();
+   }
 
    if (IsOption(kHistoRight) || IsOption(kHistoLeft) || IsOption(kHistoViolin)) {
+      if (IsOption(kHistoZeroIndicator)) {
+         SetLineColor(saveFillColor);
+         TAttLine::Modify();
+      }
       if (!swapXY) {
          gPad->PaintFillArea(fNHistoPoints, fHistoPointsX, fHistoPointsY);
          gPad->PaintPolyLine(fNHistoPoints, fHistoPointsX, fHistoPointsY);
       } else {
          gPad->PaintFillArea(fNHistoPoints, fHistoPointsY, fHistoPointsX);
          gPad->PaintPolyLine(fNHistoPoints, fHistoPointsY, fHistoPointsX);
+      }
+      if (IsOption(kHistoZeroIndicator)) {
+         SetLineColor(saveLineColor);
+         TAttLine::Modify();
       }
    }
    
@@ -509,17 +527,17 @@ void TCandle::Paint(Option_t *)
       PaintLine(dimLeft, fWhiskerDown, dimRight, fWhiskerDown, swapXY);
    }
 
-   if (IsOption(kWhiskerAll)) { // Whiskers are dashed
+   if (IsOption(kWhiskerAll) && !IsOption(kHistoZeroIndicator)) { // Whiskers are dashed
       SetLineStyle(2);
       TAttLine::Modify();
       PaintLine(fPosCandleAxis, fWhiskerUp, fPosCandleAxis, fBoxUp, swapXY);
       PaintLine(fPosCandleAxis, fBoxDown, fPosCandleAxis, fWhiskerDown, swapXY);
       SetLineStyle(saveLine);
       TAttLine::Modify();
-   } else if (IsOption(kWhisker15)) { // Whiskers without dashing, better whisker definition (done above)
+   }  else if ((IsOption(kWhiskerAll) && IsOption(kHistoZeroIndicator)) || IsOption(kWhisker15) ) { // Whiskers without dashing, better whisker definition, or forced when using zero line
       PaintLine(fPosCandleAxis, fWhiskerUp, fPosCandleAxis, fBoxUp, swapXY);
       PaintLine(fPosCandleAxis, fBoxDown, fPosCandleAxis, fWhiskerDown, swapXY);
-   }
+   } 
 
    if (IsOption(kMedianLine)) { // Paint fMedian as a line
       PaintLine(dimLeft, fMedian, dimRight, fMedian, swapXY);

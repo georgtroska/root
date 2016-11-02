@@ -50,6 +50,7 @@ public:
       kHistoLeft = 1000000,
       kHistoRight = 2000000,
       kHistoViolin = 3000000,
+      kHistoZeroIndicator = 10000000, 
       kHorizontal = 1000000000 // if this bit is not set it is vertical!
    };
 
@@ -85,6 +86,9 @@ protected:
    CandleOption fOption;                  ///< Setting the style of the candle
    int fLogX;                             ///< make the candle appear logx-like
    int fLogY;                             ///< make the candle appear logy-like
+   
+   Double_t fAxisMin;                     ///< The Minimum which is visible by the axis (used by zero indicator)
+   Double_t fAxisMax;                     ///< The Maximum which is visible by the axis (used by zero indicator)
 
    void Calculate();
 
