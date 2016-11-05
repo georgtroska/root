@@ -27,11 +27,12 @@ void candlehisto()
    for (int i = 1; i < 7; i++) {
       c1->cd(i);
       char str[16];
-      sprintf(str,"violinx%d",i);
+      sprintf(str,"VIOLINY%d",i);
       TH2I * myhist = (TH2I*)h1->DrawCopy(str);
+      myhist->SetFillColor(kGray);
       myhist->SetTitle(str);
    }
-
+/*
    TCanvas *c2 = new TCanvas("c2","Candle Individual",1200,800);
    c2->Divide(3,2);
    char myopt[16][8] = {"1000000","2000000","3000000","1112111","112111","112111","111","311","301","1111","2321","12111","112111","212111","312111"};
@@ -51,4 +52,5 @@ void candlehisto()
 	//myhist->SetBarWidth(1.5);
       myhist->SetTitle(str);
    }
+   */
 }

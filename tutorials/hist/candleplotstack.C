@@ -14,27 +14,31 @@ void candleplotstack()
    TRandom *randnum      = new TRandom();
    TDatime *dateBegin = new TDatime(2010,1,1,0,0,0);
    TDatime *dateEnd   = new TDatime(2011,1,1,0,0,0);
-   TH2I *h1 = new TH2I("h1","Machine A",6,dateBegin->Convert(),dateEnd->Convert(),1000,0,1000);
-   TH2I *h2 = new TH2I("h2","Machine B",6,dateBegin->Convert(),dateEnd->Convert(),1000,0,1000);
-   TH2I *h3 = new TH2I("h3","Machine C",6,dateBegin->Convert(),dateEnd->Convert(),1000,0,1000);
+   int bins = 1000;
+   TH2I *h1 = new TH2I("h1","Machine A",6,dateBegin->Convert(),dateEnd->Convert(),bins,0,1000);
+   TH2I *h2 = new TH2I("h2","Machine B",6,dateBegin->Convert(),dateEnd->Convert(),bins,0,1000);
+   TH2I *h3 = new TH2I("h3","Machine C",6,dateBegin->Convert(),dateEnd->Convert(),bins,0,1000);
+   TH2I *hsum = new TH2I("h4","Sum",6,dateBegin->Convert(),dateEnd->Convert(),bins,0,1000);
 
    float Rand;
    for (int i = dateBegin->Convert(); i < dateEnd->Convert(); i+=86400*30) {
       for (int j = 0; j < 1000; j++) {
-         Rand = randnum->Gaus(500+sin(i/10000000.)*100,50); h1->Fill(i,Rand);
-         Rand = randnum->Gaus(500+sin(i/11000000.)*100,70); h2->Fill(i,Rand);
-         Rand = randnum->Gaus(500+sin(i/11000000.)*100,90); h3->Fill(i,Rand);
+         Rand = randnum->Gaus(500+sin(i/10000000.)*100,50); h1->Fill(i,Rand); hsum->Fill(i,Rand);
+         Rand = randnum->Gaus(500+sin(i/12000000.)*100,70); h2->Fill(i,Rand); hsum->Fill(i,Rand);
+         Rand = randnum->Gaus(500+sin(i/14000000.)*100,90); h3->Fill(i,Rand); hsum->Fill(i,Rand);
       }
    }
 
    h2->SetLineColor(kRed);
    h3->SetLineColor(kRed+3);
+   hsum->SetFillColor(kGreen);
    TCanvas *c1 = new TCanvas();
 
    THStack *hs = new THStack("hs","Machine A+B+C");
    hs->Add(h1);
    hs->Add(h2);
    hs->Add(h3,"candle2");
+   hs->Add(hsum, "violin");
    hs->Draw("candle3");
    hs->GetXaxis()->SetNdivisions(410);
    

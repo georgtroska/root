@@ -28,7 +28,7 @@
 #include "TH1D.h"
 #include "TMath.h"
 
-const Int_t kNMAXPOINTS = 2000;  // Max outliers per candle
+const Int_t kNMAXPOINTS = 2010;  // Max outliers per candle
 
 class TCandle : public TAttLine, public TAttFill, public TAttMarker {
 public:

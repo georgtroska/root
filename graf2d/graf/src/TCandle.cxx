@@ -147,16 +147,18 @@ int TCandle::ParseOption(char * opt) {
       if (direction == 'Y' || direction == 'H') { fOption = (CandleOption)(fOption + kHorizontal); }
       if (preset == '1') //Standard candle using old candle-definition
          fOption = (CandleOption)(fOption + fallbackCandle);
-      if (preset == '2') //New standard candle with better whisker definition + outlier
+      else if (preset == '2') //New standard candle with better whisker definition + outlier
          fOption = (CandleOption)(fOption + kBox + kMeanLine + kMedianLine + kWhisker15 + kAnchor + kPointsOutliers);
-      if (preset == '3')  //Like candle2 but with a fMean as a circle
+      else if (preset == '3')  //Like candle2 but with a fMean as a circle
          fOption = (CandleOption)(fOption + kBox + kMeanCircle + kMedianLine + kWhisker15 + kAnchor + kPointsOutliers);
-      if (preset == '4')  //Like candle3 but showing the uncertainty of the fMedian as well
+      else if (preset == '4')  //Like candle3 but showing the uncertainty of the fMedian as well
          fOption = (CandleOption)(fOption + kBox + kMeanCircle + kMedianNotched + kWhisker15 + kAnchor + kPointsOutliers);
-      if (preset == '5')  //Like candle2 but showing all datapoints
+      else if (preset == '5')  //Like candle2 but showing all datapoints
          fOption = (CandleOption)(fOption + kBox + kMeanLine + kMedianLine + kWhisker15 + kAnchor + kPointsAll);
-      if (preset == '6')  //Like candle2 but showing all datapoints scattered
+      else if (preset == '6')  //Like candle2 but showing all datapoints scattered
          fOption = (CandleOption)(fOption + kBox + kMeanCircle + kMedianLine + kWhisker15 + kAnchor + kPointsAllScat);
+      else if (preset != ' ') //For all other presets not implemented yet used fallback candle
+         fOption = (CandleOption)(fOption + fallbackCandle);
 
       if (preset != ' ' && direction != ' ')
          strncpy(l,"        ",8);
@@ -186,6 +188,57 @@ int TCandle::ParseOption(char * opt) {
          fOption = fallbackCandle;
       }
    }
+   
+   l = strstr(opt,"VIOLIN");
+   if (l) {
+      const CandleOption fallbackCandle = (CandleOption)(kMeanCircle + kWhiskerAll + kHistoViolin + kHistoZeroIndicator);
+
+      char direction = ' ';
+      char preset = ' ';
+
+      if (l[6] >= 'A' && l[6] <= 'Z') direction = l[6];
+      if (l[6] >= '1' && l[6] <= '9') preset = l[6];
+      if (l[7] >= 'A' && l[7] <= 'Z' && preset != ' ') direction = l[7];
+      if (l[7] >= '1' && l[7] <= '9' && direction != ' ') preset = l[7];
+
+      if (direction == 'X' || direction == 'V') { /* nothing */ }
+      if (direction == 'Y' || direction == 'H') { fOption = (CandleOption)(fOption + kHorizontal); }
+      if (preset == '1') //Standard candle using old candle-definition
+         fOption = (CandleOption)(fOption + fallbackCandle);
+      else if (preset == '2') //New standard candle with better whisker definition + outlier
+         fOption = (CandleOption)(fOption + kMeanCircle + kWhisker15 + kHistoViolin + kHistoZeroIndicator + kPointsOutliers);
+      else if (preset != ' ') //For all other presets not implemented yet used fallback candle
+         fOption = (CandleOption)(fOption + fallbackCandle);
+
+      if (preset != ' ' && direction != ' ')
+         strncpy(l,"        ",8);
+      else if (preset != ' ' || direction != ' ')
+         strncpy(l,"        ",7);
+      else
+         strncpy(l,"        ",6);
+
+      Bool_t useIndivOption = false;
+
+      if (preset == ' ') { // Check if the user wants to set the properties individually
+         char *brOpen = strstr(opt,"(");
+         char *brClose = strstr(opt,")");
+         char indivOption[32];
+         if (brOpen && brClose) {
+            useIndivOption = true;
+            bool isHorizontal = IsHorizontal();
+            strncpy(indivOption, brOpen, brClose-brOpen +1); //Now the string "(....)" including brackets is in this array
+            sscanf(indivOption,"(%d)", (int*) &fOption);
+            if (isHorizontal) {fOption = (CandleOption)(fOption + kHorizontal);}
+            strncpy(brOpen,"                ",brClose-brOpen+1); //Cleanup
+
+         }
+      }
+      //Handle option "VIOLIN" ,"VIOLINX" or "VIOLINY" to behave like "VIOLINX1" or "VIOLINY1"
+      if (!useIndivOption && !fOption ) {
+         fOption = fallbackCandle;
+      }
+   }
+   
    fIsCalculated = false;
    return fOption;
 
@@ -195,8 +248,7 @@ int TCandle::ParseOption(char * opt) {
 /// Calculates all values needed by the candle definition depending on the
 /// candle options.
 
-void TCandle::Calculate() {
-   
+void TCandle::Calculate() {   
    //Reset everything
    fNDrawPoints = 0;
    fNHistoPoints = 0;
@@ -215,6 +267,14 @@ void TCandle::Calculate() {
    Double_t *quantiles = new Double_t[5];
    quantiles[0]=0.; quantiles[1]=0.; quantiles[2] = 0.; quantiles[3] = 0.; quantiles[4] = 0.;
    if (!fIsRaw && fProj) { //Need a calculation for a projected histo
+      if (((IsOption(kHistoLeft)) || (IsOption(kHistoRight)) || (IsOption(kHistoViolin))) && fProj->GetNbinsX() > 500) {
+         //When using the histooption the number of bins of the projection is 
+         //limited because of the arrayspace defined by kNMAXPOINTS.
+         //So the histo is rebinned, that it can be displayed at any time.
+         // Finer granularity is not usefull anyhow
+         int divideBy = ((fProj->GetNbinsX() - 1)/((kNMAXPOINTS-10)/4))+1;
+         fProj->RebinX(divideBy);
+      }
       fProj->GetQuantiles(5, quantiles, prob);
    } else { //Need a calculation for a raw-data candle
       TMath::Quantiles(fNDatapoints,5,fDatapoints,quantiles,prob,kFALSE);
@@ -378,12 +438,11 @@ void TCandle::Calculate() {
             }
          }
       }
-    //   if (!fIsRaw && fProj) { //Need a calculation for a projected histo
+
      fNHistoPoints = 0;
      Double_t maxContent = fProj->GetMaximum();
      Double_t maxHistoHeight = fCandleWidth*0.8;
-    // fHistoPointsX[fNHistoPoints] = fPosCandleAxis;
-     //fHistoPointsY[fNHistoPoints] = fProj->GetXaxis()->GetXmin();
+
      bool isFirst = true;
      int lastNonZero = 0;
       for (int bin = 1; bin <= fProj->GetNbinsX(); bin++) {
@@ -425,11 +484,7 @@ void TCandle::Calculate() {
       fHistoPointsX[fNHistoPoints] = fPosCandleAxis;
       fHistoPointsY[fNHistoPoints] = fHistoPointsY[fNHistoPoints-1];
       fNHistoPoints = lastNonZero+1; //+1 so that the line down to 0 is added as well
-      /*
-      fHistoPointsX[fNHistoPoints] = fHistoPointsX[0];
-      fHistoPointsY[fNHistoPoints] = fHistoPointsY[0];
-      fNHistoPoints++;
-      */
+
       if (IsOption(kHistoLeft)) {
          for (int i = 0; i < fNHistoPoints; i++) {
             fHistoPointsX[i] = 2*fPosCandleAxis - fHistoPointsX[i];
@@ -441,12 +496,9 @@ void TCandle::Calculate() {
             fHistoPointsY[fNHistoPoints + i] = fHistoPointsY[fNHistoPoints -i-1];
          }
          fNHistoPoints *= 2;
-         //fNHistoPoints -= 2;
       }
-      /* } else { //Raw histo
-         std::cout << "Calculation of raw histo is still missing! " << std::endl;
-       }*/
    }
+   
    
    fIsCalculated = true;
 }
@@ -456,7 +508,7 @@ void TCandle::Calculate() {
 
 void TCandle::Paint(Option_t *)
 {
-  //If something was changed before, we need to recalculate some values
+   //If something was changed before, we need to recalculate some values
    if (!fIsCalculated) Calculate();
 
    // Save the attributes as they were set originally
@@ -481,6 +533,7 @@ void TCandle::Paint(Option_t *)
 
    // From now on this is real painting only, no calculations anymore
    
+   
    if (IsOption(kHistoZeroIndicator)) {
       SetLineColor(saveFillColor);
       TAttLine::Modify();
@@ -488,6 +541,7 @@ void TCandle::Paint(Option_t *)
       SetLineColor(saveLineColor);
       TAttLine::Modify();
    }
+   
 
    if (IsOption(kHistoRight) || IsOption(kHistoLeft) || IsOption(kHistoViolin)) {
       if (IsOption(kHistoZeroIndicator)) {
@@ -626,8 +680,6 @@ void TCandle::Paint(Option_t *)
       gPad->PaintPolyMarker(fNDrawPoints,fDrawPointsX, fDrawPointsY);
       
    }
-   
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////

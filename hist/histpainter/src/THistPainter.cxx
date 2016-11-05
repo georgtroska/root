@@ -3534,11 +3534,16 @@ Int_t THistPainter::MakeChopt(Option_t *choptin)
 
    l = strstr(chopt,"VIOLIN");
    if (l) {
+      TCandle candle;
+	   Hoption.Candle = candle.ParseOption(l);
+	   Hoption.Scat = 0;
+      /*
       Hoption.Scat = 0;
       Hoption.Violin = 1;
       strncpy(l,"   ",6);
       if (l[6] == 'X') { Hoption.Violin = 1; l[6] = ' '; }
       if (l[6] == 'Y') { Hoption.Violin = 2; l[6] = ' '; }
+      * */
    }
 
    l = strstr(chopt,"LEGO");
@@ -3927,6 +3932,7 @@ void THistPainter::Paint(Option_t *option)
          Hoption.Logy = logysav;
          Hoption.Logz = logzsav;
       }
+
       return;
    }
 
@@ -4018,7 +4024,8 @@ paintstat:
    gCurrentHist = oldhist;
    delete [] fXbuf; fXbuf = 0;
    delete [] fYbuf; fYbuf = 0;
-
+   
+   
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -8606,6 +8613,7 @@ void THistPainter::PaintTable(Option_t *option)
          if (Hoption.Error >= 100) Paint2DErrors(option);
          if (Hoption.Candle)       PaintCandlePlot(option);
          if (Hoption.Violin)       PaintViolinPlot(option);
+
       }
       if (Hoption.Lego)                     PaintLego(option);
       if (Hoption.Surf && !Hoption.Contour) PaintSurface(option);
