@@ -442,6 +442,7 @@ void TCandle::Calculate() {
      fNHistoPoints = 0;
      Double_t maxContent = fProj->GetMaximum();
      Double_t maxHistoHeight = fCandleWidth*0.8;
+     if (IsOption(kHistoViolin)) maxHistoHeight *= 0.5;
 
      bool isFirst = true;
      int lastNonZero = 0;
