@@ -1131,7 +1131,7 @@ In this implementation a TH2 is considered as a collection of TH1 along
 X (option `CANDLE` or `CANDLEX`) or Y (option `CANDLEY`).
 Each TH1 is represented as one candle.
 
-Begin_Macro
+Begin_Macro(source)
 ../../../tutorials/hist/candleplotwhiskers.C
 End_Macro
 
@@ -1421,6 +1421,14 @@ Begin_Macro(source)
     hviolin->Draw("VIOLIN");
     c1->Update();
     return c1;
+}
+End_Macro
+
+Illustrating one histo per bin is very nice to illustrate a time development of a certain value:
+ 
+Begin_Macro(source)
+{
+../../../tutorials/hist/candledecay.C
 }
 End_Macro
 
@@ -4781,7 +4789,7 @@ void THistPainter::PaintCandlePlot(Option_t *)
          if (hproj->GetEntries() !=0) {
             Double_t width = fH->GetBarWidth();
             Double_t offset = fH->GetBarOffset()*binWidth;
-            if (width > 0.999) width = standardCandleWidth;
+            if (width > 0.999 && width < 1.001) width = standardCandleWidth;
             myCandle.SetAxisPosition(binPosX+binWidth/2. + offset);
             myCandle.SetWidth(width*binWidth);
             myCandle.SetHistogram(hproj);
@@ -4796,7 +4804,7 @@ void THistPainter::PaintCandlePlot(Option_t *)
          if (hproj->GetEntries() !=0) {
             Double_t width = fH->GetBarWidth();
             Double_t offset = fH->GetBarOffset()*binWidth;
-            if (width > 0.999) width = standardCandleWidth;
+            if (width > 0.999 && width < 1.001) width = standardCandleWidth;
             myCandle.SetAxisPosition(binPosY+binWidth/2. + offset);
             myCandle.SetWidth(width*binWidth);
             myCandle.SetHistogram(hproj);

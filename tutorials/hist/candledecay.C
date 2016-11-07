@@ -14,12 +14,15 @@ void candledecay()
    }
    h1->SetBarWidth(4);
    h1->SetFillStyle(0);
+   h1->SetFillColor(kGray);
+   h1->SetLineColor(kBlue);
    h1->GetYaxis()->SetTitle("time");
    h1->GetXaxis()->SetTitle("probability density"); 
+
+   c1->cd(1);
+   h1->Draw("violiny(12000000)");
+   c1->cd(2);
    TH2I *h2 = (TH2I*)h1->Clone("h2");
    h2->SetBarWidth(0.8);
-   c1->cd(1);
-   h1->Draw("candley(2000000)");
-   c1->cd(2);
    h2->DrawCopy("candley2");
 }

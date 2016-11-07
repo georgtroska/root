@@ -545,7 +545,7 @@ void TCandle::Paint(Option_t *)
    
 
    if (IsOption(kHistoRight) || IsOption(kHistoLeft) || IsOption(kHistoViolin)) {
-      if (IsOption(kHistoZeroIndicator)) {
+      if (IsOption(kHistoZeroIndicator) && (saveFillStyle != 0)) {
          SetLineColor(saveFillColor);
          TAttLine::Modify();
       }
@@ -556,7 +556,7 @@ void TCandle::Paint(Option_t *)
          gPad->PaintFillArea(fNHistoPoints, fHistoPointsY, fHistoPointsX);
          gPad->PaintPolyLine(fNHistoPoints, fHistoPointsY, fHistoPointsX);
       }
-      if (IsOption(kHistoZeroIndicator)) {
+      if (IsOption(kHistoZeroIndicator) && (saveFillStyle != 0)) {
          SetLineColor(saveLineColor);
          TAttLine::Modify();
       }
