@@ -98,7 +98,6 @@ public:
    void           Init();
    virtual void   Paint(Option_t* option="");
    void           PaintBoxPlot();
-   void           PaintHistogram();
    void           PaintLabels();
    virtual void   Print(Option_t* option="") const; // *MENU*
    void           SavePrimitive(std::ostream & out, Option_t *options);

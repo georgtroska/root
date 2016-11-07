@@ -552,7 +552,6 @@ void TParallelCoordVar::Init()
 
 void TParallelCoordVar::Paint(Option_t* /*option*/)
 {
-   //PaintHistogram();
    if (TestBit(kShowBox)) PaintBoxPlot();
    PaintLabels();
 }
@@ -610,110 +609,6 @@ void TParallelCoordVar::PaintBoxPlot()
    myCandle.Paint();
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Paint the histogram on the axis.
-
-void TParallelCoordVar::PaintHistogram()
-{
-   Int_t i;
-
-   TFrame *frame = gPad->GetFrame();
-
-   if (!fHistogram) GetHistogram();
-
-   // Paint the axis body.
-   if (fHistoHeight!=0 && TestBit(kShowBarHisto)) {
-      // Paint the axis body using bar chart.
-      TBox *b = new TBox();
-      b->SetFillStyle(GetFillStyle());
-      b->SetFillColor(GetFillColor());
-      b->SetLineStyle(1);
-      b->SetLineColor(GetFillColor());
-      b->SetLineWidth(1);
-      Double_t hmin = fHistogram->GetMinimum();
-      Double_t hmax = fHistogram->GetMaximum();
-      if (fX1 == fX2) {
-         // Vertical case.
-         Double_t dy = (fY2-fY1)/fNbins;
-         Double_t dv = (fMaxCurrent - fMinCurrent)/fNbins;
-         Double_t v = fMinCurrent;
-         Double_t y1 = fY1,x2,y2;
-         for (i=1; i<=fNbins; i++) {
-            x2 = fX1+((fHistogram->GetBinContent(i)-hmin)/(hmax-hmin))*fHistoHeight*
-                 ((frame->GetX2()-frame->GetX1())/(fParallel->GetNvar()-1));
-            if(TestBit(kLogScale)) y2 = fY1 + (fY2-fY1)*(TMath::Log10((v+dv)/fMinCurrent)) / (TMath::Log10(fMaxCurrent/fMinCurrent));
-            else y2=y1+dy;
-            b->PaintBox(fX1,y1,x2,y2,"l");
-            y1=y2;
-            v += dv;
-         }
-      } else {
-         // Horizontal case.
-         Double_t dx = (fX2-fX1)/fNbins;
-         Double_t dv = (fMaxCurrent - fMinCurrent)/fNbins;
-         Double_t v = fMinCurrent;
-         Double_t x1 = fX1,x2,y2;
-         for (i=1; i<=fNbins; i++) {
-            y2 = fY1+((fHistogram->GetBinContent(i)-hmin)/(hmax-hmin))*fHistoHeight*((frame->GetY2()-frame->GetY1())/(fParallel->GetNvar()-1));
-            if(TestBit(kLogScale)) x2 = fX1 + (fX2-fX1)*(TMath::Log10((v+dv)/fMinCurrent)) / (TMath::Log10(fMaxCurrent/fMinCurrent));
-            else x2=x1+dx;
-            b->PaintBox(x1,fY1,x2,y2,"l");
-            x1=x2;
-            v+=dv;
-         }
-      }
-      delete b;
-   }
-   if (fHistoLW==0 && !TestBit(kShowBox)) {
-      // Paint the axis body as a simple line.
-      TLine* l = new TLine(fX1,fY1,fX2,fY2);
-      l->SetLineWidth(GetLineWidth());
-      l->SetLineColor(GetLineColor());
-      l->SetLineStyle(GetLineColor());
-      l->Paint();
-      delete l;
-   } else if (fHistoLW!=0){
-      // Paint the axis body using the color palette.
-      TLine *lb = new TLine();
-      lb->SetLineWidth(fHistoLW);
-      Double_t hmin = fHistogram->GetMinimum();
-      Double_t hmax = fHistogram->GetMaximum();
-      Int_t theColor;
-      Int_t ncolors = gStyle->GetNumberOfColors();
-      if (fX1 == fX2) {
-         // Vertical case.
-         Double_t dy = (fY2-fY1)/fNbins;
-         Double_t y1 = fY1,y2;
-         Double_t dv = (fMaxCurrent - fMinCurrent)/fNbins;
-         Double_t v = fMinCurrent;
-         for (i=1; i<=fNbins; i++) {
-            theColor = (Int_t)( ((fHistogram->GetBinContent(i)-hmin)/(hmax-hmin))*(ncolors-1) );
-            if(TestBit(kLogScale)) y2 = fY1 + (fY2-fY1)*(TMath::Log10((v+dv)/fMinCurrent)) / (TMath::Log10(fMaxCurrent/fMinCurrent));
-            else y2=y1+dy;
-            lb->SetLineColor(gStyle->GetColorPalette(theColor));
-            lb->PaintLine(fX1,y1,fX1,y2);
-            y1=y2;
-            v+=dv;
-         }
-      } else {
-         // Horizontal case.
-         Double_t dx = (fX2-fX1)/fNbins;
-         Double_t dv = (fMaxCurrent - fMinCurrent)/fNbins;
-         Double_t v = fMinCurrent;
-         Double_t x1 = fX1,x2;
-         for (i=1; i<=fNbins; i++) {
-            theColor = (Int_t)( ((fHistogram->GetBinContent(i)-hmin)/(hmax-hmin))*(ncolors-1) );
-            lb->SetLineColor(gStyle->GetColorPalette(theColor));
-            if(TestBit(kLogScale)) x2 = fX1 + (fX2-fX1)*(TMath::Log10((v+dv)/fMinCurrent)) / (TMath::Log10(fMaxCurrent/fMinCurrent));
-            else x2=x1+dx;
-            lb->PaintLine(x1,fY1,x2,fY1);
-            x1=x2;
-            v+=dv;
-         }
-      }
-      delete lb;
-   }
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Paint the axis labels and titles.

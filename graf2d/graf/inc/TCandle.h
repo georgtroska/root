@@ -36,21 +36,29 @@ public:
    enum CandleOption : long {
       kNoOption = 0,
       kBox = 1,
+      //---------------
       kMedianLine = 10,
       kMedianNotched = 20,
       kMedianCircle = 30,
+      //---------------
       kMeanLine = 100,
       kMeanCircle = 300,
+      //---------------
       kWhiskerAll = 1000,
       kWhisker15 = 2000,
+      //---------------
       kAnchor = 10000,
+      //---------------
       kPointsOutliers = 100000,
       kPointsAll = 200000,
       kPointsAllScat = 300000,
+      //---------------
       kHistoLeft = 1000000,
       kHistoRight = 2000000,
       kHistoViolin = 3000000,
+      //---------------
       kHistoZeroIndicator = 10000000, 
+      //---------------
       kHorizontal = 1000000000 // if this bit is not set it is vertical!
    };
 

@@ -3506,7 +3506,7 @@ Int_t THistPainter::MakeChopt(Option_t *choptin)
    Hoption.Char = Hoption.Color  = Hoption.Contour = Hoption.Logx    = 0;
    Hoption.Logy = Hoption.Logz   = Hoption.Lego    = Hoption.Surf    = 0;
    Hoption.Off  = Hoption.Tri    = Hoption.Proj    = Hoption.AxisPos = 0;
-   Hoption.Spec = Hoption.Pie    = Hoption.Candle  = Hoption.Violin  = 0;
+   Hoption.Spec = Hoption.Pie    = Hoption.Candle  = 0;
 
    //    special 2D options
    Hoption.List     = 0;
@@ -3585,23 +3585,16 @@ Int_t THistPainter::MakeChopt(Option_t *choptin)
 
    l = strstr(chopt,"CANDLE");
    if (l) {
-	   TCandle candle;
-	   Hoption.Candle = candle.ParseOption(l);
-	   Hoption.Scat = 0;
+      TCandle candle;
+      Hoption.Candle = candle.ParseOption(l);
+      Hoption.Scat = 0;
    }
 
    l = strstr(chopt,"VIOLIN");
    if (l) {
       TCandle candle;
-	   Hoption.Candle = candle.ParseOption(l);
-	   Hoption.Scat = 0;
-      /*
+      Hoption.Candle = candle.ParseOption(l);
       Hoption.Scat = 0;
-      Hoption.Violin = 1;
-      strncpy(l,"   ",6);
-      if (l[6] == 'X') { Hoption.Violin = 1; l[6] = ' '; }
-      if (l[6] == 'Y') { Hoption.Violin = 2; l[6] = ' '; }
-      * */
    }
 
    l = strstr(chopt,"LEGO");
@@ -4759,7 +4752,7 @@ void THistPainter::PaintBoxes(Option_t *)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-/// [Control function to draw a 2D histogram as a candle (box) plot.](#HP14)
+/// [Control function to draw a 2D histogram as a candle (box) plot or violin plot](#HP14)
 
 void THistPainter::PaintCandlePlot(Option_t *)
 {
@@ -4767,15 +4760,15 @@ void THistPainter::PaintCandlePlot(Option_t *)
    TH2D *h2 = (TH2D*)fH;
 
 
-	TCandle myCandle;
-	myCandle.SetOption((TCandle::CandleOption)Hoption.Candle);
-	myCandle.SetMarkerColor(fH->GetLineColor());
-	myCandle.SetLineColor(fH->GetLineColor());
-	myCandle.SetFillColor(fH->GetFillColor());
-	myCandle.SetFillStyle(fH->GetFillStyle());
-	myCandle.SetMarkerSize(fH->GetMarkerSize());
-	myCandle.SetMarkerStyle(fH->GetMarkerStyle());
-	myCandle.SetLog(Hoption.Logx,Hoption.Logy);
+   TCandle myCandle;
+   myCandle.SetOption((TCandle::CandleOption)Hoption.Candle);
+   myCandle.SetMarkerColor(fH->GetLineColor());
+   myCandle.SetLineColor(fH->GetLineColor());
+   myCandle.SetFillColor(fH->GetFillColor());
+   myCandle.SetFillStyle(fH->GetFillStyle());
+   myCandle.SetMarkerSize(fH->GetMarkerSize());
+   myCandle.SetMarkerStyle(fH->GetMarkerStyle());
+   myCandle.SetLog(Hoption.Logx,Hoption.Logy);
 
    Bool_t swapXY = myCandle.IsHorizontal();
    const Double_t standardCandleWidth = 0.66;
@@ -4813,117 +4806,7 @@ void THistPainter::PaintCandlePlot(Option_t *)
    }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// [Control function to draw a 2D histogram as a violin plot](#HP141)
 
-void THistPainter::PaintViolinPlot(Option_t *)
-{
-   Double_t x,y,w;
-   Double_t bw, bcen, bcon;
-   Double_t xpm[1], ypm[1];
-
-   TH1D *hp;
-   TH2D *h2 = (TH2D*)fH;
-
-   Double_t *quantiles = new Double_t[5];
-   quantiles[0]=0.; quantiles[1]=0.; quantiles[2] = 0.; quantiles[3] = 0.; quantiles[4] = 0.;
-   Double_t *prob = new Double_t[5];
-   prob[0]=1E-15; prob[1]=0.25; prob[2]=0.5; prob[3]=0.75; prob[4]=1-1E-15;
-
-   Style_t fillsav   = h2->GetFillStyle();
-   Style_t colsav    = h2->GetFillColor();
-   Style_t linesav   = h2->GetLineStyle();
-   Style_t widthsav  = h2->GetLineWidth();
-   Style_t pmssav    = h2->GetMarkerStyle();
-
-   if (h2->GetFillColor() == 0)  h2->SetFillStyle(0);
-
-   h2->SetMarkerStyle(pmssav);
-   h2->TAttLine::Modify();
-   h2->TAttFill::Modify();
-   h2->TAttMarker::Modify();
-
-   // Violin plot along X
-   if (Hoption.Violin == 1) {
-      for (Int_t i=Hparam.xfirst; i<=Hparam.xlast; i++) {
-         x = fXaxis->GetBinCenter(i);
-         w = fXaxis->GetBinWidth(i);
-         hp = h2->ProjectionY("_px", i, i);
-         if (hp->GetEntries() !=0 && hp->GetMaximum()!=0) {
-             hp->Scale(1.0/hp->Integral());
-             hp->Scale(w/hp->GetMaximum());
-             hp->GetQuantiles(5, quantiles, prob);
-             ypm[0] = hp->GetMean();
-
-             TAxis *ax = hp->GetXaxis();
-             for(Int_t j=ax->GetFirst(); j<ax->GetLast(); ++j){
-                 bw = ax->GetBinWidth(j);
-                 bcen = ax->GetBinCenter(j);
-                 bcon = hp->GetBinContent(j);
-                 gPad->PaintBox(x-0.5*bcon, bcen-0.5*bw, x+0.5*bcon, bcen+0.5*bw);
-             }
-
-             h2->SetLineWidth(widthsav);
-             h2->TAttLine::Modify();
-
-             h2->SetLineStyle(linesav);
-             h2->TAttLine::Modify();
-             gPad->PaintLine(x, quantiles[3], x, quantiles[4]);
-             gPad->PaintLine(x, quantiles[0], x, quantiles[1]);
-
-             xpm[0] = x;
-             gPad->PaintPolyMarker(1,xpm,ypm);
-         }
-      }
-   // Violin plot along Y
-   } else {
-       for (Int_t i=Hparam.yfirst; i<=Hparam.ylast; i++) {
-           y = fYaxis->GetBinCenter(i);
-           w = fYaxis->GetBinWidth(i);
-           hp = h2->ProjectionX("_py", i, i);
-           if (hp->GetEntries() !=0 && hp->GetMaximum()!=0) {
-             hp->Scale(1.0/hp->Integral());
-             hp->Scale(w/hp->GetMaximum());
-             hp->GetQuantiles(5, quantiles, prob);
-             xpm[0] = hp->GetMean();
-
-             h2->SetLineWidth(1);
-             h2->TAttLine::Modify();
-             TAxis *ax = hp->GetXaxis();
-             for(Int_t j=ax->GetFirst(); j<ax->GetLast(); ++j){
-                 bw = ax->GetBinWidth(j);
-                 bcen = ax->GetBinCenter(j);
-                 bcon = hp->GetBinContent(j);
-                 gPad->PaintBox(bcen-0.5*bw, y-0.5*bcon, bcen+0.5*bw, y+0.5*bcon);
-             }
-
-             hp->GetQuantiles(5, quantiles, prob);
-             xpm[0] = hp->GetMean();
-
-             h2->SetLineWidth(widthsav);
-             h2->SetLineStyle(2);
-             h2->TAttLine::Modify();
-             gPad->PaintLine(quantiles[3], y, quantiles[4], y);
-             gPad->PaintLine(quantiles[0], y, quantiles[1], y);
-
-             ypm[0] = y;
-             gPad->PaintPolyMarker(1,xpm,ypm);
-           }
-       }
-   }
-
-   h2->SetFillStyle(fillsav);
-   h2->SetFillColor(colsav);
-   h2->SetLineStyle(linesav);
-   h2->SetMarkerStyle(pmssav);
-   h2->SetLineWidth(widthsav);
-   h2->TAttFill::Modify();
-   h2->TAttLine::Modify();
-   h2->TAttMarker::Modify();
-
-   delete [] prob;
-   delete [] quantiles;
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Returns the rendering regions for an axis to use in the COL2 option
@@ -8670,7 +8553,6 @@ void THistPainter::PaintTable(Option_t *option)
          if (Hoption.Text)         PaintText(option);
          if (Hoption.Error >= 100) Paint2DErrors(option);
          if (Hoption.Candle)       PaintCandlePlot(option);
-         if (Hoption.Violin)       PaintViolinPlot(option);
 
       }
       if (Hoption.Lego)                     PaintLego(option);

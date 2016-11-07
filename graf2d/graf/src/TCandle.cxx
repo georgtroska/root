@@ -789,7 +789,8 @@ void TCandle::ConvertToPadCoords(Double_t minAxis, Double_t maxAxis, Double_t ax
       maxinit = fMaxInit;
    }
    
-   std::cout << "DOING UGLY CONVERSION! PLEASE FIXME!!!" << std::endl;
+   //std::cout << "DOING UGLY CONVERSION! PLEASE FIXME!!!" << std::endl;
+   //This is really ugly. The TParallelCoorVar-stuff needs to be reimplemented in histo-style
    fMean = axisMinCoord + ((fMean-a)/b)*(axisMaxCoord-axisMinCoord);
    fMedian = axisMinCoord + ((fMedian-a)/b)*(axisMaxCoord-axisMinCoord);
    fMedianErr  = axisMinCoord + ((fMedianErr-a)/b)*(axisMaxCoord-axisMinCoord);
