@@ -37,6 +37,8 @@ void candleplot() {
    h2->SetBarWidth(0.4);
    h2->SetBarOffset(0.25);
    h2->SetLineColor(kRed);
+   h2->SetFillColor(kGreen);
+
 
    TCanvas *c1 = new TCanvas();
 
@@ -44,5 +46,5 @@ void candleplot() {
    h2->Draw("candle3 same");
 
 
-   gPad->BuildLegend(0.6,0.7,0.7,0.8,"","f");
+   gPad->BuildLegend(0.78,0.695,0.980,0.935,"","f");
 }

@@ -88,7 +88,10 @@ End_Macro
 Note that picking is supported for all drawing modes.
 
 \since **ROOT version 6.07/07:**
-Stacks of 2D histogram can also be painted as candle plots:
+Stacks of 2D histograms can also be painted as candle plots:
+\since **ROOT version 6.09/02:**
+Stacks of 2D histograms can also be painted as violin plots, combinations of candle and
+violin plots are possible as well:
 
 Begin_Macro(source)
 ../../../tutorials/hist/candleplotstack.C

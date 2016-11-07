@@ -93,8 +93,9 @@
 - [The ARRow option](#HP12)
 - [The BOX option](#HP13)
 - [The COLor option](#HP14)
-- [The CANDLE option](#HP140)
-- [The VIOLIN option](#HP141)
+- [The CANDLE and VIOLIN options](#HP140)
+   - [The CANDLE option](#HP140a)
+   - [The VIOLIN option](#HP140b)
 - [The TEXT and TEXTnn Option](#HP15)
 - [The CONTour options](#HP16)
    - [The LIST option](#HP16a)
@@ -272,9 +273,13 @@ using `TH1::GetOption`:
 | "CANDLE"  | Draw a candle plot along X axis.|
 | "CANDLEX" | Same as "CANDLE".|
 | "CANDLEY" | Draw a candle plot along Y axis.|
+| "CANDLEXn"| Draw a candle plot along X axis. Different candle-styles with n from 1 to 6.|
+| "CANDLEYn"| Draw a candle plot along Y axis. Different candle-styles with n from 1 to 6.|
 | "VIOLIN"  | Draw a violin plot along X axis.|
 | "VIOLINX" | Same as "VIOLIN".|
 | "VIOLINY" | Draw a violin plot along Y axis.|
+| "VIOLINXn"| Draw a violin plot along X axis. Different violin-styles with n being 1 or 2.|
+| "VIOLINYn"| Draw a violin plot along Y axis. Different violin-styles with n being 1 or 2.|
 | "CONT"    | Draw a contour plot (same as CONT0).|
 | "CONT0"   | Draw a contour plot using surface colors to distinguish contours.|
 | "CONT1"   | Draw a contour plot using line styles to distinguish contours.|
@@ -1046,8 +1051,71 @@ and COLZ options. There is one major difference and that concerns the treatment 
 bins with zero content. The COL2 and COLZ2 options color these bins the color of zero.
 
 
-### <a name="HP140"></a> The CANDLE option
+### <a name="HP140"></a> The CANDLE and VIOLIN options
 
+The mechanism behind Candle plots and Violin plots is very similar. Because of this they are
+implemented in the same class TCandle. The keywords CANDLE or VIOLIN will initiate the drawing of
+the corresponding plots. Followed by the keyword the user can select a plot direction (X or V for
+vertcal projections, or Y or H for horizontal projections) and/or predifined definitions
+(1-6 for candles, 1-2 for violins). The order doesn't matter. Default is X and 1.
+
+Instead of using the predefined representations, the candle and violin parameters can be
+changed individually. In that case the option have the following form:
+
+    CANDLEX(<option-string>)
+    CANDLEY(<option-string>)
+    VIOLINX(<option-string>)
+    VIOLINY(<option-string>).
+
+All zeros at the beginning of `option-string` can be omitted.
+
+`option-string` consists eight values, defined as follow:
+
+    "CANDLEX(zhpawMmb)"
+
+Where:
+
+  -  `b = 0`;  no box drawn
+  -  `b = 1`;  the box is drawn. As the candle-plot is also called a box-plot it
+               makes sense in the very most cases to always draw the box
+  -  `b = 2`;  draw a filled box with border
+
+  -  `m = 0`;  no median drawn
+  -  `m = 1`;  median is drawn as a line
+  -  `m = 2`;  median is drawn with errors (notches)
+  -  `m = 3`;  median is drawn as a circle
+
+  -  `M = 0`;  no mean drawn
+  -  `M = 1`;  mean is drawn as a dashed line
+  -  `M = 3`;  mean is drawn as a circle
+
+  -  `w = 0`;  no whisker drawn
+  -  `w = 1`;  whisker is drawn to end of distribution.
+  -  `w = 2`;  whisker is drawn to max 1.5*iqr
+
+  -  `a = 0`;  no anchor drawn
+  -  `a = 1`;  the anchors are drawn
+
+  -  `p = 0`;  no points drawn
+  -  `p = 1`;  only outliers are drawn
+  -  `p = 2`;  all datapoints are drawn
+  -  `p = 3`:  all datapoints are drawn scattered
+  
+  -  `h = 0`;  no histogram is drawn
+  -  `h = 1`;  histogram at the left or bottom side is drawn
+  -  `h = 2`;  histogram at the right or top side is drawn
+  -  `h = 3`;  histogram at left and right or top and bottom (violin-style) is drawn
+
+  -  `z = 0`;  no zero indicator line is drawn
+  -  `z = 1`;  zero indicator line is drawn.
+ 
+As one can see all individual options for both candle and violin plots can be accessed by this
+mechanism. In deed the keywords CANDLE(<option-string>) and VIOLIN(<option-string>) have the same
+meaning. So you can parametrise an option-string for a candle plot and use the keywords VIOLIN and
+vice versa, if you wish.
+
+
+#### <a name="HP140a"></a> The CANDLE option
 
 <a href="http://en.wikipedia.org/wiki/Box_plot">A Candle plot</a> (also known as
 a "box plot" or "whisker plot") was invented in 1977 by John Tukey. It is a convenient
@@ -1061,7 +1129,7 @@ way to describe graphically a data distribution (D) with only five numbers:
 
 In this implementation a TH2 is considered as a collection of TH1 along
 X (option `CANDLE` or `CANDLEX`) or Y (option `CANDLEY`).
-Each TH1 is represented as a candle plot.
+Each TH1 is represented as one candle.
 
 Begin_Macro
 ../../../tutorials/hist/candleplotwhiskers.C
@@ -1203,6 +1271,10 @@ Depending on the configuration the points can have different meanings:
     one can show all values as a scatter plot instead by choosing p=3. The points will be
     drawn as dots and will be scattered within the width of the candle. The color
     of the points will be the color of the candle-chart.
+    
+##### Other Options
+Is is possible to combine all options of candle and violin plots with each other. E.g. a box-plot
+with a histogram.
 
 
 #### How to use the candle-plots drawing option
@@ -1222,16 +1294,6 @@ There are six predefined candle-plot representations:
   - "CANDLEX6": Like candle2 but showing all datapoints scattered.
                 For huge datasets
 
-Of course "CANDLEY" works as well. X shows vertical candles, Y shows
-horizontal candles
-
-The option "CANDLE" is equivalent to "CANDLE1X" or "CANDLEX".
-
-The option "CANDLEY" is equivalent to "CANDLEY1"
-
-There is no difference between options "CANDLE1X" and "CANDLEX1".
-
-Instead of "X" or "Y" one can use "V" or "H"
 
 The following picture shows how the six predefined representations look.
 
@@ -1258,51 +1320,7 @@ Begin_Macro
 }
 End_Macro
 
-Instead of using the predefined representations, the candle parameters can be
-changed individually. In that case the option has the following form:
 
-    CANDLEX(<option-string>)
-
-or
-
-    CANDLEY(<option-string>).
-
-All zeros at the beginning of `option-string` can be omitted.
-
-`option-string` consists six values, defined as follow:
-
-    "CANDLEX(pawMmb)"
-
-Where:
-
-  -  `b = 0`;  no box drawn
-  -  `b = 1`;  the box is drawn. As the candle-plot is also called a box-plot it
-               makes sense in the very most cases to always draw the box.
-     `b = 2`; draw a filled box with border.
-
-  -  `m = 0`;  no median drawn
-  -  `m = 1`;  median is drawn as a line
-  -  `m = 2`;  median is drawn with errors (notches)
-  -  `m = 3`;  median is drawn as a circle
-
-  -  `M = 0`;  no mean drawn
-  -  `M = 1`;  mean is drawn as a dashed line
-  -  `M = 3`;  mean is drawn as a circle
-
-  -  `w = 0`;  no whisker drawn
-  -  `w = 1`;  whisker is drawn to end of distribution.
-  -  `w = 2`;  whisker is drawn to max 1.5*iqr
-
-  -  `a = 0`;  no anchor drawn
-  -  `a = 1`;  the anchors are drawn
-
-  -  `p = 0`;  no points drawn
-  -  `p = 1`;  only outliers are drawn
-  -  `p = 2`;  all datapoints are drawn
-  -  `p = 3`:  all datapoints are drawn scattered
-
-The values on the left of `option-string` are in the middle of the candle,
-the values on the right of `option-string` are in the outer part of the candle.
 
 #### Example 1
 Box and improved whisker, no mean, no median, no anchor no outliers
@@ -1324,8 +1342,7 @@ Begin_Macro(source)
 ../../../tutorials/hist/candleplot.C
 End_Macro
 
-### <a name="HP141"></a> The VIOLIN option
-
+#### <a name="HP140b"></a> The VIOLIN option
 
 <a href="http://en.wikipedia.org/wiki/Violin_plot">A violin plot</a> is a candle plot
 that also encodes the pdf information at each point.
@@ -1336,6 +1353,47 @@ and two lines.
 
 In this implementation a TH2 is considered as a collection of TH1 along
 X (option `VIOLIN` or `VIOLINX`) or Y (option `VIOLINY`).
+
+#### What a violin is made of
+
+\since **ROOT version 6.09/02**
+
+##### The histogram
+The histogram is typically drawn to both directions with respect to the middle-line of the
+corresponding bin. This can be achivied by using h=3. It is possible to draw a histogram only to
+one side (h=1, or h=2).
+The maximum number of bins in the histogram is limited to 500, if the number of bins in the used 
+histogram is higher it will be rebinned automatically. The maximum height of the histogram can 
+be modified by using SetBarWidth() and the position can be changed with SetBarOffset().
+A solid fill style is recommended.
+
+##### The zero indicator line
+Typical for violin charts is a line in the background over the whole histogram indicating 
+the bins with zero entries. The zero indicator line can be activated with z=1. The line color 
+will always be the same as the fill-color of the histogram.
+
+##### The Mean
+The Mean is illustrated with the same mechanismn as used for candle plots. Usually a circle is used.
+
+##### Whiskers
+The whiskers are illustrated by the same mechanism as used for candle plots. There is only one
+difference. When using the simple whisker definition (w=1) and the zero indicator line (z=1), then
+the whiskers will be forced to be solid (usually hashed)
+ 
+##### Points
+The points are illustrated by the same mechanism as used for candle plots. E.g. VIOLIN2 uses
+better whisker definition (w=2) and outliers (p=1).
+ 
+##### Other options
+It is possible to combine all options of candle or violin plots with each other. E.g. a violin plot
+including a box-plot.
+
+#### How to use the violin-plots drawing option
+
+There are two predefined violin-plot representations:
+  - "VIOLINX1": Standard violin (histogram, mean, whisker over full distribution, 
+                zero indicator line)
+  - "VIOLINX2": Line VIOLINX1 buth with better whisker definition + outliers.
 
 A solid fill style is recommended for this plot (as opposed to a hollow or
 hashed style).
