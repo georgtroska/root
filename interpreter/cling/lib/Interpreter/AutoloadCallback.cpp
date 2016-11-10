@@ -74,6 +74,19 @@ namespace cling {
     const clang::FileEntry* m_PrevFE;
     std::string m_PrevFileName;
   private:
+    bool IsAutoloadEntry(Decl *D) {
+       AnnotateAttr* attr = D->getAttr<AnnotateAttr>();
+       if (attr) {
+         llvm::StringRef annotation = attr->getAnnotation();
+         assert(!annotation.empty() && "Empty annotation!");
+         if (annotation.startswith(llvm::StringRef(annoTag, lenAnnoTag))) {
+            // autoload annotation.
+            return true;
+         }
+       }
+       return false;
+    }
+
     void InsertIntoAutoloadingState (Decl* decl, llvm::StringRef annotation) {
 
       assert(!annotation.empty() && "Empty annotation!");
@@ -124,11 +137,18 @@ namespace cling {
     AutoloadingVisitor():
       m_IsStoringState(false), m_Map(0), m_PP(0), m_Sema(0), m_PrevFE(0) {}
     void RemoveDefaultArgsOf(Decl* D, Sema* S) {
-      //D = D->getMostRecentDecl();
       m_Sema = S;
+
+      // Temporarily disable the default argument removal as it currently
+      // does too much (also remove default on declaration not from the rootmap
+      // files nor from the 'autoparsing' section of the dictionary).
+      return;
+
+      D = D->getMostRecentDecl();
       TraverseDecl(D);
-      //while ((D = D->getPreviousDecl()))
-      //  TraverseDecl(D);
+      while ((D = D->getPreviousDecl())) {
+        TraverseDecl(D);
+      }
     }
 
     void TrackDefaultArgStateOf(Decl* D, AutoloadCallback::FwdDeclsMap& map,
@@ -227,7 +247,8 @@ namespace cling {
         return true;
 
       // Now that we will read the full enum, unload the forward decl.
-      UnloadDecl(m_Sema, D);
+      if (IsAutoloadEntry(D))
+        UnloadDecl(m_Sema, D);
       return true;
     }
   };
