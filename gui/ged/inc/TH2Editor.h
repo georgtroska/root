@@ -46,6 +46,7 @@ protected:
    TH2                 *fHist;            // histogram object
    TGCompositeFrame    *fBin;             // Contains the Binning Widgets
    TGCompositeFrame    *fFit;             // Contains the Fitting Widgets
+   TGCompositeFrame    *fCandle;          // Contains the Candle Widgets
    TGTextEntry         *fTitle;           // histogram title input field
    TGComboBox          *fTypeCombo;       // histogram type combo box
    TGComboBox          *fCoordsCombo;     // Coordinate System combo box
@@ -73,6 +74,7 @@ protected:
    TGCheckButton       *fAddFB;           // Draw front box (or not)
    TGCheckButton       *fAddBB;           // Draw back box (or not)
    TGCheckButton       *fAddText;         // Draw bin contents as text
+   TGCheckButton       *fAddCandle;       // Draw bin contents as candle or violin
    TGNumberEntry       *fContLevels;      // Set number of contour levels
    TGNumberEntry       *fContLevels1;     // Set number of contour levels
    TGNumberEntry       *fBarWidth;        // Set bar width of histogram
@@ -105,13 +107,22 @@ protected:
    TGColorSelect       *fFrameColor;      // Select the Frame Color
    TGedPatternSelect   *fFramePattern;    // Select the Frame Pattern Style
    TString              fCutString;       // Contais info about graphical cuts (if any)
-
+   
+   TGCompositeFrame    *fCandleXCont;     // Contains the rebin widgets for case 1
+   TGHButtonGroup      *fCandleGroup;     // Radiobuttongroup to change candle
+   TGRadioButton       *fCandleX;         // Candle in X direction
+   TGRadioButton       *fCandleY;         // Candle in Y direction
+   TGComboBox          *fCandleCombo;       // Contour selecting combo box
+   
    static  TGComboBox *BuildHistTypeComboBox(TGFrame *parent, Int_t id);
    static  TGComboBox *BuildHistCoordsComboBox(TGFrame *parent, Int_t id);
    static  TGComboBox *BuildHistContComboBox(TGFrame* parent, Int_t id);
+   static  TGComboBox *BuildCandlePresetsComboBox(TGFrame* parent, Int_t id);
+
 
    virtual void   ConnectSignals2Slots();
            void   CreateBinTab();       // Creates the Bin Tab (part of the SetGedEditor)
+           void   CreateCandleTab();       // Creates the Candle Tab (part of the SetGedEditor)
 
 private:
    void    PaintBox3D(Float_t *p1, Float_t *p2,Float_t *p3, Float_t *p4);

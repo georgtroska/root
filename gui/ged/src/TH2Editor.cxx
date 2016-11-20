@@ -159,14 +159,18 @@ enum ETH2Wid {
    kCOORD_TYPE, kCOORDS_CAR,  kCOORDS_CYL, kCOORDS_POL, kCOORDS_PSR, kCOORDS_SPH,
    kCONT_TYPE,  kERROR_ONOFF, kPALETTE_ONOFF, kPALETTE_ONOFF1,
    kARROW_ONOFF,kBOX_ONOFF,   kSCAT_ONOFF, kCOL_ONOFF, kTEXT_ONOFF,
-   kFRONTBOX_ONOFF, kBACKBOX_ONOFF,
+   kFRONTBOX_ONOFF, kBACKBOX_ONOFF, kCANDLE_ONOFF,
    kBAR_WIDTH,   kBAR_OFFSET,
    kCONT_NONE,   kCONT_0, kCONT_1, kCONT_2, kCONT_3, kCONT_4,
    kCONT_LEVELS, kCONT_LEVELS1,
    kSLIDERX_MIN, kSLIDERX_MAX, kSLIDERY_MIN, kSLIDERY_MAX,
    kDELAYED_DRAWING, kCOLOR,  kPATTERN,
    kBINXSLIDER, kBINYSLIDER, kBINXSLIDER1, kBINYSLIDER1,
-   kXBINOFFSET, kYBINOFFSET
+   kXBINOFFSET, kYBINOFFSET,
+   kCANDLE_X, kCANDLE_Y,
+   kCANDLE_TYPE,
+   kCANDLE_USER, kCANDLE_1, kCANDLE_2, kCANDLE_3, kCANDLE_4, kCANDLE_5, kCANDLE_6,
+   kVIOLIN_1, kVIOLIN_2
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -226,7 +230,11 @@ TH2Editor::TH2Editor(const TGWindow *p, Int_t width,
 
    fAddText = new TGCheckButton(f7, "Text", kTEXT_ONOFF);
    fAddText ->SetToolTipText("Draw bin contents as text");
-   f7->AddFrame(fAddText, new TGLayoutHints(kLHintsLeft, 6, 1, 1, 3));
+   f7->AddFrame(fAddText, new TGLayoutHints(kLHintsLeft, 6, 1, 1, 0));
+   
+   fAddCandle = new TGCheckButton(f7, "Candle",kCANDLE_ONOFF);
+   fAddCandle ->SetToolTipText("Draw candle plot or violin plot");
+   f7->AddFrame(fAddCandle, new TGLayoutHints(kLHintsLeft, 6, 1, 1, 3));
 
    TGCompositeFrame *f8 = new TGCompositeFrame(f6, 40, 20, kVerticalFrame);
    f6->AddFrame(f8, new TGLayoutHints(kLHintsLeft, 5, 1, 0, 0));
@@ -366,6 +374,7 @@ TH2Editor::TH2Editor(const TGWindow *p, Int_t width,
    fCutString = "";
 
    CreateBinTab();
+   CreateCandleTab();
 
    // add itself in the least of cleanups to be notified when attached histogram is deleted
    gROOT->GetListOfCleanups()->Add(this);
@@ -670,6 +679,62 @@ void TH2Editor::CreateBinTab()
 
    fCancel->SetState(kButtonDisabled);
    fApply->SetState(kButtonDisabled);
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Create the Binning tab.
+
+void TH2Editor::CreateCandleTab()
+{
+   fCandle = CreateEditorTabSubFrame("Candle");
+
+   // Editor for rebinning a histogram which does NOT derive from an Ntuple
+   fCandleXCont = new TGCompositeFrame(fCandle, 80, 20, kVerticalFrame);
+   TGCompositeFrame *title1 = new TGCompositeFrame(fCandle, 145, 10,
+                                                         kHorizontalFrame |
+                                                         kLHintsExpandX   |
+                                                         kFixedWidth      |
+                                                         kOwnBackground);
+   title1->AddFrame(new TGLabel(title1, "Basic Candle"),
+                    new TGLayoutHints(kLHintsLeft, 1, 1, 0, 0));
+   title1->AddFrame(new TGHorizontal3DLine(title1),
+                    new TGLayoutHints(kLHintsExpandX, 5, 5, 7, 7));
+   fCandle->AddFrame(title1, new TGLayoutHints(kLHintsTop, 0, 0, 5, 0));
+   
+   TGCompositeFrame *f1 = new TGCompositeFrame(fCandle, 80, 18, kHorizontalFrame);
+   fCandleGroup = new TGHButtonGroup(f1,"Presets");
+   fCandleX = new TGRadioButton(fCandleGroup,"X",kCANDLE_X);
+   fCandleX->SetToolTipText("Vertical candles are drawn");
+   fCandleY = new TGRadioButton(fCandleGroup,"Y",kCANDLE_Y);
+   fCandleY->SetToolTipText("Horizontal candles are drawn");
+   fCandleCombo = BuildCandlePresetsComboBox(f1, kCANDLE_TYPE);
+   //f1->AddFrame(fCandleX, new TGLayoutHints(kLHintsLeft ,3 ,3,3,-7));
+   //f1->AddFrame(fCandleY, new TGLayoutHints(kLHintsLeft ,0 ,3,3,-7));
+   fCandleGroup->AddFrame(fCandleCombo, new TGLayoutHints(kLHintsLeft, 4, -12, -2, -7));
+   fCandleCombo->Resize(61, 20);
+   fCandleCombo->Associate(this);
+   
+   fCandleGroup->SetLayoutHints(new TGLayoutHints(kLHintsLeft ,-8,1,-2,-7),fCandleX);
+   fCandleGroup->SetLayoutHints(new TGLayoutHints(kLHintsLeft ,0,-1,-2,-7),fCandleY);
+   //fCandleGroup->SetLayoutHints(new TGLayoutHints(kLHintsLeft ,0,-1,3,-7),fCandleCombo);
+   
+   //f1->Show();
+   f1->ChangeOptions(kFitWidth|kChildFrame|kHorizontalFrame);
+   f1->AddFrame(fCandleGroup, new TGLayoutHints(kLHintsTop, 1, 1, 0, 0));
+   fCandle->AddFrame(f1, new TGLayoutHints(kLHintsTop, 1, 1, 2, 5));
+   
+   
+   TGCompositeFrame *title2 = new TGCompositeFrame(fCandle, 145, 10,
+                                                         kHorizontalFrame |
+                                                         kLHintsExpandX   |
+                                                         kFixedWidth      |
+                                                         kOwnBackground);
+   title2->AddFrame(new TGLabel(title2, "Individual Candle"),
+                    new TGLayoutHints(kLHintsLeft, 1, 1, 0, 0));
+   title2->AddFrame(new TGHorizontal3DLine(title2),
+                    new TGLayoutHints(kLHintsExpandX, 5, 5, 7, 7));
+   fCandle->AddFrame(title2, new TGLayoutHints(kLHintsTop, 0, 0, 5, 0));
 
 }
 
@@ -2878,6 +2943,27 @@ TGComboBox* TH2Editor::BuildHistContComboBox(TGFrame* parent, Int_t id)
    c->AddEntry("Cont2", kCONT_2);
    c->AddEntry("Cont3", kCONT_3);
    c->AddEntry("Cont4", kCONT_4);
+
+   return c;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Create candle presets combo box.
+
+TGComboBox* TH2Editor::BuildCandlePresetsComboBox(TGFrame* parent, Int_t id)
+{
+   TGComboBox *c = new TGComboBox(parent, id);
+
+   c->AddEntry("None" , kCONT_NONE);
+   c->AddEntry("(..)", kCANDLE_USER);
+   c->AddEntry("Candle1", kCANDLE_1);
+   c->AddEntry("Candle2", kCANDLE_2);
+   c->AddEntry("Candle3", kCANDLE_3);
+   c->AddEntry("Candle4", kCANDLE_4);
+   c->AddEntry("Candle5", kCANDLE_5);
+   c->AddEntry("Candle6", kCANDLE_6);
+   c->AddEntry("Violin1", kVIOLIN_1);
+   c->AddEntry("Violin2", kVIOLIN_2);
 
    return c;
 }
