@@ -113,11 +113,14 @@ protected:
    TGRadioButton       *fCandleX;         // Candle in X direction
    TGRadioButton       *fCandleY;         // Candle in Y direction
    TGComboBox          *fCandleCombo;       // Contour selecting combo box
+   TGComboBox          *fCandleUserCombo[10];       // Contour selecting combo box
    
    static  TGComboBox *BuildHistTypeComboBox(TGFrame *parent, Int_t id);
    static  TGComboBox *BuildHistCoordsComboBox(TGFrame *parent, Int_t id);
    static  TGComboBox *BuildHistContComboBox(TGFrame* parent, Int_t id);
    static  TGComboBox *BuildCandlePresetsComboBox(TGFrame* parent, Int_t id);
+   static  TGComboBox *BuildUserCandleComboBox(TGFrame* parent, Int_t id);
+
 
 
    virtual void   ConnectSignals2Slots();

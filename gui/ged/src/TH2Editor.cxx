@@ -170,7 +170,17 @@ enum ETH2Wid {
    kCANDLE_X, kCANDLE_Y,
    kCANDLE_TYPE,
    kCANDLE_USER, kCANDLE_1, kCANDLE_2, kCANDLE_3, kCANDLE_4, kCANDLE_5, kCANDLE_6,
-   kVIOLIN_1, kVIOLIN_2
+   kVIOLIN_1, kVIOLIN_2,
+   kCANDLE_BOX_TYPE, kCANDLE_MEDIAN_TYPE, kCANDLE_MEAN_TYPE, kCANDLE_WHISKER_TYPE, kCANDLE_ANCHOR_TYPE, kCANDLE_POINTS_TYPE, kCANDLE_HISTO_TYPE, kCANDLE_ZERO_TYPE,
+   kCANDLE_BOX0, kCANDLE_BOX1,
+   kCANDLE_MEDIAN0, kCANDLE_MEDIAN1, kCANDLE_MEDIAN2, kCANDLE_MEDIAN3,
+   kCANDLE_MEAN0, kCANDLE_MEAN1, kCANDLE_MEAN3,
+   kCANDLE_WHISKER0, kCANDLE_WHISKER1, kCANDLE_WHISKER2,
+   kCANDLE_ANCHOR0, kCANDLE_ANCHOR1,
+   kCANDLE_POINTS0, kCANDLE_POINTS1, kCANDLE_POINTS2, kCANDLE_POINTS3,
+   kCANDLE_HISTO0, kCANDLE_HISTO1, kCANDLE_HISTO2, kCANDLE_HISTO3,
+   kCANDLE_ZERO0, kCANDLE_ZERO1
+   
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -735,6 +745,27 @@ void TH2Editor::CreateCandleTab()
    title2->AddFrame(new TGHorizontal3DLine(title2),
                     new TGLayoutHints(kLHintsExpandX, 5, 5, 7, 7));
    fCandle->AddFrame(title2, new TGLayoutHints(kLHintsTop, 0, 0, 5, 0));
+   
+   TGCompositeFrame *f4 = new TGCompositeFrame(fCandle, 80, 18, kHorizontalFrame);
+   TGCompositeFrame *f2 = new TGCompositeFrame(f4, 80, 18, kVerticalFrame);
+   TGCompositeFrame *f3 = new TGCompositeFrame(f4, 80, 18, kVerticalFrame);
+   
+   ETH2Wid myEnum[] = {kCANDLE_BOX_TYPE, kCANDLE_MEDIAN_TYPE, kCANDLE_MEAN_TYPE, kCANDLE_WHISKER_TYPE, kCANDLE_ANCHOR_TYPE, kCANDLE_POINTS_TYPE, kCANDLE_HISTO_TYPE, kCANDLE_ZERO_TYPE};
+   char myLabel[][16] = {"Box:","Median:","Mean:","Whisker:","Anchor:","Points:","Histo:","Zero:"};
+   for (int i = 0; i < 8; i++) {
+      TGLabel *fAddLabel = new TGLabel(f2, myLabel[i]);
+      f2->AddFrame(fAddLabel, new TGLayoutHints(kLHintsLeft, 15, 10, 4, 4));
+      
+      fCandleUserCombo[i] = BuildUserCandleComboBox(f3, myEnum[i]);
+      f3->AddFrame(fCandleUserCombo[i], new TGLayoutHints(kLHintsLeft, 10, 1, 2, 1));
+      fCandleUserCombo[i]->Resize(61, 20);
+      fCandleUserCombo[i]->Associate(this);
+   }
+   f4->AddFrame(f2, new TGLayoutHints(kLHintsTop, 0, 0, 0, 0));
+   f4->AddFrame(f3, new TGLayoutHints(kLHintsTop, 0, 0, 0, 0));
+   
+   
+   fCandle->AddFrame(f4, new TGLayoutHints(kLHintsTop, 1, 1, 2, 5));
 
 }
 
@@ -2964,6 +2995,59 @@ TGComboBox* TH2Editor::BuildCandlePresetsComboBox(TGFrame* parent, Int_t id)
    c->AddEntry("Candle6", kCANDLE_6);
    c->AddEntry("Violin1", kVIOLIN_1);
    c->AddEntry("Violin2", kVIOLIN_2);
+
+   return c;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Create contour combo box.
+
+TGComboBox* TH2Editor::BuildUserCandleComboBox(TGFrame* parent, Int_t id)
+{
+   TGComboBox *c = new TGComboBox(parent, id);
+   switch (id) {
+      case kCANDLE_BOX_TYPE:
+         c->AddEntry("none" , kCANDLE_BOX0);
+         c->AddEntry("box", kCANDLE_BOX1);
+         break;
+      case kCANDLE_MEDIAN_TYPE:
+         c->AddEntry("none" , kCANDLE_MEDIAN0);
+         c->AddEntry("line", kCANDLE_MEDIAN1);
+         c->AddEntry("notched", kCANDLE_MEDIAN2);
+         c->AddEntry("circle", kCANDLE_MEDIAN3);
+         break;
+      case kCANDLE_MEAN_TYPE:
+         c->AddEntry("none", kCANDLE_MEAN0);
+         c->AddEntry("line", kCANDLE_MEAN1);
+         c->AddEntry("circle", kCANDLE_MEAN3);
+         break;
+      case kCANDLE_WHISKER_TYPE:
+         c->AddEntry("none", kCANDLE_WHISKER0);
+         c->AddEntry("all", kCANDLE_WHISKER1);
+         c->AddEntry("1.5iqr", kCANDLE_WHISKER2);
+         break;
+      case kCANDLE_ANCHOR_TYPE:
+         c->AddEntry("none", kCANDLE_ANCHOR0);
+         c->AddEntry("anchor", kCANDLE_ANCHOR1);
+         break;
+      case kCANDLE_POINTS_TYPE:
+         c->AddEntry("none" , kCANDLE_POINTS0);
+         c->AddEntry("outliers", kCANDLE_POINTS1);
+         c->AddEntry("all", kCANDLE_POINTS2);
+         c->AddEntry("all scat", kCANDLE_POINTS3);
+         break;
+      case kCANDLE_HISTO_TYPE:
+         c->AddEntry("none" , kCANDLE_HISTO0);
+         c->AddEntry("left", kCANDLE_HISTO1);
+         c->AddEntry("right", kCANDLE_HISTO2);
+         c->AddEntry("violin", kCANDLE_HISTO3);
+         break;
+      case kCANDLE_ZERO_TYPE:
+         c->AddEntry("none", kCANDLE_ZERO0);
+         c->AddEntry("zero", kCANDLE_ZERO1);
+         break;
+      }
+         
 
    return c;
 }
