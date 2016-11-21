@@ -120,6 +120,8 @@ protected:
    static  TGComboBox *BuildHistContComboBox(TGFrame* parent, Int_t id);
    static  TGComboBox *BuildCandlePresetsComboBox(TGFrame* parent, Int_t id);
    static  TGComboBox *BuildUserCandleComboBox(TGFrame* parent, Int_t id);
+   
+   void InterpretCandleOption(TString str);
 
 
 

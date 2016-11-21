@@ -148,6 +148,13 @@
 #include "TH2.h"
 #include "TROOT.h"
 
+#include "TMath.h"
+#include "TCandle.h"
+
+
+//REMOVE!!
+#include <iostream>
+
 
 ClassImp(TH2Editor)
 
@@ -873,6 +880,58 @@ Bool_t TH2Editor::AcceptModel(TObject* obj)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+/// Interpreting what is in the bracket of CANDLE(...)
+
+void TH2Editor::InterpretCandleOption(TString str) {
+    char chopt[128];
+    strlcpy(chopt,str,128);
+    
+    TCandle candle;
+    long myCandleOption = candle.ParseOption(chopt);
+    int myBox =      (myCandleOption/(int)TMath::Power(10,0))%10;
+    int myMedian =   (myCandleOption/(int)TMath::Power(10,1))%10;
+    int myMean =     (myCandleOption/(int)TMath::Power(10,2))%10;
+    int myWhisker =  (myCandleOption/(int)TMath::Power(10,3))%10;
+    int myAnchor =   (myCandleOption/(int)TMath::Power(10,4))%10;
+    int myPoints =   (myCandleOption/(int)TMath::Power(10,5))%10;
+    int myHisto =    (myCandleOption/(int)TMath::Power(10,6))%10;
+    int myZero =     (myCandleOption/(int)TMath::Power(10,7))%10;
+    
+    if (myBox == 1)           fCandleUserCombo[0]->Select(kCANDLE_BOX1);
+    else                      fCandleUserCombo[0]->Select(kCANDLE_BOX0);
+    
+    if (myMedian == 1)        fCandleUserCombo[1]->Select(kCANDLE_MEDIAN1);
+    else if (myMedian == 2)   fCandleUserCombo[1]->Select(kCANDLE_MEDIAN2);
+    else if (myMedian == 3)   fCandleUserCombo[1]->Select(kCANDLE_MEDIAN3);
+    else                      fCandleUserCombo[1]->Select(kCANDLE_MEDIAN0);
+    
+    if (myMean == 1)          fCandleUserCombo[2]->Select(kCANDLE_MEAN1);
+    else if (myMean == 3)     fCandleUserCombo[2]->Select(kCANDLE_MEAN3);
+    else                      fCandleUserCombo[2]->Select(kCANDLE_MEAN0);
+    
+    if (myWhisker == 1)       fCandleUserCombo[3]->Select(kCANDLE_WHISKER1);
+    else if (myWhisker == 2)  fCandleUserCombo[3]->Select(kCANDLE_WHISKER2);
+    else                      fCandleUserCombo[3]->Select(kCANDLE_WHISKER0);
+    
+    if (myAnchor == 1)        fCandleUserCombo[4]->Select(kCANDLE_ANCHOR1);
+    else                      fCandleUserCombo[4]->Select(kCANDLE_ANCHOR0);
+    
+    if (myPoints == 1)        fCandleUserCombo[5]->Select(kCANDLE_POINTS1);
+    else if (myPoints == 2)   fCandleUserCombo[5]->Select(kCANDLE_POINTS2);
+    else if (myPoints == 3)   fCandleUserCombo[5]->Select(kCANDLE_POINTS3);
+    else                      fCandleUserCombo[5]->Select(kCANDLE_POINTS0);
+    
+    if (myHisto == 1)         fCandleUserCombo[6]->Select(kCANDLE_HISTO1);
+    else if (myHisto == 2)    fCandleUserCombo[6]->Select(kCANDLE_HISTO2);
+    else if (myHisto == 3)    fCandleUserCombo[6]->Select(kCANDLE_HISTO3);
+    else                      fCandleUserCombo[6]->Select(kCANDLE_HISTO0);
+    
+    if (myZero == 1)          fCandleUserCombo[7]->Select(kCANDLE_ZERO1);
+    else                      fCandleUserCombo[7]->Select(kCANDLE_ZERO0);
+    
+}
+
+////////////////////////////////////////////////////////////////////////////////
 /// Pick up the values of current histogram attributes.
 
 void TH2Editor::SetModel(TObject* obj)
@@ -910,6 +969,7 @@ void TH2Editor::SetModel(TObject* obj)
 
    if (str == "") {
       // default options = Scatter-Plot
+      std::cout << "NO DRAW-OPTION" << std::endl;
       ShowFrame(f6);
       HideFrame(f9);
       HideFrame(f12);
@@ -972,6 +1032,98 @@ void TH2Editor::SetModel(TObject* obj)
       fAddPalette1->SetState(kButtonUp);
       fAddFB->SetState(kButtonDown);
       fAddBB->SetState(kButtonDown);
+      
+      std::cout << "Drawoption is: " << str << std::endl;
+      if (str.Contains("CANDLE") || str.Contains("VIOLIN")) {
+         fAddCandle->SetState(kButtonDown);
+         if (str.Contains("CANDLE1X") || str.Contains("CANDLEX1") || str.Contains("CANDLE1")) {
+            fCandleGroup->SetButton(kCANDLE_X, kTRUE);
+            fCandleGroup->SetButton(kCANDLE_Y, kFALSE);
+            fCandleCombo->Select(kCANDLE_1);
+         } else if (str.Contains("CANDLE2X") || str.Contains("CANDLEX2") || str.Contains("CANDLE2")) {
+            fCandleGroup->SetButton(kCANDLE_X, kTRUE);
+            fCandleGroup->SetButton(kCANDLE_Y, kFALSE);
+            fCandleCombo->Select(kCANDLE_2);
+         } else if (str.Contains("CANDLE3X") || str.Contains("CANDLEX3") || str.Contains("CANDLE3")) {
+            fCandleGroup->SetButton(kCANDLE_X, kTRUE);
+            fCandleGroup->SetButton(kCANDLE_Y, kFALSE);
+            fCandleCombo->Select(kCANDLE_3);
+         } else if (str.Contains("CANDLE4X") || str.Contains("CANDLEX4") || str.Contains("CANDLE4")) {
+            fCandleGroup->SetButton(kCANDLE_X, kTRUE);
+            fCandleGroup->SetButton(kCANDLE_Y, kFALSE);
+            fCandleCombo->Select(kCANDLE_4);
+         } else if (str.Contains("CANDLE5X") || str.Contains("CANDLEX5") || str.Contains("CANDLE5")) {
+            fCandleGroup->SetButton(kCANDLE_X, kTRUE);
+            fCandleGroup->SetButton(kCANDLE_Y, kFALSE);
+            fCandleCombo->Select(kCANDLE_5);
+         } else if (str.Contains("CANDLE6X") || str.Contains("CANDLEX6") || str.Contains("CANDLE6")) {
+            fCandleGroup->SetButton(kCANDLE_X, kTRUE);
+            fCandleGroup->SetButton(kCANDLE_Y, kFALSE);
+            fCandleCombo->Select(kCANDLE_6);
+         } else if (str.Contains("CANDLE1Y") || str.Contains("CANDLEY1") || str.Contains("CANDLE1")) {
+            fCandleGroup->SetButton(kCANDLE_Y, kTRUE);
+            fCandleGroup->SetButton(kCANDLE_X, kFALSE);
+            fCandleCombo->Select(kCANDLE_1);
+         } else if (str.Contains("CANDLE2Y") || str.Contains("CANDLEY2") || str.Contains("CANDLE2")) {
+            fCandleGroup->SetButton(kCANDLE_Y, kTRUE);
+            fCandleGroup->SetButton(kCANDLE_X, kFALSE);
+            fCandleCombo->Select(kCANDLE_2);
+         } else if (str.Contains("CANDLE3Y") || str.Contains("CANDLEY3") || str.Contains("CANDLE3")) {
+            fCandleGroup->SetButton(kCANDLE_Y, kTRUE);
+            fCandleGroup->SetButton(kCANDLE_X, kFALSE);
+            fCandleCombo->Select(kCANDLE_3);
+         } else if (str.Contains("CANDLE4Y") || str.Contains("CANDLEY4") || str.Contains("CANDLE4")) {
+            fCandleGroup->SetButton(kCANDLE_Y, kTRUE);
+            fCandleGroup->SetButton(kCANDLE_X, kFALSE);
+            fCandleCombo->Select(kCANDLE_4);
+         } else if (str.Contains("CANDLE5Y") || str.Contains("CANDLEY5") || str.Contains("CANDLE5")) {
+            fCandleGroup->SetButton(kCANDLE_Y, kTRUE);
+            fCandleGroup->SetButton(kCANDLE_X, kFALSE);
+            fCandleCombo->Select(kCANDLE_5);
+         } else if (str.Contains("CANDLE6Y") || str.Contains("CANDLEY6") || str.Contains("CANDLE6")) {
+            fCandleGroup->SetButton(kCANDLE_Y, kTRUE);
+            fCandleGroup->SetButton(kCANDLE_X, kFALSE);
+            fCandleCombo->Select(kCANDLE_6);
+         } else if (str.Contains("VIOLIN1X") || str.Contains("VIOLINX1") || str.Contains("VIOLIN1")) {
+            fCandleGroup->SetButton(kCANDLE_X, kTRUE);
+            fCandleGroup->SetButton(kCANDLE_Y, kFALSE);
+            fCandleCombo->Select(kVIOLIN_1);
+         } else if (str.Contains("VIOLIN2X") || str.Contains("VIOLINX2") || str.Contains("VIOLIN2")) {
+            fCandleGroup->SetButton(kCANDLE_X, kTRUE);
+            fCandleGroup->SetButton(kCANDLE_Y, kFALSE);
+            fCandleCombo->Select(kVIOLIN_2);
+         } else if (str.Contains("VIOLIN1Y") || str.Contains("VIOLINY1") || str.Contains("VIOLIN1")) {
+            fCandleGroup->SetButton(kCANDLE_Y, kTRUE);
+            fCandleGroup->SetButton(kCANDLE_X, kFALSE);
+            fCandleCombo->Select(kVIOLIN_1);
+         } else if (str.Contains("VIOLIN2Y") || str.Contains("VIOLINY2") || str.Contains("VIOLIN2")) {
+            fCandleGroup->SetButton(kCANDLE_Y, kTRUE);
+            fCandleGroup->SetButton(kCANDLE_X, kFALSE);
+            fCandleCombo->Select(kVIOLIN_2);
+         } else if (str.Contains("CANDLEX(") || str.Contains("CANDLE(") || str.Contains("VIOLINX(") || str.Contains("VIOLIN(")) {
+            fCandleGroup->SetButton(kCANDLE_X, kTRUE);
+            fCandleGroup->SetButton(kCANDLE_Y, kFALSE);
+            fCandleCombo->Select(kCANDLE_USER);
+            InterpretCandleOption(str);
+         } else if (str.Contains("CANDLEY(") || str.Contains("VIOLINY(")) {
+            fCandleGroup->SetButton(kCANDLE_Y, kTRUE);
+            fCandleGroup->SetButton(kCANDLE_X, kFALSE);
+            fCandleCombo->Select(kCANDLE_USER);
+            InterpretCandleOption(str);
+         } 
+         
+         else if (str.Contains("CANDLE")) { // MUST BE LAST
+            fCandleGroup->SetButton(kCANDLE_X, kTRUE);
+            fCandleGroup->SetButton(kCANDLE_Y, kFALSE);
+            fCandleCombo->Select(kCANDLE_1);
+         } else if (str.Contains("VIOLIN")) { // MUST BE LAST
+            fCandleGroup->SetButton(kCANDLE_X, kTRUE);
+            fCandleGroup->SetButton(kCANDLE_Y, kFALSE);
+            fCandleCombo->Select(kVIOLIN_1);
+         }
+      } else  {
+         fAddCandle->SetState(kButtonUp);
+      }
 
    } else if (str.Contains("LEGO") || str.Contains("SURF")) {
       HideFrame(f6);
