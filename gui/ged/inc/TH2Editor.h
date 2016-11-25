@@ -186,6 +186,7 @@ public:
    virtual void DoAddPalette(Bool_t on);
    virtual void DoAddFB();
    virtual void DoAddBB();
+   virtual void DoAddCandle(Bool_t on);
    virtual void DoContLevel();
    virtual void DoContLevel1();
    virtual void DoBarWidth();
