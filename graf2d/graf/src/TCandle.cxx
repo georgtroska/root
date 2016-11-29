@@ -296,25 +296,24 @@ void TCandle::Calculate() {
    
    if (IsOption(kWhisker15)) { // Improved whisker definition, with 1.5*iqr
       if (!fIsRaw && fProj) { //Need a calculation for a projected histo
-       int bin = fProj->FindBin(fBoxDown-1.5*iqr);
-       // extending only to the lowest data value within this range
-       while (fProj->GetBinContent(bin) == 0 && bin <= fProj->GetNbinsX()) bin++;
-       fWhiskerDown = fProj->GetBinCenter(bin);
+         int bin = fProj->FindBin(fBoxDown-1.5*iqr);
+         // extending only to the lowest data value within this range
+         while (fProj->GetBinContent(bin) == 0 && bin <= fProj->GetNbinsX()) bin++;
+         fWhiskerDown = fProj->GetBinCenter(bin);
 
-       bin = fProj->FindBin(fBoxUp+1.5*iqr);
-       while (fProj->GetBinContent(bin) == 0 && bin >= 1) bin--;
-       fWhiskerUp = fProj->GetBinCenter(bin);
+         bin = fProj->FindBin(fBoxUp+1.5*iqr);
+         while (fProj->GetBinContent(bin) == 0 && bin >= 1) bin--;
+         fWhiskerUp = fProj->GetBinCenter(bin);
       } else { //Need a calculation for a raw-data candle
-       fWhiskerUp = fBoxDown;
-       fWhiskerDown = fBoxUp;
+         fWhiskerUp = fBoxDown;
+         fWhiskerDown = fBoxUp;
 
-       //Need to find highest value up to 1.5*iqr from the BoxUp-pos, and the lowest value up to -1.5*iqr from the boxLow-pos
-       for (Long64_t i = 0; i < fNDatapoints; ++i) {
-         Double_t myData = fDatapoints[i];
-         if (myData > fWhiskerUp && myData <= fBoxUp + 1.5*iqr) fWhiskerUp = myData;
-         if (myData < fWhiskerDown && myData >= fBoxDown - 1.5*iqr) fWhiskerDown = myData;
-       }
-    
+         //Need to find highest value up to 1.5*iqr from the BoxUp-pos, and the lowest value up to -1.5*iqr from the boxLow-pos
+         for (Long64_t i = 0; i < fNDatapoints; ++i) {
+            Double_t myData = fDatapoints[i];
+            if (myData > fWhiskerUp && myData <= fBoxUp + 1.5*iqr) fWhiskerUp = myData;
+            if (myData < fWhiskerDown && myData >= fBoxDown - 1.5*iqr) fWhiskerDown = myData;
+         }
       }
    }
    
@@ -323,27 +322,24 @@ void TCandle::Calculate() {
       fMedianErr = 1.57*iqr/sqrt(fProj->GetEntries());
       fAxisMin = fProj->GetXaxis()->GetXmin();
       fAxisMax = fProj->GetXaxis()->GetXmax();
-    } else { //Need a calculation for a raw-data candle
+   } else { //Need a calculation for a raw-data candle
       //Calculate the Mean
       fMean = 0;
       for (Long64_t i = 0; i < fNDatapoints; ++i) {
-       fMean += fDatapoints[i];
-       if (fDatapoints[i] < min) min = fDatapoints[i];
-       if (fDatapoints[i] > max) max = fDatapoints[i];
-       if (fDatapoints[i] < fWhiskerDown || fDatapoints[i] > fWhiskerUp) nOutliers++;
+         fMean += fDatapoints[i];
+         if (fDatapoints[i] < min) min = fDatapoints[i];
+         if (fDatapoints[i] > max) max = fDatapoints[i];
+         if (fDatapoints[i] < fWhiskerDown || fDatapoints[i] > fWhiskerUp) nOutliers++;
       }
       fMean /= fNDatapoints;
       fMedianErr = 1.57*iqr/sqrt(fNDatapoints);
-    }
-
-
+   }
 
    delete [] prob;
    delete [] quantiles;
    
-   
    //Doing the outliers and other single points to show
-    if (GetCandleOption(5) > 0) { //Draw outliers
+   if (GetCandleOption(5) > 0) { //Draw outliers
       TRandom2 random;
       const int maxOutliers = kNMAXPOINTS;
       Double_t myScale = 1.;
@@ -444,13 +440,13 @@ void TCandle::Calculate() {
          }
       }
 
-     fNHistoPoints = 0;
-     Double_t maxContent = fProj->GetMaximum();
-     Double_t maxHistoHeight = fCandleWidth*0.8;
-     if (IsOption(kHistoViolin)) maxHistoHeight *= 0.5;
+      fNHistoPoints = 0;
+      Double_t maxContent = fProj->GetMaximum();
+      Double_t maxHistoHeight = fCandleWidth*0.8;
+      if (IsOption(kHistoViolin)) maxHistoHeight *= 0.5;
 
-     bool isFirst = true;
-     int lastNonZero = 0;
+      bool isFirst = true;
+      int lastNonZero = 0;
       for (int bin = 1; bin <= fProj->GetNbinsX(); bin++) {
          if (isFirst) {
             if (fProj->GetBinContent(bin) > 0) {
@@ -474,14 +470,14 @@ void TCandle::Calculate() {
          fNHistoPoints++;
          fHistoPointsX[fNHistoPoints] = fPosCandleAxis + myBinValue/maxContent*maxHistoHeight;
          fHistoPointsY[fNHistoPoints] = fProj->GetBinLowEdge(bin)+fProj->GetBinWidth(bin);
-          if (doLogX) {
+         if (doLogX) {
             if (fHistoPointsX[fNHistoPoints -1] > 0) fHistoPointsX[fNHistoPoints - 1] = TMath::Log10(fHistoPointsX[fNHistoPoints - 1]); else continue;
             if (fHistoPointsX[fNHistoPoints] > 0) fHistoPointsX[fNHistoPoints] = TMath::Log10(fHistoPointsX[fNHistoPoints]); else continue;
-          }
-          if (doLogY) {
+         }
+         if (doLogY) {
             if (fHistoPointsY[fNHistoPoints -1] > 0) fHistoPointsY[fNHistoPoints - 1] = TMath::Log10(fHistoPointsY[fNHistoPoints - 1]); else continue;
             if (fHistoPointsY[fNHistoPoints] > 0) fHistoPointsY[fNHistoPoints] = TMath::Log10(fHistoPointsY[fNHistoPoints]); else continue;
-          }
+         }
          
          fNHistoPoints++;
          if (fProj->GetBinContent(bin) > 0) lastNonZero = fNHistoPoints;
