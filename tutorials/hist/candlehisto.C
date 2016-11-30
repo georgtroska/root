@@ -27,7 +27,7 @@ void candlehisto()
    for (int i = 1; i < 7; i++) {
       c1->cd(i);
       char str[16];
-      sprintf(str,"VIOLINY%d",i);
+      sprintf(str,"CANDLEX%d",i);
       TH2I * myhist = (TH2I*)h1->DrawCopy(str);
       myhist->SetFillColor(kGray);
       myhist->SetTitle(str);
