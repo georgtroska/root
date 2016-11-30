@@ -22,6 +22,8 @@
 #include "TAttFill.h"
 #endif
 
+#include "TCandle.h"
+
 class TParallelCoord;
 class TParallelCoordSelect;
 class TParallelCoordRange;
@@ -97,7 +99,7 @@ public:
    void           GetXYfromValue(Double_t value, Double_t & x, Double_t & y);
    void           Init();
    virtual void   Paint(Option_t* option="");
-   void           PaintBoxPlot();
+   void           PaintBoxPlot(TCandle::CandleOption opt);
    void           PaintLabels();
    virtual void   Print(Option_t* option="") const; // *MENU*
    void           SavePrimitive(std::ostream & out, Option_t *options);

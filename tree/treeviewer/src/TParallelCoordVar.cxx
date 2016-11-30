@@ -552,14 +552,15 @@ void TParallelCoordVar::Init()
 
 void TParallelCoordVar::Paint(Option_t* /*option*/)
 {
-   if (TestBit(kShowBox)) PaintBoxPlot();
+   if (TestBit(kShowBox)) PaintBoxPlot(TCandle::CandleOption(2112311)); //paint box and histo
+   else PaintBoxPlot(TCandle::kHistoRight); //paint only histo at the right
    PaintLabels();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Paint the boxes in the case of a candle chart.
 
-void TParallelCoordVar::PaintBoxPlot()
+void TParallelCoordVar::PaintBoxPlot(TCandle::CandleOption opt)
 {
    
    TFrame* frame = gPad->GetFrame();
@@ -602,9 +603,9 @@ void TParallelCoordVar::PaintBoxPlot()
    myCandle.SetLineWidth(1);
    myCandle.SetLineStyle(1);
    myCandle.SetMarkerColor(kBlue);
-   char opt[16];
-   sprintf(opt,"%s","CANDLE(2112311)"); // Need a possibility here, to pass a candle-option
-   myCandle.ParseOption(opt);
+   char chopt[16];
+   sprintf(chopt,"CANDLE(%d)",(long)opt); // Need a possibility here, to pass a candle-option
+   myCandle.ParseOption(chopt);
    myCandle.ConvertToPadCoords(fMinCurrent, fMaxCurrent, fY1, fY2, fMinInit, fMaxInit);
    myCandle.Paint();
 }
