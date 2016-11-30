@@ -1,47 +1,66 @@
-/// \defgroup tutorial_unfold5 TUnfoldDensity and TUnfoldBinning test suite
+/// \file
 /// \ingroup tutorial_unfold
+/// \notebook
+/// Test program for the classes TUnfoldDensity and TUnfoldBinning
 ///
-/// This is an example of unfolding a two-dimensional distribution.
-/// Also using an auxiliary measurement to constrain some background
+/// A toy test of the TUnfold package
 ///
-/// The example comprises several macros:
+/// This is an example of unfolding a two-dimensional distribution
+/// also using an auxiliary measurement to constrain some background
 ///
+/// The example comprises several macros
 ///  - testUnfold5a.C   create root files with TTree objects for
-///                     signal, background and data.
-///                     - write files:
-///                           - testUnfold5_signal.root
-///                           - testUnfold5_background.root
-///                           - testUnfold5_data.root
+///                      signal, background and data
+///            - write files  testUnfold5_signal.root
+///                            testUnfold5_background.root
+///                            testUnfold5_data.root
 ///
 ///  - testUnfold5b.C   create a root file with the TUnfoldBinning objects
-///            -> write file  testUnfold5_binning.root
+///            - write file  testUnfold5_binning.root
 ///
 ///  - testUnfold5c.C   loop over trees and fill histograms based on the
-///                     TUnfoldBinning objects
-///                     - read:
-///                           - testUnfold5_binning.root
-///                           - testUnfold5_signal.root
-///                           - testUnfold5_background.root
-///                           - testUnfold5_data.root
-///                     - write:
-///                           - testUnfold5_histograms.root
+///                      TUnfoldBinning objects
+///            - read  testUnfold5_binning.root
+///                     testUnfold5_signal.root
+///                     testUnfold5_background.root
+///                     testUnfold5_data.root
+///
+///            - write testUnfold5_histograms.root
 ///
 ///  - testUnfold5d.C   run the unfolding
-///                     - read:
-///                           - testUnfold5_histograms.root
-///                     - write:
-///                           - testUnfold5_result.root
-///                           - testUnfold5_result.ps
-///
-/// \file
-/// \ingroup tutorial_unfold5
-/// \notebook -nodraw
-/// Version 17.0 example for multi-dimensional unfolding
+///            - read  testUnfold5_histograms.root
+///            - write testUnfold5_result.root
+///                     testUnfold5_result.ps
 ///
 /// \macro_output
 /// \macro_code
 ///
-/// \author Stefan Schmitt, DESY
+///  **Version 17.6, in parallel to changes in TUnfold**
+///
+/// #### History:
+///  - Version 17.5, in parallel to changes in TUnfold
+///  - Version 17.4, in parallel to changes in TUnfold
+///  - Version 17.3, in parallel to changes in TUnfold
+///  - Version 17.2, in parallel to changes in TUnfold
+///  - Version 17.1, in parallel to changes in TUnfold
+///  - Version 17.0 example for multi-dimensional unfolding
+///
+///  This file is part of TUnfold.
+///
+///  TUnfold is free software: you can redistribute it and/or modify
+///  it under the terms of the GNU General Public License as published by
+///  the Free Software Foundation, either version 3 of the License, or
+///  (at your option) any later version.
+///
+///  TUnfold is distributed in the hope that it will be useful,
+///  but WITHOUT ANY WARRANTY; without even the implied warranty of
+///  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+///  GNU General Public License for more details.
+///
+///  You should have received a copy of the GNU General Public License
+///  along with TUnfold.  If not, see <http://www.gnu.org/licenses/>.
+///
+/// \author Stefan Schmitt DESY, 14.10.2008
 
 #include <iostream>
 #include <map>
@@ -279,7 +298,7 @@ void ToyEvent::GenerateSignalKinematics(TRandom *rnd,Bool_t isData) {
 void ToyEvent::GenerateBgrKinematics(TRandom *rnd,Bool_t isData) {
    fPtGen=0.0;
    fEtaGen=0.0;
-   fPtRec=rnd->Exp(2.5);
+   fPtRec=rnd->Exp(isData ? 2.5 : 2.5);
    fEtaRec=rnd->Uniform(-3.,3.);
 }
 

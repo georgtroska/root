@@ -1,10 +1,10 @@
 /// \file
 /// \ingroup tutorial_unfold
 /// \notebook
-///  Test program as an example for a user specific regularisation scheme
+///  Test program as an example for a user specific regularisation scheme.
 ///
 ///  1. Generate Monte Carlo and Data events
-///      The events consist of
+///      The events consist of:
 ///       - signal
 ///       - background
 ///
@@ -20,34 +20,54 @@
 ///
 ///  3. produce some plots
 ///
-///  Version 17.0, updated for changed methods in TUnfold
-///
-///  History:
-///   - Version 16.1, parallel to changes in TUnfold
-///   - Version 16.0, parallel to changes in TUnfold
-///   - Version 15, with automatic L-curve scan, simplified example
-///   - Version 14, with changes in TUnfoldSys.cxx
-///   - Version 13,  with changes to TUnfold.C
-///   - Version 12,  with improvements to TUnfold.cxx
-///   - Version 11,  print chi**2 and number of degrees of freedom
-///   - Version 10, with bug-fix in TUnfold.cxx
-///   - Version 9, with bug-fix in TUnfold.cxx, TUnfold.h
-///   - Version 8, with bug-fix in TUnfold.cxx, TUnfold.h
-///   - Version 7, with bug-fix in TUnfold.cxx, TUnfold.h
-///   - Version 6a, fix problem with dynamic array allocation under windows
-///   - Version 6, re-include class MyUnfold in the example
-///   - Version 5, move class MyUnfold to seperate files
-///   - Version 4, with bug-fix in TUnfold.C
-///   - Version 3, with bug-fix in TUnfold.C
-///   - Version 2, with changed ScanLcurve() arguments
-///   - Version 1, remove L curve analysis, use ScanLcurve() method instead
-///   - Version 0, L curve analysis included here
-///
-/// \macro_image
 /// \macro_output
 /// \macro_code
 ///
-/// \author Stefan Schmitt, DESY
+///  **Version 17.6, in parallel to changes in TUnfold**
+///
+/// #### History:
+///  - Version 17.5, in parallel to changes in TUnfold
+///  - Version 17.4, in parallel to changes in TUnfold
+///  - Version 17.3, in parallel to changes in TUnfold
+///  - Version 17.2, in parallel to changes in TUnfold
+///  - Version 17.1, in parallel to changes in TUnfold
+///  - Version 17.0, updated for changed methods in TUnfold
+///  - Version 16.1, parallel to changes in TUnfold
+///  - Version 16.0, parallel to changes in TUnfold
+///  - Version 15, with automatic L-curve scan, simplified example
+///  - Version 14, with changes in TUnfoldSys.cxx
+///  - Version 13,  with changes to TUnfold.C
+///  - Version 12,  with improvements to TUnfold.cxx
+///  - Version 11,  print chi**2 and number of degrees of freedom
+///  - Version 10, with bug-fix in TUnfold.cxx
+///  - Version 9, with bug-fix in TUnfold.cxx, TUnfold.h
+///  - Version 8, with bug-fix in TUnfold.cxx, TUnfold.h
+///  - Version 7, with bug-fix in TUnfold.cxx, TUnfold.h
+///  - Version 6a, fix problem with dynamic array allocation under windows
+///  - Version 6, re-include class MyUnfold in the example
+///  - Version 5, move class MyUnfold to separate files
+///  - Version 4, with bug-fix in TUnfold.C
+///  - Version 3, with bug-fix in TUnfold.C
+///  - Version 2, with changed ScanLcurve() arguments
+///  - Version 1, remove L curve analysis, use ScanLcurve() method instead
+///  - Version 0, L curve analysis included here
+///
+///  This file is part of TUnfold.
+///
+///  TUnfold is free software: you can redistribute it and/or modify
+///  it under the terms of the GNU General Public License as published by
+///  the Free Software Foundation, either version 3 of the License, or
+///  (at your option) any later version.
+///
+///  TUnfold is distributed in the hope that it will be useful,
+///  but WITHOUT ANY WARRANTY; without even the implied warranty of
+///  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+///  GNU General Public License for more details.
+///
+///  You should have received a copy of the GNU General Public License
+///  along with TUnfold.  If not, see <http://www.gnu.org/licenses/>.
+///
+/// \author Stefan Schmitt DESY, 14.10.2008
 
 #include <TMath.h>
 #include <TCanvas.h>
@@ -61,6 +81,7 @@
 
 using namespace std;
 
+
 TRandom *rnd=0;
 
 // generate an event
@@ -69,7 +90,7 @@ TRandom *rnd=0;
 //  positive mass: signal event
 Double_t GenerateEvent(Double_t bgr, // relative fraction of background
                        Double_t mass, // peak position
-                       Double_t gamma /* peak width*/ )
+                       Double_t gamma) // peak width
 {
   Double_t t;
   if(rnd->Rndm()>bgr) {
@@ -220,7 +241,7 @@ int testUnfold2()
   Double_t estimatedPeakPosition=3.8;
   Int_t nPeek=3;
   TUnfold::ERegMode regMode=TUnfold::kRegModeCurvature;
-  // calculate bin number correspoinding to estimated peak position
+  // calculate bin number corresponding to estimated peak position
   Int_t iPeek=(Int_t)(nGen*(estimatedPeakPosition-xminGen)/(xmaxGen-xminGen)
                       // offset 1.5
                       // accounts for start bin 1
@@ -285,10 +306,10 @@ int testUnfold2()
 
   //=====================================================================
   // plot some histograms
-  TCanvas *output = new TCanvas();
+  TCanvas output;
 
   // produce some plots
-  output->Divide(3,2);
+  output.Divide(3,2);
 
   // Show the matrix which connects input and output
   // There are overflow bins at the bottom, not shown in the plot
@@ -296,14 +317,14 @@ int testUnfold2()
   // The overflow bins to the left and right contain
   // events which are not reconstructed. These are necessary for proper MC
   // normalisation
-  output->cd(1);
+  output.cd(1);
   histMdetGenMC->Draw("BOX");
 
   // draw generator-level distribution:
   //   data (red) [for real data this is not available]
   //   MC input (black) [with completely wrong peak position and shape]
   //   unfolded data (blue)
-  output->cd(2);
+  output.cd(2);
   histMunfold->SetLineColor(kBlue);
   histMunfold->Draw();
   histMgenData->SetLineColor(kRed);
@@ -314,7 +335,7 @@ int testUnfold2()
   //    data (red)
   //    MC (black)
   //    unfolded data (blue)
-  output->cd(3);
+  output.cd(3);
   histMdetFold->SetLineColor(kBlue);
   histMdetFold->Draw();
   histMdetData->SetLineColor(kRed);
@@ -326,19 +347,20 @@ int testUnfold2()
   //     But they are compatible with zero anyway
   //     If the peak shape is fitted,
   //     these correlations have to be taken into account, see example
-  output->cd(4);
+  output.cd(4);
   histRhoi->Draw();
 
   // show rhoi_max(tau) distribution
-  output->cd(5);
+  output.cd(5);
   logTauX->Draw();
   bestLogTauX->SetMarkerColor(kRed);
   bestLogTauX->Draw("*");
 
-  output->cd(6);
+  output.cd(6);
   lCurve->Draw("AL");
   bestLcurve->SetMarkerColor(kRed);
   bestLcurve->Draw("*");
 
+  output.SaveAs("testUnfold2.ps");
   return 0;
 }

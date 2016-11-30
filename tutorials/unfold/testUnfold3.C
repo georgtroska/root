@@ -1,7 +1,7 @@
 /// \file
 /// \ingroup tutorial_unfold
 /// \notebook
-/// Simple Test program for the class TUnfoldDensity
+/// Simple Test program for the class TUnfoldDensity.
 ///
 /// 1-dimensional unfolding with background subtraction
 ///
@@ -9,10 +9,9 @@
 ///
 ///  the reconstructed Pt is measured in 24 bins from 4 to 28
 ///  the generator-level Pt is unfolded into 10 bins from 6 to 26
-///    plus underflow bin from 0 to 6
-///    plus overflow bin above 26
-///  there are two background sources
-///       bgr1 and bgr2
+///   - plus underflow bin from 0 to 6
+///   - plus overflow bin above 26
+///  there are two background sources bgr1 and bgr2
 ///  the signal has a finite trigger efficiency at a threshold of 8 GeV
 ///
 ///  one type of systematic error is studied, where the signal parameters are
@@ -20,17 +19,38 @@
 ///
 ///  Finally, the unfolding is compared to a "bin-by-bin" correction method
 ///
-///  History:
-///  - Version 17.0, changeto use the class TUnfoldDensity
+/// \macro_output
+/// \macro_code
+///
+///  **Version 17.6, in parallel to changes in TUnfold**
+///
+/// #### History:
+///  - Version 17.5, in parallel to changes in TUnfold
+///  - Version 17.4, in parallel to changes in TUnfold
+///  - Version 17.3, in parallel to changes in TUnfold
+///  - Version 17.2, in parallel to changes in TUnfold
+///  - Version 17.1, in parallel to changes in TUnfold
+///  - Version 17.0, change to use the class TUnfoldDensity
 ///  - Version 16.1, parallel to changes in TUnfold
 ///  - Version 16.0, parallel to changes in TUnfold
 ///  - Version 15, simple example including background subtraction
 ///
-/// \macro_image
-/// \macro_output
-/// \macro_code
+///  This file is part of TUnfold.
 ///
-/// \author Stefan Schmitt, DESY
+///  TUnfold is free software: you can redistribute it and/or modify
+///  it under the terms of the GNU General Public License as published by
+///  the Free Software Foundation, either version 3 of the License, or
+///  (at your option) any later version.
+///
+///  TUnfold is distributed in the hope that it will be useful,
+///  but WITHOUT ANY WARRANTY; without even the implied warranty of
+///  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+///  GNU General Public License for more details.
+///
+///  You should have received a copy of the GNU General Public License
+///  along with TUnfold.  If not, see <http://www.gnu.org/licenses/>.
+///
+/// \author Stefan Schmitt DESY, 14.10.2008
 
 #include <TMath.h>
 #include <TCanvas.h>
@@ -44,7 +64,6 @@
 #include "TUnfoldDensity.h"
 
 using namespace std;
-
 
 TRandom *rnd=0;
 
@@ -428,17 +447,17 @@ void testUnfold3()
 
 
   //===========================
-  // Step 6: retreive unfolding results
+  // Step 6: retrieve unfolding results
 
   // get unfolding output
   // includes the statistical and background errors
   // but not the other systematic uncertainties
   TH1 *histUnfoldOutput=unfold.GetOutput("PT(unfold,stat+bgrerr)");
 
-  // retreive error matrix of statistical errors
+  // retrieve error matrix of statistical errors
   TH2 *histEmatStat=unfold.GetEmatrixInput("unfolding stat error matrix");
 
-  // retreive full error matrix
+  // retrieve full error matrix
   // This includes all systematic errors
   TH2 *histEmatTotal=unfold.GetEmatrixTotal("unfolding total error matrix");
 
@@ -476,7 +495,7 @@ void testUnfold3()
      }
   }
 
-  // retreive bgr source 1
+  // retrieve bgr source 1
   TH1 *histDetNormBgr1=unfold.GetBackground("bgr1 normalized",
                                              "background1");
   TH1 *histDetNormBgrTotal=unfold.GetBackground("bgr total normalized");
@@ -484,9 +503,9 @@ void testUnfold3()
   //========================
   // Step 7: plots
 
-  TCanvas *output = new TCanvas();
-  output->Divide(3,2);
-  output->cd(1);
+  TCanvas output;
+  output.Divide(3,2);
+  output.cd(1);
   // data, MC prediction, background
   histUnfoldInput->SetMinimum(0.0);
   histUnfoldInput->Draw("E");
@@ -498,7 +517,7 @@ void testUnfold3()
   histDetNormBgr1->Draw("SAME HIST");
   histDetNormBgrTotal->Draw("SAME HIST");
 
-  output->cd(2);
+  output.cd(2);
   // unfolded data, data truth, MC truth
   histUnfoldTotal->SetMinimum(0.0);
   histUnfoldTotal->SetMaximum(histUnfoldTotal->GetMaximum()*1.5);
@@ -512,26 +531,28 @@ void testUnfold3()
   histBbbSignalGen->SetLineColor(kBlue);
   histBbbSignalGen->Draw("SAME HIST");
 
-  output->cd(3);
+  output.cd(3);
   // unfolding matrix
   histUnfoldMatrix->SetLineColor(kBlue);
   histUnfoldMatrix->Draw("BOX");
 
   // show tau as a function of chi**2
-  output->cd(4);
+  output.cd(4);
   logTauX->Draw();
   bestLogTauLogChi2->SetMarkerColor(kRed);
   bestLogTauLogChi2->Draw("*");
 
   // show the L curve
-  output->cd(5);
+  output.cd(5);
   lCurve->Draw("AL");
   bestLcurve->SetMarkerColor(kRed);
   bestLcurve->Draw("*");
 
   // show correlation matrix
-  output->cd(6);
+  output.cd(6);
   histCorr->Draw("BOX");
+
+  output.SaveAs("testUnfold3.ps");
 
   //============================================================
   // step 8: compare results to the so-called bin-by-bin "correction"

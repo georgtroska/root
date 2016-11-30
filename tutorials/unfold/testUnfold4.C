@@ -1,7 +1,7 @@
 /// \file
 /// \ingroup tutorial_unfold
 /// \notebook
-/// Test program for the class TUnfoldSys
+/// Test program for the class TUnfoldSys.
 ///
 /// Simple toy tests of the TUnfold package
 ///
@@ -12,16 +12,37 @@
 /// is applied. This is expected because the true data errors are not known,
 /// and instead the sqrt(data) errors are used.
 ///
-///  History:
+/// \macro_output
+/// \macro_code
+///
+///  **Version 17.6, in parallel to changes in TUnfold**
+///
+/// #### History:
+///  - Version 17.5, in parallel to changes in TUnfold
+///  - Version 17.4, in parallel to changes in TUnfold
+///  - Version 17.3, in parallel to changes in TUnfold
+///  - Version 17.2, in parallel to changes in TUnfold
+///  - Version 17.1, in parallel to changes in TUnfold
 ///  - Version 16.1, parallel to changes in TUnfold
 ///  - Version 16.0, parallel to changes in TUnfold
 ///  - Version 15, use L-curve scan to scan the average correlation
 ///
-/// \macro_image
-/// \macro_output
-/// \macro_code
+///  This file is part of TUnfold.
 ///
-/// \author Stefan Schmitt, DESY
+///  TUnfold is free software: you can redistribute it and/or modify
+///  it under the terms of the GNU General Public License as published by
+///  the Free Software Foundation, either version 3 of the License, or
+///  (at your option) any later version.
+///
+///  TUnfold is distributed in the hope that it will be useful,
+///  but WITHOUT ANY WARRANTY; without even the implied warranty of
+///  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+///  GNU General Public License for more details.
+///
+///  You should have received a copy of the GNU General Public License
+///  along with TUnfold.  If not, see <http://www.gnu.org/licenses/>.
+///
+/// \author Stefan Schmitt DESY, 14.10.2008
 
 #include <TMath.h>
 #include <TCanvas.h>
@@ -151,11 +172,6 @@ void testUnfold4()
      //========================
      // unfolding
 
-     // switch off info messages
-#ifndef DEBUG
-     gErrorIgnoreLevel = 1001;
-#endif
-
      TUnfoldSys unfold(histGenDetMC,TUnfold::kHistMapOutputHoriz,
                        TUnfold::kRegModeSize,TUnfold::kEConstraintNone);
      // define the input vector (the measured data distribution)
@@ -187,19 +203,20 @@ void testUnfold4()
      }
 
   }
-  TCanvas *output = new TCanvas();
-  output->Divide(3,2);
+  TCanvas output;
+  output.Divide(3,2);
 
   gStyle->SetOptFit(1111);
 
   for(int i=0;i<nGen;i++) {
-     output->cd(i+1);
+     output.cd(i+1);
      histPullNC[i]->Fit("gaus");
      histPullNC[i]->Draw();
   }
   for(int i=0;i<nGen;i++) {
-     output->cd(i+4);
+     output.cd(i+4);
      histPullArea[i]->Fit("gaus");
      histPullArea[i]->Draw();
   }
+  output.SaveAs("testUnfold4.ps");
 }

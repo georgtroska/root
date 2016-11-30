@@ -308,12 +308,13 @@ Long64_t TTreeReader::GetCurrentEntry() const {
 
 TTreeReader::EEntryStatus TTreeReader::SetEntryBase(Long64_t entry, Bool_t local)
 {
-   if (!fTree) {
+   if (!fTree || !fDirector) {
       fEntryStatus = kEntryNoTree;
       return fEntryStatus;
    }
 
-   if (fProxiesSet && fDirector && fDirector->GetReadEntry() == -1) {
+   if (fProxiesSet && fDirector && fDirector->GetReadEntry() == -1
+       && fMostRecentTreeNumber != -1) {
       // Passed the end of the chain, Restart() was not called:
       // don't try to load entries anymore. Can happen in these cases:
       // while (tr.Next()) {something()};
@@ -351,8 +352,14 @@ TTreeReader::EEntryStatus TTreeReader::SetEntryBase(Long64_t entry, Bool_t local
    }
 
    if (fDirector->GetTree() != fTree->GetTree()
-       || fMostRecentTreeNumber != fTree->GetTreeNumber())
+       || fMostRecentTreeNumber != fTree->GetTreeNumber()) {
       fDirector->SetTree(fTree->GetTree());
+      if (fProxiesSet) {
+         for (auto value: fValues) {
+            value->NotifyNewTree(fTree->GetTree());
+         }
+      }
+   }
 
    fMostRecentTreeNumber = fTree->GetTreeNumber();
 
@@ -400,6 +407,8 @@ void TTreeReader::SetTree(TTree* tree)
    else {
       fDirector->SetTree(fTree);
       fDirector->SetReadEntry(-1);
+      // Distinguish from end-of-chain case:
+      fMostRecentTreeNumber = -1;
    }
 }
 
@@ -410,7 +419,8 @@ Bool_t TTreeReader::RegisterValueReader(ROOT::Internal::TTreeReaderValueBase* re
 {
    if (fProxiesSet) {
       Error("RegisterValueReader",
-            "TTreeReaders must be created before the call to Next() / SetEntry() / SetLocalEntry()!");
+            "Error registering reader for %s: TTreeReaderValue/Array objects must be created before the call to Next() / SetEntry() / SetLocalEntry(), or after TTreeReader::Restart()!",
+            reader->GetBranchName());
       return false;
    }
    fValues.push_back(reader);

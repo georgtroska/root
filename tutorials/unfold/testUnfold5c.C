@@ -1,12 +1,71 @@
 /// \file
-/// \ingroup tutorial_unfold5
-/// \notebook -nodraw
-/// Version 17.0 example for multi-dimensional unfolding
+/// \ingroup tutorial_unfold
+/// \notebook
+/// Test program for the classes TUnfoldDensity and TUnfoldBinning.
+///
+/// A toy test of the TUnfold package
+///
+/// This is an example of unfolding a two-dimensional distribution
+/// also using an auxiliary measurement to constrain some background
+///
+/// The example comprises several macros
+///  - testUnfold5a.C   create root files with TTree objects for
+///                      signal, background and data
+///            - write files  testUnfold5_signal.root
+///                           testUnfold5_background.root
+///                           testUnfold5_data.root
+///
+///  - testUnfold5b.C   create a root file with the TUnfoldBinning objects
+///            - write file  testUnfold5_binning.root
+///
+///  - testUnfold5c.C   loop over trees and fill histograms based on the
+///                      TUnfoldBinning objects
+///            - read  testUnfold5_binning.root
+///                    testUnfold5_signal.root
+///                    testUnfold5_background.root
+///                    testUnfold5_data.root
+///
+///            - write testUnfold5_histograms.root
+///
+///  - testUnfold5d.C   run the unfolding
+///            - read  testUnfold5_histograms.root
+///            - write testUnfold5_result.root
+///                    testUnfold5_result.ps
 ///
 /// \macro_output
 /// \macro_code
 ///
-/// \author Stefan Schmitt, DESY
+///  **Version 17.6, in parallel to changes in TUnfold**
+///
+/// #### History:
+///  - Version 17.5, updated for reading binning from XML file
+///  - Version 17.4, updated for reading binning from XML file
+///  - Version 17.3, updated for reading binning from XML file
+///  - Version 17.2, updated for reading binning from XML file
+///  - Version 17.1, in parallel to changes in TUnfold
+///  - Version 17.0 example for multi-dimensional unfolding
+///
+///  This file is part of TUnfold.
+///
+///  TUnfold is free software: you can redistribute it and/or modify
+///  it under the terms of the GNU General Public License as published by
+///  the Free Software Foundation, either version 3 of the License, or
+///  (at your option) any later version.
+///
+///  TUnfold is distributed in the hope that it will be useful,
+///  but WITHOUT ANY WARRANTY; without even the implied warranty of
+///  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+///  GNU General Public License for more details.
+///
+///  You should have received a copy of the GNU General Public License
+///  along with TUnfold.  If not, see <http://www.gnu.org/licenses/>.
+///
+/// \author Stefan Schmitt DESY, 14.10.2008
+
+// uncomment this to read the binning schemes from the root file
+// by default the binning is read from the XML file
+// #define READ_BINNING_CINT
+
 
 #include <iostream>
 #include <map>
@@ -15,9 +74,16 @@
 #include <TFile.h>
 #include <TTree.h>
 #include <TH1.h>
+#ifndef READ_BINNING_CINT
+#include <TDOMParser.h>
+#include <TXMLDocument.h>
+#include "TUnfoldBinningXML.h"
+#else
 #include "TUnfoldBinning.h"
+#endif
 
 using namespace std;
+
 
 void testUnfold5c()
 {
@@ -30,20 +96,33 @@ void testUnfold5c()
   TFile *outputFile=new TFile("testUnfold5_histograms.root","recreate");
 
   //=======================================================
-  // Step 2: read binning from file
+  // Step 2: read binning from XML
   //         and save them to output file
 
+#ifdef READ_BINNING_CINT
   TFile *binningSchemes=new TFile("testUnfold5_binning.root");
+#endif
 
   TUnfoldBinning *detectorBinning,*generatorBinning;
 
   outputFile->cd();
 
+  // read binning schemes in XML format
+#ifndef READ_BINNING_CINT
+  TDOMParser parser;
+  Int_t error=parser.ParseFile("testUnfold5binning.xml");
+  if(error) cout<<"error="<<error<<" from TDOMParser\n";
+  TXMLDocument const *XMLdocument=parser.GetXMLDocument();
+  detectorBinning=
+     TUnfoldBinningXML::ImportXML(XMLdocument,"detector");
+  generatorBinning=
+     TUnfoldBinningXML::ImportXML(XMLdocument,"generator");
+#else
   binningSchemes->GetObject("detector",detectorBinning);
   binningSchemes->GetObject("generator",generatorBinning);
 
   delete binningSchemes;
-
+#endif
   detectorBinning->Write();
   generatorBinning->Write();
 
@@ -58,7 +137,7 @@ void testUnfold5c()
      cout<<"could not read 'generator' binning\n";
   }
 
-  // pointers to various nodes in the bining scheme
+  // pointers to various nodes in the binning scheme
   const TUnfoldBinning *detectordistribution=
      detectorBinning->FindNode("detectordistribution");
 
@@ -68,7 +147,7 @@ void testUnfold5c()
   const TUnfoldBinning *bgrBinning=
      generatorBinning->FindNode("background");
 
-  // write binnig schemes to output file
+  // write binning schemes to output file
 
   //=======================================================
   // Step 3: book and fill data histograms
