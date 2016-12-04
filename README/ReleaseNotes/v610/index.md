@@ -42,6 +42,24 @@ The following interfaces have been removed, after deprecation in v6.08.
 
 ## Histogram Libraries
 
+- New class `THnChain` was added to provide a `TChain`-like experience when
+  working with `THnBase`'ed histograms (currently `THn` and `THnSparse`) from
+  many files, see [here](https://sft.its.cern.ch/jira/browse/ROOT-4515). This
+  allows to e.g., interactively adjust axis parameters before performing
+  projections from high-dimensional histograms,
+
+  ```{.cpp}
+  // Create a chain of histograms called `h`.
+  THnChain chain("h");
+
+  // Add files containing histograms `h` to `chain`.
+  chain->AddFile("file1.root");
+
+  chain->GetXaxis(1)->SetRangeUser(0.1, 0.2);
+
+  TH1* projection = chain->Projection(0)
+  ```
+
 
 ## Math Libraries
 
@@ -89,6 +107,9 @@ The following interfaces have been removed, after deprecation in v6.08.
   The problem was reported [here](https://sft.its.cern.ch/jira/browse/ROOT-8476).
 - In `TASimage::DrawLineInternal` the case of a line with 0 pixel along X and 0
   pixel along Y was not treated properly. An horizontal line was drawn instead.
+- In `TGraphPainter::PaintGrapHist`: Decouple the `P` option (histogram drawn with
+  a simple polymarker) from the `L`(Histogram drawn as a simple polyline). This
+  improved (in some cases some extra markers were drawn) and simplify. the code.
 
 ## 3D Graphics Libraries
 - In `TMarker3DBox::PaintH3` the boxes' sizes was not correct.

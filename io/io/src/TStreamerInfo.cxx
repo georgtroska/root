@@ -501,26 +501,25 @@ void TStreamerInfo::Build()
             TVirtualCollectionProxy *proxy = TClass::GetClass(dmType /* the underlying type */)->GetCollectionProxy();
             if (proxy) element = new TStreamerSTL(dmName, dmTitle, offset, dmFull, *proxy, dmIsPtr);
             else element = new TStreamerSTL(dmName, dmTitle, offset, dmFull, dmFull, dmIsPtr);
-// Disable feature: see ROOT-8478
-//             if (((TStreamerSTL*)element)->GetSTLtype() != ROOT::kSTLvector) {
-            auto printErrorMsg = [&](const char* category)
-               {
-                  Error("Build","The class \"%s\" is %s and for its data member \"%s\" we do not have a dictionary for the collection \"%s\". Because of this, we will not be able to read or write this data member.",GetName(), category, dmName, dmType);
-               };
-            if (fClass->IsLoaded()) {
-               if (!element->GetClassPointer()->IsLoaded()) {
-                  printErrorMsg("compiled");
-                  delete element;
-                  continue;
-               }
-            } else if (fClass->GetState() == TClass::kInterpreted) {
-               if (element->GetClassPointer()->GetCollectionProxy()->GetProperties() & TVirtualCollectionProxy::kIsEmulated) {
-                  printErrorMsg("interpreted");
-                  delete element;
-                  continue;
+            if (((TStreamerSTL*)element)->GetSTLtype() != ROOT::kSTLvector) {
+               auto printErrorMsg = [&](const char* category)
+                  {
+                     Error("Build","The class \"%s\" is %s and for its data member \"%s\" we do not have a dictionary for the collection \"%s\". Because of this, we will not be able to read or write this data member.",GetName(), category, dmName, dmType);
+                  };
+               if (fClass->IsLoaded()) {
+                  if (!element->GetClassPointer()->IsLoaded()) {
+                     printErrorMsg("compiled");
+                     delete element;
+                     continue;
+                  }
+               } else if (fClass->GetState() == TClass::kInterpreted) {
+                  if (element->GetClassPointer()->GetCollectionProxy()->GetProperties() & TVirtualCollectionProxy::kIsEmulated) {
+                     printErrorMsg("interpreted");
+                     delete element;
+                     continue;
+                  }
                }
             }
-//             } // End of check if collection is different from std::vector
          } else {
             TClass* clm = TClass::GetClass(dmType);
             if (!clm) {
@@ -1696,7 +1695,7 @@ void TStreamerInfo::BuildOld()
    Int_t offset = 0;
    TMemberStreamer* streamer = 0;
 
-   Int_t sp = sizeof(void*);
+   constexpr size_t kSizeOfPtr = sizeof(void*);
 
    int nBaze = 0;
 
@@ -1968,8 +1967,8 @@ void TStreamerInfo::BuildOld()
             offset += asize;
             element->Init(this);
             continue;
-         }
-      }
+         } // if element is of type TStreamerBase or not.
+      } // if (element->IsBase())
 
       // If we get here, this means that we looked at all the base classes.
       if (shouldHaveInfoLoc && fNVirtualInfoLoc==0) {
@@ -2070,7 +2069,7 @@ void TStreamerInfo::BuildOld()
                element->SetSize(dsize*narr);
             }
          }
-      }
+      } // Class corresponding to StreamerInfo is emulated or not.
 
       // Now let's deal with Schema evolution
       Int_t newType = -1;
@@ -2399,8 +2398,8 @@ void TStreamerInfo::BuildOld()
             asize = element->GetSize();
          }
          // align the non-basic data types (required on alpha and IRIX!!)
-         if ((offset % sp) != 0) {
-            offset = offset - (offset % sp) + sp;
+         if ((offset % kSizeOfPtr) != 0) {
+            offset = offset - (offset % kSizeOfPtr) + kSizeOfPtr;
          }
          element->SetOffset(offset);
          offset += asize;
@@ -3044,6 +3043,14 @@ void TStreamerInfo::ComputeSize()
    fSize = element ? element->GetOffset() + element->GetSize() : 0;
    if (fNVirtualInfoLoc > 0 && (fVirtualInfoLoc[0]+sizeof(TStreamerInfo*)) >= (ULong_t)fSize) {
       fSize = fVirtualInfoLoc[0] + sizeof(TStreamerInfo*);
+   }
+
+   // On some platform and in some case of layout non-basic data types needs
+   // to be aligned.  So let's be on the safe side and align on the size of
+   // the pointers.  (Question: is that the right thing on x32 ABI ?)
+   constexpr size_t kSizeOfPtr = sizeof(void*);
+   if ((fSize % kSizeOfPtr) != 0) {
+      fSize = fSize - (fSize % kSizeOfPtr) + kSizeOfPtr;
    }
 }
 
