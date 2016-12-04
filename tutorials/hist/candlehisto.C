@@ -29,28 +29,47 @@ void candlehisto()
       char str[16];
       sprintf(str,"CANDLEX%d",i);
       TH2I * myhist = (TH2I*)h1->DrawCopy(str);
-      myhist->SetFillColor(kGray);
+      //myhist->SetFillColor(kGray);
       myhist->SetTitle(str);
    }
-/*
-   TCanvas *c2 = new TCanvas("c2","Candle Individual",1200,800);
-   c2->Divide(3,2);
-   char myopt[16][8] = {"1000000","2000000","3000000","1112111","112111","112111","111","311","301","1111","2321","12111","112111","212111","312111"};
-   for (int i = 0; i < 5; i++) {
-      c2->cd(i+1);
+   
+   TCanvas *c2 = new TCanvas("c2","Violin Presets",1200,800);
+   c2->Divide(2,1);
+   
+   for (int i = 1; i < 3; i++) {
+      c2->cd(i);
+      char str[16];
+      sprintf(str,"VIOLINX%d",i);
+      TH2I * myhist = (TH2I*)h1->DrawCopy(str);
+      myhist->SetFillColor(kGray+2);
+   }
+      
+
+   TCanvas *c3 = new TCanvas("c3","Playing with candle and violin-options",1200,800);
+   c3->Divide(3,2);
+   char myopt[6][16] = {"1000000","2000000","3000000","1112111","112111","112111"};
+   for (int i = 0; i < 6; i++) {
+      c3->cd(i+1);
       char str[16];
       sprintf(str, "candlex(%s)",myopt[i]);
       TH2I * myhist = (TH2I*)h1->DrawCopy(str);
       myhist->SetFillColor(kYellow);
       if (i == 4) {
-		  TH2I * myhist2 = (TH2I*)h1->DrawCopy("candlex(1000000) same");
-		   myhist2->SetFillColor(kRed);
-	  }
-	
-	 
-	 //myhist->SetFillStyle(0);
-	//myhist->SetBarWidth(1.5);
+         TH2I * myhist2 = (TH2I*)h1->DrawCopy("candlex(1000000) same");
+         myhist2->SetFillColor(kRed);
+      }
+   if (i == 5) {
+         myhist->SetBarWidth(0.2);
+         myhist->SetBarOffset(0.25);
+         TH2I * myhist2 = (TH2I*)h1->DrawCopy("candlex(2000000) same");
+         myhist2->SetFillColor(kRed);
+         myhist2->SetBarWidth(0.6);
+         myhist2->SetBarOffset(-0.5);
+      }
+
+
+      //myhist->SetFillStyle(0);
+      //myhist->SetBarWidth(1.5);
       myhist->SetTitle(str);
    }
-   */
 }
