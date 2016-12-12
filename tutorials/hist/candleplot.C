@@ -1,5 +1,6 @@
 /// \file
 /// \ingroup tutorial_hist
+/// \notebook
 /// Example of candle plot with 2-D histograms.
 ///
 /// \macro_image
@@ -39,12 +40,10 @@ void candleplot() {
    h2->SetLineColor(kRed);
    h2->SetFillColor(kGreen);
 
-
    TCanvas *c1 = new TCanvas();
 
    h1->Draw("candle2");
    h2->Draw("candle3 same");
-
 
    gPad->BuildLegend(0.78,0.695,0.980,0.935,"","f");
 }

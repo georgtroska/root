@@ -30,8 +30,6 @@ TCandle is the "painter class" of the box plots. Therefore it is never used
 directly to draw a candle.
 */
 
-
-
 ////////////////////////////////////////////////////////////////////////////////
 /// TCandle default constructor.
 
@@ -49,17 +47,17 @@ TCandle::TCandle()
    fWhiskerUp     = 0.;
    fWhiskerDown   = 0.;
    fNDatapoints   = 0;
-   fDismiss = 0;
+   fDismiss       = 0;
    fLogX          = 0;
    fLogY          = 0;
-   fNDrawPoints     = 0;
+   fNDrawPoints   = 0;
    fNHistoPoints  = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// TCandle constructor for raw-data candles.
 
-TCandle::TCandle(const Double_t candlePos, const Double_t candleWidth, Long64_t n, Double_t * points) 
+TCandle::TCandle(const Double_t candlePos, const Double_t candleWidth, Long64_t n, Double_t * points)
    : TAttLine(), TAttFill(), TAttMarker()
 {
    //Preliminary values only, need to be calculated before paint
@@ -81,9 +79,9 @@ TCandle::TCandle(const Double_t candlePos, const Double_t candleWidth, Long64_t 
    fOption        = kNoOption;
    fLogX          = 0;
    fLogY          = 0;
-   fNDrawPoints     = 0;
+   fNDrawPoints   = 0;
    fNHistoPoints  = 0;
-   
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -111,7 +109,7 @@ TCandle::TCandle(const Double_t candlePos, const Double_t candleWidth, TH1D *pro
    fOption        = kNoOption;
    fLogX          = 0;
    fLogY          = 0;
-   fNDrawPoints     = 0;
+   fNDrawPoints   = 0;
    fNHistoPoints  = 0;
 
 }
@@ -130,7 +128,7 @@ TCandle::~TCandle() {
 int TCandle::ParseOption(char * opt) {
    fOption = kNoOption;
    char *l;
-   
+
    l = strstr(opt,"CANDLE");
    if (l) {
       const CandleOption fallbackCandle = (CandleOption)(kBox + kMedianLine + kMeanCircle + kWhiskerAll + kAnchor);
@@ -176,7 +174,7 @@ int TCandle::ParseOption(char * opt) {
          if (brOpen && brClose) {
             useIndivOption = true;
             bool isHorizontal = IsHorizontal();
-            strncpy(indivOption, brOpen, brClose-brOpen +1); //Now the string "(....)" including brackets is in this array
+            strlcpy(indivOption, brOpen, brClose-brOpen+2); //Now the string "(....)" including brackets is in this array
             sscanf(indivOption,"(%d)", (int*) &fOption);
             if (isHorizontal) {fOption = (CandleOption)(fOption + kHorizontal);}
             strncpy(brOpen,"                ",brClose-brOpen+1); //Cleanup
@@ -188,7 +186,7 @@ int TCandle::ParseOption(char * opt) {
          fOption = fallbackCandle;
       }
    }
-   
+
    l = strstr(opt,"VIOLIN");
    if (l) {
       const CandleOption fallbackCandle = (CandleOption)(kMeanCircle + kWhiskerAll + kHistoViolin + kHistoZeroIndicator);
@@ -238,7 +236,7 @@ int TCandle::ParseOption(char * opt) {
          fOption = fallbackCandle;
       }
    }
-   
+
    fIsCalculated = false;
    return fOption;
 
@@ -248,19 +246,19 @@ int TCandle::ParseOption(char * opt) {
 /// Calculates all values needed by the candle definition depending on the
 /// candle options.
 
-void TCandle::Calculate() {   
+void TCandle::Calculate() {
    //Reset everything
    fNDrawPoints = 0;
    fNHistoPoints = 0;
-   
+
    Bool_t swapXY = IsOption(kHorizontal);
    Bool_t doLogY = (!(swapXY) && fLogY) || (swapXY && fLogX);
    Bool_t doLogX = (!(swapXY) && fLogX) || (swapXY && fLogY);
-   
+
    //Will be min and max values of raw-data
    Double_t min = 1e15;
    Double_t max = -1e15;
-  
+
    // Determining the quantiles
    Double_t *prob = new Double_t[5];
    prob[0]=1E-15; prob[1]=0.25; prob[2]=0.5; prob[3]=0.75; prob[4]=1-1E-15;
@@ -268,10 +266,10 @@ void TCandle::Calculate() {
    quantiles[0]=0.; quantiles[1]=0.; quantiles[2] = 0.; quantiles[3] = 0.; quantiles[4] = 0.;
    if (!fIsRaw && fProj) { //Need a calculation for a projected histo
       if (((IsOption(kHistoLeft)) || (IsOption(kHistoRight)) || (IsOption(kHistoViolin))) && fProj->GetNbinsX() > 500) {
-         //When using the histooption the number of bins of the projection is 
-         //limited because of the arrayspace defined by kNMAXPOINTS.
-         //So the histo is rebinned, that it can be displayed at any time.
-         // Finer granularity is not usefull anyhow
+         // When using the histooption the number of bins of the projection is
+         // limited because of the array space defined by kNMAXPOINTS.
+         // So the histo is rebinned, that it can be displayed at any time.
+         // Finer granularity is not useful anyhow
          int divideBy = ((fProj->GetNbinsX() - 1)/((kNMAXPOINTS-10)/4))+1;
          fProj->RebinX(divideBy);
       }
@@ -293,7 +291,7 @@ void TCandle::Calculate() {
    fMedian = quantiles[2];
    Double_t iqr = fBoxUp-fBoxDown;
    Int_t nOutliers = 0;
-   
+
    if (IsOption(kWhisker15)) { // Improved whisker definition, with 1.5*iqr
       if (!fIsRaw && fProj) { //Need a calculation for a projected histo
          int bin = fProj->FindBin(fBoxDown-1.5*iqr);
@@ -316,7 +314,7 @@ void TCandle::Calculate() {
          }
       }
    }
-   
+
    if (!fIsRaw && fProj) { //Need a calculation for a projected histo
       fMean = fProj->GetMean();
       fMedianErr = 1.57*iqr/sqrt(fProj->GetEntries());
@@ -337,7 +335,7 @@ void TCandle::Calculate() {
 
    delete [] prob;
    delete [] quantiles;
-   
+
    //Doing the outliers and other single points to show
    if (GetCandleOption(5) > 0) { //Draw outliers
       TRandom2 random;
@@ -350,7 +348,7 @@ void TCandle::Calculate() {
             // Either show them only outside the whiskers, or all of them
             if (fProj->GetBinContent(bin) > 0 && (fProj->GetBinCenter(bin) < fWhiskerDown || fProj->GetBinCenter(bin) > fWhiskerUp || (GetCandleOption(5) > 1)) ) {
                Double_t scaledBinContent = fProj->GetBinContent(bin)/myScale;
-               if (scaledBinContent >0 && scaledBinContent < 1) scaledBinContent = 1; //Outliers have a typical bincontent between 0 and 1, when scaling they would disappear
+               if (scaledBinContent >0 && scaledBinContent < 1) scaledBinContent = 1; //Outliers have a typical bin content between 0 and 1, when scaling they would disappear
                for (int j=0; j < (int)scaledBinContent; j++) {
                   if (fNDrawPoints > maxOutliers) break;
                   if (IsOption(kPointsAllScat)) { //Draw outliers and "all" values scattered
@@ -393,7 +391,7 @@ void TCandle::Calculate() {
             if (fNDatapoints > maxOutliers/2) myScale = fNDatapoints/(maxOutliers/2.);
          }
          fNDrawPoints = 0;
-         for (int i = 0; i < fNDatapoints; i++ ) { 
+         for (int i = 0; i < fNDatapoints; i++ ) {
             Double_t myData = fDatapoints[i];
             Double_t maxScatter = (fWhiskerUp-fWhiskerDown)/100;
             if (!(i % (int) myScale == 0 )) continue; //If the amount of data is too large take only every 2nd or 3rd to reduce the amount
@@ -401,10 +399,10 @@ void TCandle::Calculate() {
             if (myData < fWhiskerDown || myData > fWhiskerUp || (GetCandleOption(5) > 1)) {
                if (IsOption(kPointsAllScat)) { //Draw outliers and "all" values scattered
                   fDrawPointsX[fNDrawPoints] = fPosCandleAxis - fCandleWidth/2. + fCandleWidth*random.Rndm();
-                  fDrawPointsY[fNDrawPoints] = myData + (random.Rndm() - 0.5)*maxScatter; //random +- 0.5 of candleheight
+                  fDrawPointsY[fNDrawPoints] = myData + (random.Rndm() - 0.5)*maxScatter; //random +- 0.5 of candle-height
                } else { //Draw them in the "candle line"
-                  fDrawPointsX[fNDrawPoints] = fPosCandleAxis; 
-                  fDrawPointsY[fNDrawPoints] = myData + (random.Rndm() - 0.5)*maxScatter; //random +- 0.5 of candleheight
+                  fDrawPointsX[fNDrawPoints] = fPosCandleAxis;
+                  fDrawPointsY[fNDrawPoints] = myData + (random.Rndm() - 0.5)*maxScatter; //random +- 0.5 of candle-height
                }
                if (swapXY) {
                   //Swap X and Y
@@ -414,21 +412,24 @@ void TCandle::Calculate() {
                   fDrawPointsY[fNDrawPoints] = keepCurrently;
                }
                // Continue fMeans, that fNDrawPoints is not increased, so that value will not be shown
-               if (doLogX) 
-                  if (fDrawPointsX[fNDrawPoints] > 0) fDrawPointsX[fNDrawPoints] = TMath::Log10(fDrawPointsX[fNDrawPoints]); else continue;
-               if (doLogY) 
-                  if (fDrawPointsY[fNDrawPoints] > 0) fDrawPointsY[fNDrawPoints] = TMath::Log10(fDrawPointsY[fNDrawPoints]); else continue;
+               if (doLogX) {
+                  if (fDrawPointsX[fNDrawPoints] > 0) fDrawPointsX[fNDrawPoints] = TMath::Log10(fDrawPointsX[fNDrawPoints]);
+                  else continue;
+               }
+               if (doLogY) {
+                  if (fDrawPointsY[fNDrawPoints] > 0) fDrawPointsY[fNDrawPoints] = TMath::Log10(fDrawPointsY[fNDrawPoints]);
+                  else continue;
+               }
                fNDrawPoints++;
                if (fNDrawPoints > maxOutliers) { //Should never happen, due to myScale!!!
                   Error ("PaintCandlePlotRaw","Not possible to draw all outliers.");
                   break;
                }
             }
-            
          }
       }
    }
-   
+
    if (IsOption(kHistoRight) || IsOption(kHistoLeft) || IsOption(kHistoViolin)) {
       //We are starting with kHistoRight, left will be modified from right later
       if (fIsRaw) { //This is a raw-data candle
@@ -478,11 +479,11 @@ void TCandle::Calculate() {
             if (fHistoPointsY[fNHistoPoints -1] > 0) fHistoPointsY[fNHistoPoints - 1] = TMath::Log10(fHistoPointsY[fNHistoPoints - 1]); else continue;
             if (fHistoPointsY[fNHistoPoints] > 0) fHistoPointsY[fNHistoPoints] = TMath::Log10(fHistoPointsY[fNHistoPoints]); else continue;
          }
-         
+
          fNHistoPoints++;
          if (fProj->GetBinContent(bin) > 0) lastNonZero = fNHistoPoints;
       }
-      
+
       fHistoPointsX[fNHistoPoints] = fPosCandleAxis;
       fHistoPointsY[fNHistoPoints] = fHistoPointsY[fNHistoPoints-1];
       fNHistoPoints = lastNonZero+1; //+1 so that the line down to 0 is added as well
@@ -500,8 +501,8 @@ void TCandle::Calculate() {
          fNHistoPoints *= 2;
       }
    }
-   
-   
+
+
    fIsCalculated = true;
 }
 
@@ -522,8 +523,6 @@ void TCandle::Paint(Option_t *)
 
    Double_t dimLeft = fPosCandleAxis-0.5*fCandleWidth;
    Double_t dimRight = fPosCandleAxis+0.5*fCandleWidth;
-   
- 
 
    TAttLine::Modify();
    TAttFill::Modify();
@@ -534,8 +533,7 @@ void TCandle::Paint(Option_t *)
    Bool_t doLogX = (!(swapXY) && fLogX) || (swapXY && fLogY);
 
    // From now on this is real painting only, no calculations anymore
-   
-   
+
    if (IsOption(kHistoZeroIndicator)) {
       SetLineColor(saveFillColor);
       TAttLine::Modify();
@@ -543,7 +541,7 @@ void TCandle::Paint(Option_t *)
       SetLineColor(saveLineColor);
       TAttLine::Modify();
    }
-   
+
 
    if (IsOption(kHistoRight) || IsOption(kHistoLeft) || IsOption(kHistoViolin)) {
       if (IsOption(kHistoZeroIndicator) && (saveFillStyle != 0)) {
@@ -562,7 +560,6 @@ void TCandle::Paint(Option_t *)
          TAttLine::Modify();
       }
    }
-   
 
    if (IsOption(kBox)) { // Draw a simple box
      if (IsOption(kMedianNotched)) { // Check if we have to draw a box with notches
@@ -576,7 +573,7 @@ void TCandle::Paint(Option_t *)
          Double_t y[] = {fBoxDown,  fBoxUp, fBoxUp,  fBoxDown,   fBoxDown};
          PaintBox(5, x, y, swapXY);
       }
-   } 
+   }
 
    if (IsOption(kAnchor)) { // Draw the anchor line
       PaintLine(dimLeft, fWhiskerUp, dimRight, fWhiskerUp, swapXY);
@@ -593,7 +590,7 @@ void TCandle::Paint(Option_t *)
    }  else if ((IsOption(kWhiskerAll) && IsOption(kHistoZeroIndicator)) || IsOption(kWhisker15) ) { // Whiskers without dashing, better whisker definition, or forced when using zero line
       PaintLine(fPosCandleAxis, fWhiskerUp, fPosCandleAxis, fBoxUp, swapXY);
       PaintLine(fPosCandleAxis, fBoxDown, fPosCandleAxis, fWhiskerDown, swapXY);
-   } 
+   }
 
    if (IsOption(kMedianLine)) { // Paint fMedian as a line
       PaintLine(dimLeft, fMedian, dimRight, fMedian, swapXY);
@@ -626,7 +623,8 @@ void TCandle::Paint(Option_t *)
       TAttMarker::Modify();
 
    }
-  if (IsOption(kMeanCircle)) { // Paint fMean as a circle
+
+   if (IsOption(kMeanCircle)) { // Paint fMean as a circle
       Double_t myMeanX[1], myMeanY[1];
       if (!swapXY) {
          myMeanX[0] = fPosCandleAxis;
@@ -671,16 +669,15 @@ void TCandle::Paint(Option_t *)
    // only the datapoints outside the whiskers are shown.
    // One can show them in one row as crosses, or scattered randomly. If activated
    // all datapoint are shown in the same way
-   
+
    if (GetCandleOption(5) > 0) { //Draw outliers
-     if (IsOption(kPointsAllScat)) { //Draw outliers and "all" values scattered
-    SetMarkerStyle(0);
+      if (IsOption(kPointsAllScat)) { //Draw outliers and "all" values scattered
+         SetMarkerStyle(0);
       } else {
-    SetMarkerStyle(5);
+         SetMarkerStyle(5);
       }
       TAttMarker::Modify();
       gPad->PaintPolyMarker(fNDrawPoints,fDrawPointsX, fDrawPointsY);
-      
    }
 }
 
@@ -720,8 +717,7 @@ void TCandle::PaintBox(Int_t nPoints, Double_t *x, Double_t *y, Bool_t swapXY)
       }
    }
    if (!swapXY) {
-     gPad->PaintFillArea(nPoints, x, y);
-
+      gPad->PaintFillArea(nPoints, x, y);
       gPad->PaintPolyLine(nPoints, x, y);
    } else {
       gPad->PaintFillArea(nPoints, y, x);
@@ -771,40 +767,30 @@ void TCandle::Streamer(TBuffer &R__b)
 ////////////////////////////////////////////////////////////////////////////////
 /// The coordinates in the TParallelCoordVar-class are in Pad-Coordinates, so we need to convert them
 
-void TCandle::ConvertToPadCoords(Double_t minAxis, Double_t maxAxis, Double_t axisMinCoord, Double_t axisMaxCoord, Double_t fMinInit, Double_t fMaxInit) {
-   
-   /* THIS IS UGLY - WE SHOULD DEFINE A BETTER COORDINATE SYSTEM IN THE PAD */
-   
-    if (!fIsCalculated) Calculate();
-   Double_t a,b,maxinit,mininit;
+void TCandle::ConvertToPadCoords(Double_t minAxis, Double_t maxAxis, Double_t axisMinCoord, Double_t axisMaxCoord)
+{
+   if (!fIsCalculated) Calculate();
+   Double_t a,b;
    if (fLogY) {
       a = TMath::Log10(minAxis);
       b = TMath::Log10(maxAxis/minAxis);
-      if(fMinInit > 0) mininit = TMath::Log10(fMinInit);
-      else             mininit = TMath::Log10(axisMinCoord);
-      maxinit = TMath::Log10(fMaxInit);
    } else {
       a = minAxis;
       b = maxAxis-minAxis;
-      mininit = fMinInit;
-      maxinit = fMaxInit;
    }
-   
-   //std::cout << "DOING UGLY CONVERSION! PLEASE FIXME!!!" << std::endl;
-   //This is really ugly. The TParallelCoorVar-stuff needs to be reimplemented in histo-style
-   fMean = axisMinCoord + ((fMean-a)/b)*(axisMaxCoord-axisMinCoord);
-   fMedian = axisMinCoord + ((fMedian-a)/b)*(axisMaxCoord-axisMinCoord);
-   fMedianErr  = axisMinCoord + ((fMedianErr-a)/b)*(axisMaxCoord-axisMinCoord);
-   fBoxUp  = axisMinCoord + ((fBoxUp-a)/b)*(axisMaxCoord-axisMinCoord);
-   fBoxDown  = axisMinCoord + ((fBoxDown-a)/b)*(axisMaxCoord-axisMinCoord);
-   fWhiskerUp  = axisMinCoord + ((fWhiskerUp-a)/b)*(axisMaxCoord-axisMinCoord);
-   fWhiskerDown  = axisMinCoord + ((fWhiskerDown-a)/b)*(axisMaxCoord-axisMinCoord);
-   
+
+   fMean        = axisMinCoord + ((fMean-a)/b)*(axisMaxCoord-axisMinCoord);
+   fMedian      = axisMinCoord + ((fMedian-a)/b)*(axisMaxCoord-axisMinCoord);
+   fMedianErr   = axisMinCoord + ((fMedianErr-a)/b)*(axisMaxCoord-axisMinCoord);
+   fBoxUp       = axisMinCoord + ((fBoxUp-a)/b)*(axisMaxCoord-axisMinCoord);
+   fBoxDown     = axisMinCoord + ((fBoxDown-a)/b)*(axisMaxCoord-axisMinCoord);
+   fWhiskerUp   = axisMinCoord + ((fWhiskerUp-a)/b)*(axisMaxCoord-axisMinCoord);
+   fWhiskerDown = axisMinCoord + ((fWhiskerDown-a)/b)*(axisMaxCoord-axisMinCoord);
+
    for (int i = 0; i < fNDrawPoints; i++) {
       fDrawPointsY[i] = axisMinCoord + ((fDrawPointsY[i]-a)/b)*(axisMaxCoord-axisMinCoord);
   }
    for (int i = 0; i < fNHistoPoints; i++) {
       fHistoPointsY[i] = axisMinCoord + ((fHistoPointsY[i]-a)/b)*(axisMaxCoord-axisMinCoord);
    }
-   
 }

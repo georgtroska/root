@@ -380,7 +380,6 @@ the histograms by calling:
     gPad->RedrawAxis();
 
 
-
 ### <a name="HP05"></a> Giving titles to the X, Y and Z axis
 
 
@@ -1044,6 +1043,35 @@ Begin_Macro(source)
 }
 End_Macro
 
+\since **ROOT version 6.09/01:**
+When the option SAME (or "SAMES") is used with the option COL, the boxes' color
+are computing taking the previous plots into account. The range along the Z axis
+is imposed by the first plot (the one without option SAME); therefore the order
+in which the plots are done is relevant.
+
+Begin_Macro(source)
+{
+   c = new TCanvas("c","Example of col plots with option SAME",200,10,700,500);
+   TH2F *h1 = new TH2F("h1","h1",40,-3,3,40,-3,3);
+   TH2F *h2 = new TH2F("h2","h2",40,-3,3,40,-3,3);
+   TH2F *h3 = new TH2F("h3","h3",40,-3,3,40,-3,3);
+   TH2F *h4 = new TH2F("h4","h4",40,-3,3,40,-3,3);
+   h1->SetBit(TH1::kNoStats);
+   for (Int_t i=0;i<5000;i++) {
+      double x,y;
+      gRandom->Rannor(x,y);
+      if(x>0 && y>0) h1->Fill(x,y,4);
+      if(x<0 && y<0) h2->Fill(x,y,3);
+      if(x>0 && y<0) h3->Fill(x,y,2);
+      if(x<0 && y>0) h4->Fill(x,y,1);
+   }
+   h1->Draw("colz");
+   h2->Draw("col same");
+   h3->Draw("col same");
+   h4->Draw("col same");
+}
+End_Macro
+
 The option `COL` can be combined with the option `POL`:
 
 Begin_Macro(source)
@@ -1089,7 +1117,7 @@ bins with zero content. The COL2 and COLZ2 options color these bins the color of
 The mechanism behind Candle plots and Violin plots is very similar. Because of this they are
 implemented in the same class TCandle. The keywords CANDLE or VIOLIN will initiate the drawing of
 the corresponding plots. Followed by the keyword the user can select a plot direction (X or V for
-vertcal projections, or Y or H for horizontal projections) and/or predifined definitions
+vertical projections, or Y or H for horizontal projections) and/or predefined definitions
 (1-6 for candles, 1-2 for violins). The order doesn't matter. Default is X and 1.
 
 Instead of using the predefined representations, the candle and violin parameters can be
@@ -1133,7 +1161,7 @@ Where:
   -  `p = 1`;  only outliers are drawn
   -  `p = 2`;  all datapoints are drawn
   -  `p = 3`:  all datapoints are drawn scattered
-  
+
   -  `h = 0`;  no histogram is drawn
   -  `h = 1`;  histogram at the left or bottom side is drawn
   -  `h = 2`;  histogram at the right or top side is drawn
@@ -1141,7 +1169,7 @@ Where:
 
   -  `z = 0`;  no zero indicator line is drawn
   -  `z = 1`;  zero indicator line is drawn.
- 
+
 As one can see all individual options for both candle and violin plots can be accessed by this
 mechanism. In deed the keywords CANDLE(<option-string>) and VIOLIN(<option-string>) have the same
 meaning. So you can parametrise an option-string for a candle plot and use the keywords VIOLIN and
@@ -1304,7 +1332,7 @@ Depending on the configuration the points can have different meanings:
     one can show all values as a scatter plot instead by choosing p=3. The points will be
     drawn as dots and will be scattered within the width of the candle. The color
     of the points will be the color of the candle-chart.
-    
+
 ##### Other Options
 Is is possible to combine all options of candle and violin plots with each other. E.g. a box-plot
 with a histogram.
@@ -1393,30 +1421,30 @@ X (option `VIOLIN` or `VIOLINX`) or Y (option `VIOLINY`).
 
 ##### The histogram
 The histogram is typically drawn to both directions with respect to the middle-line of the
-corresponding bin. This can be achivied by using h=3. It is possible to draw a histogram only to
+corresponding bin. This can be achieved by using h=3. It is possible to draw a histogram only to
 one side (h=1, or h=2).
-The maximum number of bins in the histogram is limited to 500, if the number of bins in the used 
-histogram is higher it will be rebinned automatically. The maximum height of the histogram can 
+The maximum number of bins in the histogram is limited to 500, if the number of bins in the used
+histogram is higher it will be rebinned automatically. The maximum height of the histogram can
 be modified by using SetBarWidth() and the position can be changed with SetBarOffset().
 A solid fill style is recommended.
 
 ##### The zero indicator line
-Typical for violin charts is a line in the background over the whole histogram indicating 
-the bins with zero entries. The zero indicator line can be activated with z=1. The line color 
+Typical for violin charts is a line in the background over the whole histogram indicating
+the bins with zero entries. The zero indicator line can be activated with z=1. The line color
 will always be the same as the fill-color of the histogram.
 
 ##### The Mean
-The Mean is illustrated with the same mechanismn as used for candle plots. Usually a circle is used.
+The Mean is illustrated with the same mechanism as used for candle plots. Usually a circle is used.
 
 ##### Whiskers
 The whiskers are illustrated by the same mechanism as used for candle plots. There is only one
 difference. When using the simple whisker definition (w=1) and the zero indicator line (z=1), then
 the whiskers will be forced to be solid (usually hashed)
- 
+
 ##### Points
 The points are illustrated by the same mechanism as used for candle plots. E.g. VIOLIN2 uses
 better whisker definition (w=2) and outliers (p=1).
- 
+
 ##### Other options
 It is possible to combine all options of candle or violin plots with each other. E.g. a violin plot
 including a box-plot.
@@ -1424,9 +1452,9 @@ including a box-plot.
 #### How to use the violin-plots drawing option
 
 There are two predefined violin-plot representations:
-  - "VIOLINX1": Standard violin (histogram, mean, whisker over full distribution, 
+  - "VIOLINX1": Standard violin (histogram, mean, whisker over full distribution,
                 zero indicator line)
-  - "VIOLINX2": Line VIOLINX1 buth with better whisker definition + outliers.
+  - "VIOLINX2": Line VIOLINX1 both with better whisker definition + outliers.
 
 A solid fill style is recommended for this plot (as opposed to a hollow or
 hashed style).
@@ -1457,12 +1485,10 @@ Begin_Macro(source)
 }
 End_Macro
 
-Illustrating one histo per bin is very nice to illustrate a time development of a certain value:
- 
+The next example illustrates a time development of a certain value:
+
 Begin_Macro(source)
-{
 ../../../tutorials/hist/candledecay.C
-}
 End_Macro
 
 
@@ -1830,7 +1856,7 @@ Begin_Macro(source)
    hlego3->SetFillColor(kRed);
    hlego3->Draw("LEGO3");
    return c2;
- }
+}
 End_Macro
 
 The following example shows a 2D histogram plotted with the option
@@ -4034,7 +4060,6 @@ void THistPainter::Paint(Option_t *option)
          Hoption.Logy = logysav;
          Hoption.Logz = logzsav;
       }
-
       return;
    }
 
@@ -4126,8 +4151,7 @@ paintstat:
    gCurrentHist = oldhist;
    delete [] fXbuf; fXbuf = 0;
    delete [] fYbuf; fYbuf = 0;
-   
-   
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4802,7 +4826,6 @@ void THistPainter::PaintCandlePlot(Option_t *)
    TH1D *hproj;
    TH2D *h2 = (TH2D*)fH;
 
-
    TCandle myCandle;
    myCandle.SetOption((TCandle::CandleOption)Hoption.Candle);
    myCandle.SetMarkerColor(fH->GetLineColor());
@@ -4987,6 +5010,8 @@ void THistPainter::PaintColorLevelsFast(Option_t*)
    // the appropriate value to use.
    Double_t zmin = fH->GetMinimumStored();
    Double_t zmax = fH->GetMaximumStored();
+   Double_t originalZMin = zmin;
+   Double_t originalZMax = zmax;
    if ((zmin == -1111) && (zmax == -1111)) {
       fH->GetMinimumAndMaximum(zmin, zmax);
       fH->SetMinimum(zmin);
@@ -5148,10 +5173,16 @@ void THistPainter::PaintColorLevelsFast(Option_t*)
 
    if (Hoption.Zscale) PaintPalette();
 
+   // Reset the maximum and minimum values to their original values
+   // when this function was called. If we don't do this, an initial
+   // value of -1111 will be replaced with the true max or min values.
+   fH->SetMinimum(originalZMin);
+   fH->SetMaximum(originalZMax);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// [Control function to draw a 2D histogram as a color plot.](#HP14)
+
 void THistPainter::PaintColorLevels(Option_t*)
 {
    Double_t z, zc, xk, xstep, yk, ystep, xlow, xup, ylow, yup;
@@ -5166,13 +5197,35 @@ void THistPainter::PaintColorLevels(Option_t*)
       dz = zmax - zmin;
    }
 
-   if (Hoption.Logz) {
-      if (zmin > 0) {
-         zmin = TMath::Log10(zmin);
-         zmax = TMath::Log10(zmax);
+   // In case of option SAME, zmin and zmax values are taken from the
+   // first plotted 2D histogram.
+   if (Hoption.Same) {
+      TH2 *h2;
+      TIter next(gPad->GetListOfPrimitives());
+      while ((h2 = (TH2 *)next())) {
+         if (!h2->InheritsFrom(TH2::Class())) continue;
+         zmin = h2->GetMinimum();
+         zmax = h2->GetMaximum();
+         if (Hoption.Logz) {
+            if (zmin <= 0) {
+               zmin = TMath::Log10(zmax*0.001);
+            } else {
+               zmin = TMath::Log10(zmin);
+            }
+            zmax = TMath::Log10(zmax);
+         }
          dz = zmax - zmin;
-      } else {
-         return;
+         break;
+      }
+   } else {
+      if (Hoption.Logz) {
+         if (zmin > 0) {
+            zmin = TMath::Log10(zmin);
+            zmax = TMath::Log10(zmax);
+            dz   = zmax - zmin;
+         } else {
+            return;
+         }
       }
    }
 
@@ -8596,7 +8649,6 @@ void THistPainter::PaintTable(Option_t *option)
          if (Hoption.Text)         PaintText(option);
          if (Hoption.Error >= 100) Paint2DErrors(option);
          if (Hoption.Candle)       PaintCandlePlot(option);
-
       }
       if (Hoption.Lego)                     PaintLego(option);
       if (Hoption.Surf && !Hoption.Contour) PaintSurface(option);

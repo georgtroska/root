@@ -27,7 +27,6 @@
 #include "TFrame.h"
 #include "TCanvas.h"
 #include "TMarker.h"
-#include "TCandle.h"
 
 ClassImp(TParallelCoordVar)
 
@@ -552,18 +551,27 @@ void TParallelCoordVar::Init()
 
 void TParallelCoordVar::Paint(Option_t* /*option*/)
 {
-   if (TestBit(kShowBox)) PaintBoxPlot(TCandle::CandleOption(2112311)); //paint box and histo
-   else PaintBoxPlot(TCandle::kHistoRight); //paint only histo at the right
+   PaintHistogram();
+   if (TestBit(kShowBox)) PaintBoxPlot();
    PaintLabels();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Paint the boxes in the case of a candle chart.
 
-void TParallelCoordVar::PaintBoxPlot(TCandle::CandleOption opt)
+void TParallelCoordVar::PaintBoxPlot()
 {
-   
+   TLine *line = new TLine();
+   line->SetLineColor(GetLineColor());
+   line->SetLineWidth(1);
+   TBox *box = new TBox();
+   box->SetLineWidth(1);
+   box->SetLineColor(GetLineColor());
+   box->SetLineStyle(1);
+   box->SetFillStyle(0);
+
    TFrame* frame = gPad->GetFrame();
+
    Double_t boxSize;
    if (fParallel->GetNvar() > 1) {
       if (fX1==fX2) boxSize = fHistoHeight*((frame->GetY2()-frame->GetY1())/(fParallel->GetNvar()-1));
@@ -571,45 +579,187 @@ void TParallelCoordVar::PaintBoxPlot(TCandle::CandleOption opt)
       if (boxSize >= 0.03) boxSize = 0.03;
    }
    else boxSize = 0.03;
-   
-   boxSize *=5;
-   
-   Long64_t first = fParallel->GetCurrentFirst();
-   Long64_t nentries = fParallel->GetCurrentN();
-   Double_t* val;
-   TCandle myCandle;
-   if (first==0 && nentries==fNentries) { //Without any selection take the array as it is
-      myCandle = TCandle(fX1,boxSize, fNentries, fVal);
-   } else { //Need to pass only the selection to TCandle
-      val = new Double_t[nentries];
-      Int_t selected = 0;
-      if(fMinInit<=0) {
-         for (Long64_t n=first;n<first+nentries;++n) {
-            if (fVal[n] >= fMinCurrent) {
-               val[selected] = fVal[n];
-               ++selected;
-            }
-         }
-      } else {
-         for (Long64_t n=first;n<first+nentries;++n) {
-            val[selected] = fVal[n];
-            ++selected;
-         }
-      }
-      myCandle = TCandle(fX1,boxSize, selected, val);
+
+   Double_t qua1,med,qua3,max,min;
+   Double_t a,b,maxinit,mininit;
+   if (TestBit(kLogScale)) {
+      a = TMath::Log10(fMinCurrent);
+      b = TMath::Log10(fMaxCurrent/fMinCurrent);
+      if(fMinInit > 0) mininit = TMath::Log10(fMinInit);
+      else             mininit = TMath::Log10(fMinCurrent);
+      maxinit = TMath::Log10(fMaxInit);
+   } else {
+      a = fMinCurrent;
+      b = fMaxCurrent-fMinCurrent;
+      mininit = fMinInit;
+      maxinit = fMaxInit;
    }
-      
-   myCandle.SetLineColor(kBlue);
-   myCandle.SetLineWidth(1);
-   myCandle.SetLineStyle(1);
-   myCandle.SetMarkerColor(kBlue);
-   char chopt[16];
-   sprintf(chopt,"CANDLE(%d)",(long)opt); // Need a possibility here, to pass a candle-option
-   myCandle.ParseOption(chopt);
-   myCandle.ConvertToPadCoords(fMinCurrent, fMaxCurrent, fY1, fY2, fMinInit, fMaxInit);
-   myCandle.Paint();
+   if(fX1==fX2) {
+      qua1 = fY1 + ((fQua1-a)/b)*(fY2-fY1);
+      qua3 = fY1 + ((fQua3-a)/b)*(fY2-fY1);
+      med  = fY1 + ((fMed-a)/b)*(fY2-fY1);
+      max  = fY1 + ((maxinit-a)/b)*(fY2-fY1);
+      min  = fY1 + ((mininit-a)/b)*(fY2-fY1);
+   } else {
+      qua1 = fX1 + ((fQua1-a)/b)*(fX2-fX1);
+      qua3 = fX1 + ((fQua3-a)/b)*(fX2-fX1);
+      med  = fX1 + ((fMed-a)/b)*(fX2-fX1);
+      max  = fX1 + ((maxinit-a)/b)*(fX2-fX1);
+      min  = fX1 + ((mininit-a)/b)*(fX2-fX1);
+   }
+
+   // min and max lines.
+   if (fX1==fX2) {
+      line->PaintLine(fX1-boxSize,min,fX1+boxSize,min);
+      line->PaintLine(fX2-boxSize,max,fX2+boxSize,max);
+   } else {
+      line->PaintLine(min,fY1-boxSize,min,fY1+boxSize);
+      line->PaintLine(max,fY2-boxSize,max,fY2+boxSize);
+   }
+
+   // lines from min and max to the box.
+   line->SetLineStyle(7);
+   if (fX1==fX2) {
+      if (min<frame->GetY1()) min = frame->GetY1();
+      if (max>frame->GetY2()) max = frame->GetY2();
+      line->PaintLine(fX1,min,fX1,qua1);
+      line->PaintLine(fX1,qua3,fX1,max);
+   } else {
+      if (min<frame->GetX1()) min = frame->GetX1();
+      if (max>frame->GetX2()) max = frame->GetX2();
+      line->PaintLine(min,fY1,qua1,fY2);
+      line->PaintLine(qua3,fY1,max,fY2);
+   }
+
+   // Box
+   if(fX1==fX2) box->PaintBox(fX1-boxSize,qua1,fX1+boxSize,qua3);
+   else box->PaintBox(qua1,fY1-boxSize,qua3,fY1+boxSize);
+
+   // Median line
+   line->SetLineStyle(1);
+   if(fX1==fX2) line->PaintLine(fX1-boxSize,med,fX1+boxSize,med);
+   else line->PaintLine(med,fY1-boxSize,med,fY1+boxSize);
+
+   // Paint average
+   if (!TestBit(kLogScale) || (TestBit(kLogScale) && fMean > 0)) {
+      Double_t mean;
+      if (TestBit(kLogScale)) mean = TMath::Log10(fMean);
+      else mean = fMean;
+      TMarker *mark = NULL;
+      if(fX1==fX2) mark = new TMarker(fX1,fY1 + ((mean-a)/b)*(fY2-fY1),24);
+      else         mark = new TMarker(fX1 + ((mean-a)/b)*(fX2-fX1),fY1,24);
+      mark->Paint();
+      delete mark;
+   }
+
+   delete line;
+   delete box;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+/// Paint the histogram on the axis.
+
+void TParallelCoordVar::PaintHistogram()
+{
+   Int_t i;
+
+   TFrame *frame = gPad->GetFrame();
+
+   if (!fHistogram) GetHistogram();
+
+   // Paint the axis body.
+   if (fHistoHeight!=0 && TestBit(kShowBarHisto)) {
+      // Paint the axis body using bar chart.
+      TBox *b = new TBox();
+      b->SetFillStyle(GetFillStyle());
+      b->SetFillColor(GetFillColor());
+      b->SetLineStyle(1);
+      b->SetLineColor(GetFillColor());
+      b->SetLineWidth(1);
+      Double_t hmin = fHistogram->GetMinimum();
+      Double_t hmax = fHistogram->GetMaximum();
+      if (fX1 == fX2) {
+         // Vertical case.
+         Double_t dy = (fY2-fY1)/fNbins;
+         Double_t dv = (fMaxCurrent - fMinCurrent)/fNbins;
+         Double_t v = fMinCurrent;
+         Double_t y1 = fY1,x2,y2;
+         for (i=1; i<=fNbins; i++) {
+            x2 = fX1+((fHistogram->GetBinContent(i)-hmin)/(hmax-hmin))*fHistoHeight*
+                 ((frame->GetX2()-frame->GetX1())/(fParallel->GetNvar()-1));
+            if(TestBit(kLogScale)) y2 = fY1 + (fY2-fY1)*(TMath::Log10((v+dv)/fMinCurrent)) / (TMath::Log10(fMaxCurrent/fMinCurrent));
+            else y2=y1+dy;
+            b->PaintBox(fX1,y1,x2,y2,"l");
+            y1=y2;
+            v += dv;
+         }
+      } else {
+         // Horizontal case.
+         Double_t dx = (fX2-fX1)/fNbins;
+         Double_t dv = (fMaxCurrent - fMinCurrent)/fNbins;
+         Double_t v = fMinCurrent;
+         Double_t x1 = fX1,x2,y2;
+         for (i=1; i<=fNbins; i++) {
+            y2 = fY1+((fHistogram->GetBinContent(i)-hmin)/(hmax-hmin))*fHistoHeight*((frame->GetY2()-frame->GetY1())/(fParallel->GetNvar()-1));
+            if(TestBit(kLogScale)) x2 = fX1 + (fX2-fX1)*(TMath::Log10((v+dv)/fMinCurrent)) / (TMath::Log10(fMaxCurrent/fMinCurrent));
+            else x2=x1+dx;
+            b->PaintBox(x1,fY1,x2,y2,"l");
+            x1=x2;
+            v+=dv;
+         }
+      }
+      delete b;
+   }
+   if (fHistoLW==0 && !TestBit(kShowBox)) {
+      // Paint the axis body as a simple line.
+      TLine* l = new TLine(fX1,fY1,fX2,fY2);
+      l->SetLineWidth(GetLineWidth());
+      l->SetLineColor(GetLineColor());
+      l->SetLineStyle(GetLineColor());
+      l->Paint();
+      delete l;
+   } else if (fHistoLW!=0){
+      // Paint the axis body using the color palette.
+      TLine *lb = new TLine();
+      lb->SetLineWidth(fHistoLW);
+      Double_t hmin = fHistogram->GetMinimum();
+      Double_t hmax = fHistogram->GetMaximum();
+      Int_t theColor;
+      Int_t ncolors = gStyle->GetNumberOfColors();
+      if (fX1 == fX2) {
+         // Vertical case.
+         Double_t dy = (fY2-fY1)/fNbins;
+         Double_t y1 = fY1,y2;
+         Double_t dv = (fMaxCurrent - fMinCurrent)/fNbins;
+         Double_t v = fMinCurrent;
+         for (i=1; i<=fNbins; i++) {
+            theColor = (Int_t)( ((fHistogram->GetBinContent(i)-hmin)/(hmax-hmin))*(ncolors-1) );
+            if(TestBit(kLogScale)) y2 = fY1 + (fY2-fY1)*(TMath::Log10((v+dv)/fMinCurrent)) / (TMath::Log10(fMaxCurrent/fMinCurrent));
+            else y2=y1+dy;
+            lb->SetLineColor(gStyle->GetColorPalette(theColor));
+            lb->PaintLine(fX1,y1,fX1,y2);
+            y1=y2;
+            v+=dv;
+         }
+      } else {
+         // Horizontal case.
+         Double_t dx = (fX2-fX1)/fNbins;
+         Double_t dv = (fMaxCurrent - fMinCurrent)/fNbins;
+         Double_t v = fMinCurrent;
+         Double_t x1 = fX1,x2;
+         for (i=1; i<=fNbins; i++) {
+            theColor = (Int_t)( ((fHistogram->GetBinContent(i)-hmin)/(hmax-hmin))*(ncolors-1) );
+            lb->SetLineColor(gStyle->GetColorPalette(theColor));
+            if(TestBit(kLogScale)) x2 = fX1 + (fX2-fX1)*(TMath::Log10((v+dv)/fMinCurrent)) / (TMath::Log10(fMaxCurrent/fMinCurrent));
+            else x2=x1+dx;
+            lb->PaintLine(x1,fY1,x2,fY1);
+            x1=x2;
+            v+=dv;
+         }
+      }
+      delete lb;
+   }
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Paint the axis labels and titles.

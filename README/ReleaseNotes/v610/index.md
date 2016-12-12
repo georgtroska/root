@@ -110,6 +110,23 @@ The following interfaces have been removed, after deprecation in v6.08.
 - In `TGraphPainter::PaintGrapHist`: Decouple the `P` option (histogram drawn with
   a simple polymarker) from the `L`(Histogram drawn as a simple polyline). This
   improved (in some cases some extra markers were drawn) and simplify. the code.
+- Candle plot improvements:
+   * Rearragement of TCandle-code - split into calculate and paint
+   * Implementation for a "raw-data candle" inside TCandle - to be used from TTreeViewer in the future
+   * Implementation of 1D histograms along each candle (left, right and violin) - to be used for violin-charts
+   * Implementation of a zero indicator line for TCandle - to be used for violin-charts
+   * Reimplementation if THistPainter draw option VIOLIN
+   * Implementations of presets and individual options for VIOLIN-charts
+   * Implementation of VIOLIN-charts in THStack - can be combined with CANDLE
+   * Update of the docs (THistPainter and THStack)
+   * New tutorials
+- In various places in TGraph the underlying histogram was deleted when the graph
+  range should be recomputed. This has the side effect that some graph parameters
+  (like the axis titles) were also deleted. This now fixed. It was reported
+  [here](https://sft.its.cern.ch/jira/browse/ROOT-8092).
+- Improve the error bars drawing in TLegend to better match the plot's error
+  drawing. This improvement was requested [here](https://sft.its.cern.ch/jira/browse/ROOT-5468).
+
 
 ## 3D Graphics Libraries
 - In `TMarker3DBox::PaintH3` the boxes' sizes was not correct.
@@ -119,6 +136,8 @@ The following interfaces have been removed, after deprecation in v6.08.
 
 ## Geometry Libraries
 
+## Dictionaries
+- Stop dictionary generation early, during AST scanning, if a union is selected for I/O as this is not supported (triggered by [ROOT-8492](https://sft.its.cern.ch/jira/browse/ROOT-8492))
 
 ## I/O Libraries
 - [[https://sft.its.cern.ch/jira/browse/ROOT-8478](https://sft.its.cern.ch/jira/browse/ROOT-8478)] - Prompt error when building streamer info and a data member is a vector<T> w/o dictionary
