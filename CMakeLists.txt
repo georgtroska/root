@@ -164,15 +164,17 @@ get_property(__allFiles GLOBAL PROPERTY ROOT_DICTIONARY_FILES)
 get_property(__clingetcpch GLOBAL PROPERTY CLINGETCPCH)
 
 
-string(REGEX REPLACE "[ ]-" ";-" CMAKE_CXX_FLAGS_SEPARATE ${CMAKE_CXX_FLAGS})
+set (CMAKE_CXX_FLAGS_SEPARATE "${CMAKE_CXX_FLAGS}")
 if(cxxmodules)
   # rootcling uses our internal version of clang. Passing the modules flags here
   # would allow rootcling to find module files built by the external compiler
   # (eg. $CXX or $CC). This, in turn, would cause problems if we are using
   # different clang version (even different commit revision) as the modules files
   # are not guaranteed to be compatible among clang revisions.
-  string(REPLACE "${ROOT_CXXMODULES_FLAGS}" "" CMAKE_CXX_FLAGS_SEPARATE ${CMAKE_CXX_FLAGS_SEPARATE})
+  string(REPLACE "${ROOT_CXXMODULES_CXXFLAGS}" "" CMAKE_CXX_FLAGS_SEPARATE ${CMAKE_CXX_FLAGS_SEPARATE})
 endif(cxxmodules)
+string(REGEX REPLACE "[ ]-" ";-" CMAKE_CXX_FLAGS_SEPARATE "${CMAKE_CXX_FLAGS_SEPARATE} ${CORE_OS_DICT_CXX_FLAGS}")
+
 add_custom_command(OUTPUT etc/dictpch/allLinkDefs.h
                           etc/dictpch/allHeaders.h
                           etc/dictpch/allCppflags.txt
@@ -198,7 +200,16 @@ if(cxxmodules)
                     DEPENDS build/unix/module.modulemap
                     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/build/unix/module.modulemap ${CMAKE_BINARY_DIR}/include/module.modulemap
                     )
-  add_dependencies(copymodulemap move_headers)
+  get_property(__modulemap_extra_content GLOBAL PROPERTY ROOT_CXXMODULES_EXTRA_MODULEMAP_CONTENT)
+  string(REPLACE ";" "" __modulemap_extra_content "${__modulemap_extra_content}")
+  if (NOT APPLE)
+    set(__echo_args "-e")
+  endif()
+  add_custom_command(TARGET copymodulemap POST_BUILD
+                     COMMAND echo ${__echo_args} ${__modulemap_extra_content} >> ${CMAKE_BINARY_DIR}/include/module.modulemap
+                     VERBATIM
+                    )
+  add_dependencies(move_headers copymodulemap)
 endif(cxxmodules)
 
 #---hsimple.root---------(use the executable for clearer dependencies and proper return code)---

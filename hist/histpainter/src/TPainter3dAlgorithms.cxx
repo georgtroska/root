@@ -253,7 +253,7 @@ TPainter3dAlgorithms::TPainter3dAlgorithms(Double_t *rmin, Double_t *rmax, Int_t
 
 TPainter3dAlgorithms::~TPainter3dAlgorithms()
 {
-   if (fRaster) {delete [] fRaster; fRaster = 0;}
+   if (fRaster) { delete [] fRaster; fRaster = 0; }
    if (fNStack > kVSizeMax) {
       delete [] fColorMain;
       delete [] fColorDark;
@@ -336,17 +336,17 @@ void TPainter3dAlgorithms::ClearRaster()
 /// \param[in] fl   function levels
 /// \param[in] icl   colors for levels
 ///
-/// \param[out] irep   return code.(0 OK, -1 error).
+/// \param[out] irep   return code (0 OK, -1 error).
 
 void TPainter3dAlgorithms::ColorFunction(Int_t nl, Double_t *fl, Int_t *icl, Int_t &irep)
 {
    static const char *where = "ColorFunction";
 
-   /* Local variables */
-   Int_t i;
-
    irep = 0;
-   if (nl == 0) {fNlevel = 0;        return; }
+   if (nl == 0) {
+      fNlevel = 0;
+      return;
+   }
 
    //          C H E C K   P A R A M E T E R S
    if (nl < 0 || nl > 256) {
@@ -354,14 +354,16 @@ void TPainter3dAlgorithms::ColorFunction(Int_t nl, Double_t *fl, Int_t *icl, Int
       irep = -1;
       return;
    }
-   for (i = 1; i < nl; ++i) {
+
+   for (Int_t i = 1; i < nl; ++i) {
       if (fl[i] <= fl[i - 1]) {
    //         Error(where, "function levels must be in increasing order");
          irep = -1;
          return;
       }
    }
-   for (i = 0; i < nl; ++i) {
+
+   for (Int_t i = 0; i < nl; ++i) {
       if (icl[i] < 0) {
    //         Error(where, "negative color index (%d)", icl[i]);
          irep = -1;
@@ -371,8 +373,8 @@ void TPainter3dAlgorithms::ColorFunction(Int_t nl, Double_t *fl, Int_t *icl, Int
 
    //          S E T   L E V E L S
    fNlevel = nl;
-   for (i = 0; i < fNlevel; ++i) fFunLevel[i]   = Hparam.factor*fl[i];
-   for (i = 0; i < fNlevel+1; ++i) fColorLevel[i] = icl[i];
+   for (Int_t i = 0; i < fNlevel;   ++i) fFunLevel[i] = Hparam.factor*fl[i];
+   for (Int_t i = 0; i < fNlevel+1; ++i) fColorLevel[i] = icl[i];
 }
 
 
@@ -417,71 +419,48 @@ void TPainter3dAlgorithms::DefineGridLevels(Int_t ndivz)
 ///
 /// \param[in] icodes   set of codes for the line (not used in this method)
 /// \param[in] xyz   coordinates of nodes
-/// \param[in] np   number of nodes
+/// \param[in] np   number of nodes in face
 /// \param[in] iface   face
 /// \param[in] t   additional function defined on this face (not used in this method)
 
-void TPainter3dAlgorithms::DrawFaceMode1(Int_t *icodes, Double_t *xyz, Int_t np, Int_t *iface, Double_t *t)
+void TPainter3dAlgorithms::DrawFaceMode1(Int_t *, Double_t *xyz, Int_t np, Int_t *iface, Double_t *)
 {
-
-   /* Local variables */
-   Int_t i, k,ifneg,i1, i2;
-   Double_t x[13], y[13];
-   Double_t z;
-   Double_t p3[24]        /* was [2][12] */;
    TView *view = 0;
-
    if (gPad) view = gPad->GetView();
    if (!view) return;
 
-   //          T R A N S F E R   T O   N O R M A L I S E D   COORDINATES
-   /* Parameter adjustments */
-   --t;
-   --iface;
-   xyz -= 4;
-   --icodes;
+   //          Transfer to normalised coordinates
+   Bool_t ifneg = false;
+   Double_t x[12+1], y[12+1], p3[3];
+   for (Int_t i = 0; i < np; ++i) {
+      Int_t k = iface[i];
+      if (k < 0) { k = -k; ifneg = true; }
+      view->WCtoNDC(&xyz[(k-1)*3], p3);
+      x[i] = p3[0]; y[i] = p3[1];
+   }
+   x[np] = x[0]; y[np] = y[0];
 
-   ifneg = 0;
-   for (i = 1; i <= np; ++i) {
-      k = iface[i];
-      if (k < 0) ifneg = 1;
-      if (k < 0) k = -k;
-      view->WCtoNDC(&xyz[k*3 + 1], &p3[2*i - 2]);
-      x[i - 1] = p3[2*i - 2];
-      y[i - 1] = p3[2*i - 1];
+   //          Find normal
+   Double_t z = 0;
+   for (Int_t i = 0; i < np; ++i) {
+      z += y[i]*x[i+1] - x[i]*y[i+1];
    }
 
-   //          F I N D   N O R M A L
-   z = 0;
-   for (i = 1; i <= np; ++i) {
-      i1 = i;
-      i2 = i1 + 1;
-      if (i2 > np) i2 = 1;
-      z = z + p3[2*i1 - 1]*p3[2*i2 - 2] - p3[2*i1 - 2] *
-              p3[2*i2 - 1];
-   }
-
-   //          D R A W   F A C E
-   if (z > 0)         SetFillColor(kF3FillColor1);
-   if (z <= 0) SetFillColor(kF3FillColor2);
+   //          Draw face
+   SetFillColor((z > 0) ? kF3FillColor1 : kF3FillColor2);
    SetFillStyle(1001);
    TAttFill::Modify();
    gPad->PaintFillArea(np, x, y);
 
-   //          D R A W   B O R D E R
-   if (ifneg == 0) {
-      SetFillStyle(0);
-      SetFillColor(kF3LineColor);
-      TAttFill::Modify();
-      gPad->PaintFillArea(np, x, y);
-   } else {
-      x[np] = x[0];
-      y[np] = y[0];
-      SetLineColor(kF3LineColor);
-      TAttLine::Modify();
-      for (i = 1; i <= np; ++i) {
-         if (iface[i] > 0) gPad->PaintPolyLine(2, &x[i-1], &y[i-1]);
+   //          Draw border
+   SetLineColor(kF3LineColor);
+   TAttLine::Modify();
+   if (ifneg) {
+      for (Int_t i = 0; i < np; ++i) { // draw visible edges, skip invisible
+         if (iface[i] > 0) gPad->PaintPolyLine(2, &x[i], &y[i]);
       }
+   } else {
+      gPad->PaintPolyLine(np+1, x, y); // all edges are visible
    }
 }
 
@@ -495,45 +474,31 @@ void TPainter3dAlgorithms::DrawFaceMode1(Int_t *icodes, Double_t *xyz, Int_t np,
 /// \param[in] iface   face
 /// \param[in] t   additional function defined on this face
 
-void TPainter3dAlgorithms::DrawFaceMode2(Int_t *icodes, Double_t *xyz, Int_t np, Int_t *iface, Double_t *t)
+void TPainter3dAlgorithms::DrawFaceMode2(Int_t *, Double_t *xyz, Int_t np, Int_t *iface, Double_t *t)
 {
-   /* Local variables */
-   Int_t i, k;
-   Double_t x[12], y[12];
-   Double_t p3[36]        /* was [3][12] */;
    TView *view = 0;
-
    if (gPad) view = gPad->GetView();
    if (!view) return;
 
-   //          T R A N S F E R   T O   N O R M A L I S E D   COORDINATES
-   /* Parameter adjustments */
-   --t;
-   --iface;
-   xyz -= 4;
-   --icodes;
-
-   for (i = 1; i <= np; ++i) {
-      k = iface[i];
-      view->WCtoNDC(&xyz[k*3 + 1], &p3[i*3 - 3]);
-      x[i - 1] = p3[i*3 - 3];
-      y[i - 1] = p3[i*3 - 2];
+   //          Transfer to normalised coordinates
+   Double_t x[12+1], y[12+1], p3[3*12];
+   for (Int_t i = 0; i < np; ++i) {
+      Int_t k = iface[i];
+      view->WCtoNDC(&xyz[(k-1)*3], &p3[i*3]);
+      x[i] = p3[i*3+0]; y[i] = p3[i*3+1];
    }
+   x[np] = x[0]; y[np] = y[0];
 
-   //          D R A W   F A C E   &   B O R D E R
-   FillPolygon(np, p3, &t[1]);
+   //          Draw face
+   FillPolygon(np, p3, t);
+
+   //          Draw border
    if (fMesh == 1) {
-      if (Hoption.Lego!=0 && Hoption.Surf==0) {  // i.e. PaintFillArea for lego, not for surf
-         SetFillColor(fEdgeColor[fEdgeIdx]);
-         SetFillStyle(0);
-         TAttFill::Modify();
-         gPad->PaintFillArea(np, x, y);
-      }
       SetLineColor(fEdgeColor[fEdgeIdx]);
       SetLineStyle(fEdgeStyle[fEdgeIdx]);
       SetLineWidth(fEdgeWidth[fEdgeIdx]);
       TAttLine::Modify();
-      gPad->PaintPolyLine(np, x, y);
+      gPad->PaintPolyLine(np+1, x, y);
    }
 }
 
@@ -547,50 +512,41 @@ void TPainter3dAlgorithms::DrawFaceMode2(Int_t *icodes, Double_t *xyz, Int_t np,
 /// \param[in] iface   face
 /// \param[in] t   additional function defined on this face (not used in this method)
 
-void TPainter3dAlgorithms::DrawFaceMode3(Int_t *icodes, Double_t *xyz, Int_t np, Int_t *iface, Double_t *t)
+void TPainter3dAlgorithms::DrawFaceMode3(Int_t *icodes, Double_t *xyz, Int_t np, Int_t *iface, Double_t *)
 {
-   Int_t i, k;
-   Int_t icol = 0;
-   Double_t x[4], y[4], p3[12]        /* was [3][4] */;
    TView *view = 0;
-
    if (gPad) view = gPad->GetView();
    if (!view) return;
 
-   /* Parameter adjustments */
-   --t;
-   --iface;
-   xyz -= 4;
-   --icodes;
-
-   if (icodes[4] == 6) icol = fColorTop;
-   if (icodes[4] == 5) icol = fColorBottom;
-   if (icodes[4] == 1) icol = fColorMain[icodes[3] - 1];
-   if (icodes[4] == 2) icol = fColorDark[icodes[3] - 1];
-   if (icodes[4] == 3) icol = fColorMain[icodes[3] - 1];
-   if (icodes[4] == 4) icol = fColorDark[icodes[3] - 1];
-
-   for (i = 1; i <= np; ++i) {
-      k = iface[i];
-      view->WCtoNDC(&xyz[k*3 + 1], &p3[i*3 - 3]);
-      x[i - 1] = p3[i*3 - 3];
-      y[i - 1] = p3[i*3 - 2];
+   //          Transfer to normalised coordinates
+   Double_t x[4+1], y[4+1], p3[3];
+   for (Int_t i = 0; i < np; ++i) {
+      Int_t k = iface[i];
+      view->WCtoNDC(&xyz[(k-1)*3], p3);
+      x[i] = p3[0]; y[i] = p3[1];
    }
+   x[np] = x[0]; y[np] = y[0];
 
+   //          Draw face
+   Int_t icol = 0;
+   if (icodes[3] == 6) icol = fColorTop;
+   if (icodes[3] == 5) icol = fColorBottom;
+   if (icodes[3] == 1) icol = fColorMain[icodes[2] - 1];
+   if (icodes[3] == 2) icol = fColorDark[icodes[2] - 1];
+   if (icodes[3] == 3) icol = fColorMain[icodes[2] - 1];
+   if (icodes[3] == 4) icol = fColorDark[icodes[2] - 1];
    SetFillStyle(1001);
    SetFillColor(icol);
    TAttFill::Modify();
    gPad->PaintFillArea(np, x, y);
+
+   //          Draw border
    if (fMesh) {
-      SetFillStyle(0);
-      SetFillColor(fEdgeColor[fEdgeIdx]);
-      TAttFill::Modify();
-      gPad->PaintFillArea(np, x, y);
       SetLineColor(fEdgeColor[fEdgeIdx]);
       SetLineStyle(fEdgeStyle[fEdgeIdx]);
       SetLineWidth(fEdgeWidth[fEdgeIdx]);
       TAttLine::Modify();
-      gPad->PaintPolyLine(np, x, y);
+      gPad->PaintPolyLine(np+1, x, y);
    }
 }
 
@@ -856,6 +812,7 @@ void TPainter3dAlgorithms::DrawFaceMove2(Int_t *icodes, Double_t *xyz, Int_t np,
 void TPainter3dAlgorithms::DrawFaceRaster1(Int_t *icodes, Double_t *xyz, Int_t np, Int_t *iface, Double_t *tt)
 {
    Double_t xdel, ydel;
+
    Int_t i, k, i1, i2, il, it;
    Double_t x[2], y[2];
    Double_t p1[3], p2[3], p3[36]        /* was [3][12] */;

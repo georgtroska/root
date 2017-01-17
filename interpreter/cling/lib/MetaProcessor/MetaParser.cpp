@@ -15,11 +15,12 @@
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InvocationOptions.h"
 #include "cling/Interpreter/Value.h"
+#include "cling/Utils/Output.h"
+#include "cling/Utils/Paths.h"
 
 #include "llvm/ADT/Optional.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Path.h"
-#include "llvm/Support/raw_ostream.h"
 
 namespace cling {
 
@@ -192,50 +193,66 @@ namespace cling {
         stream = MetaProcessor::kSTDERR;
       // Wrong constant_FD, do not redirect.
       } else if (constant_FD != 1) {
-        llvm::errs() << "cling::MetaParser::isRedirectCommand():"
-                     << "invalid file descriptor number " << constant_FD <<"\n";
+        cling::errs() << "cling::MetaParser::isRedirectCommand():"
+                      << "invalid file descriptor number " << constant_FD <<"\n";
         return true;
       }
       consumeToken();
     }
     // &> redirection for both stdout & stderr
     if (getCurTok().is(tok::ampersand)) {
-      if (constant_FD != 2) {
+      if (constant_FD == 0) {
         stream = MetaProcessor::kSTDBOTH;
       }
       consumeToken();
     }
+    llvm::StringRef file;
     if (getCurTok().is(tok::greater)) {
       bool append = false;
-      consumeToken();
-      // check for syntax like: 2>&1
-      if (getCurTok().is(tok::ampersand)) {
-        if (constant_FD != 2) {
-          stream = MetaProcessor::kSTDBOTH;
-        }
+      // check whether we have >>
+      if (lookAhead(1).is(tok::greater)) {
         consumeToken();
-      } else {
-        // check whether we have >>
-        if (getCurTok().is(tok::greater)) {
-          append = true;
-          consumeToken();
+        append = true;
+      }
+      // check for syntax like: 2>&1
+      if (lookAhead(1).is(tok::ampersand)) {
+        if (constant_FD == 0)
+          stream = MetaProcessor::kSTDBOTH;
+
+        const Token& Tok = lookAhead(2);
+        if (Tok.is(tok::constant)) {
+          switch (Tok.getConstant()) {
+            case 1: file = llvm::StringRef("&1"); break;
+            case 2: file = llvm::StringRef("&2"); break;
+            default: break;
+          }
+          if (!file.empty()) {
+            // Mark the stream name as refering to stderr or stdout, not a name
+            stream = MetaProcessor::RedirectionScope(stream |
+                                                     MetaProcessor::kSTDSTRM);
+            consumeToken(); // &
+            consumeToken(); // 1,2
+          }
         }
       }
-      llvm::StringRef file;
-      if (getCurTok().is(tok::constant) && getCurTok().getConstant() == 1) {
-        file = llvm::StringRef("_IO_2_1_stdout_");
-      } else {
-        if (getCurTok().is(tok::eof)) {
-          file  = llvm::StringRef();
-        } else {
-          consumeAnyStringToken(tok::eof);
-          if (getCurTok().is(tok::raw_ident)) {
-            file = getCurTok().getIdent();
-            consumeToken();
+      std::string EnvExpand;
+      if (!lookAhead(1).is(tok::eof) && !(stream & MetaProcessor::kSTDSTRM)) {
+        consumeAnyStringToken(tok::eof);
+        if (getCurTok().is(tok::raw_ident)) {
+          EnvExpand = getCurTok().getIdent();
+          // Quoted path, no expansion and strip quotes
+          if (EnvExpand.size() > 3 && EnvExpand.front() == '"' &&
+              EnvExpand.back() == '"') {
+            file = EnvExpand;
+            file = file.substr(1, file.size()-2);
+          } else if (!EnvExpand.empty()) {
+            cling::utils::ExpandEnvVars(EnvExpand);
+            file = EnvExpand;
           }
-          else {
-            file  = llvm::StringRef();
-          }
+          consumeToken();
+          // If we had a token, we need a path; empty means to undo a redirect
+          if (file.empty())
+            return false;
         }
       }
       // Empty file means std.

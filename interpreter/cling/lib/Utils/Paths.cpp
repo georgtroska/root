@@ -8,10 +8,10 @@
 //------------------------------------------------------------------------------
 
 #include "cling/Utils/Paths.h"
+#include "cling/Utils/Output.h"
 #include "clang/Lex/HeaderSearchOptions.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/FileSystem.h"
-#include "llvm/Support/raw_ostream.h"
 
 namespace cling {
 namespace utils {
@@ -24,6 +24,28 @@ namespace platform {
 #else
   #error "Unknown platform (environmental delimiter)"
 #endif
+} // namespace platform
+
+bool ExpandEnvVars(std::string& Str, bool Path) {
+  std::size_t DPos = Str.find("$");
+  while (DPos != std::string::npos) {
+    std::size_t SPos = Str.find("/", DPos + 1);
+    std::size_t Length = Str.length();
+
+    if (SPos != std::string::npos) // if we found a "/"
+      Length = SPos - DPos;
+
+    std::string EnvVar = Str.substr(DPos + 1, Length -1); //"HOME"
+    std::string FullPath;
+    if (const char* Tok = ::getenv(EnvVar.c_str()))
+      FullPath = Tok;
+
+    Str.replace(DPos, Length, FullPath);
+    DPos = Str.find("$", DPos + 1); //search for next env variable
+  }
+  if (!Path)
+    return true;
+  return llvm::sys::fs::exists(Str.c_str());
 }
 
 using namespace clang;
@@ -125,7 +147,7 @@ void DumpIncludePaths(const clang::HeaderSearchOptions& Opts,
 }
 
 void LogNonExistantDirectory(llvm::StringRef Path) {
-  llvm::errs() << "  ignoring nonexistent directory \"" << Path << "\"\n";
+  cling::log() << "  ignoring nonexistent directory \"" << Path << "\"\n";
 }
 
 bool SplitPaths(llvm::StringRef PathStr,
@@ -172,7 +194,7 @@ bool SplitPaths(llvm::StringRef PathStr,
             while (!Split.second.empty()) {
               Split = PathStr.split(Delim);
               if (llvm::sys::fs::is_directory(Split.first)) {
-                llvm::errs() << "  ignoring directory that exists \""
+                cling::log() << "  ignoring directory that exists \""
                              << Split.first << "\"\n";
               } else
                 LogNonExistantDirectory(Split.first);
@@ -239,9 +261,9 @@ void AddIncludePaths(llvm::StringRef PathStr, clang::HeaderSearchOptions& HOpts,
                     IsFramework, IsSysRootRelative);
 
   if (HOpts.Verbose) {
-    llvm::errs() << "Added include paths:\n";
+    cling::log() << "Added include paths:\n";
     for (llvm::StringRef Path : PathsChecked)
-      llvm::errs() << "  " << Path << "\n";
+      cling::log() << "  " << Path << "\n";
   }
 }
   

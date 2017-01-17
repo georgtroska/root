@@ -93,7 +93,10 @@ X11.XInitThread:         yes
 # The EnableAntiAliasing flag defines if you want to have anti-aliased
 # lines/polygon in a canvas/pad. Possible values:
 # yes (enable AA), no (disable AA) and auto (use AA only on Retina displays)
+# There is a special flag EnableFillAreaAntiAliasing for fill area which is "no"
+# by default because antialiasing for fill area may create artificial meshes on on plots
 Cocoa.EnableAntiAliasing: yes
+Cocoa.EnableFillAreaAntiAliasing: no
 
 # Settings for Win32 behavior.
 Win32.UseSysPointers:    no
@@ -723,10 +726,17 @@ Davix.UseOldClient: @useoldwebfile@
 # Sets the Amazon S3 authentication parameters
 # Region is optional - if provided, davix will use v4 signatures
 # Token is optional, and enables the use of STS temporary credentials
+#
+# Alternate is optional and takes a boolean value. If set to true, davix
+# will assume that the bucket name is in the path, not in the hostname.
+# Necessary because davix has to know the bucket name to calculate
+# the S3 signatures.
+#
 # Davix.S3.SecretKey: secret
 # Davix.S3.AccessKey: access
 # Davix.S3.Region: region
 # Davix.S3.Token: token
+# Davix.S3.Alternate: yes
 
 # NOTE: The authentication of TDavixFile/TDavixSystem can be influenced
 # through some well known environment variables:

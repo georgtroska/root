@@ -30,7 +30,18 @@ namespace cling {
       /// ':' on Unix, and ';' on Windows
       extern const char* const kEnvDelim;
     }
-    
+
+    ///\brief Replace all $TOKENS in a string with environent variable values.
+    ///
+    /// \param [in,out] Str - String with tokens to replace (in place)
+    /// \param [in] Path - Check if the result is a valid filesystem path.
+    ///
+    /// \returns When Path is true, return whether Str was expanded to an
+    /// existing file-system object.
+    /// Return value has no meaning when Path is false.
+    ///
+    bool ExpandEnvVars(std::string& Str, bool Path = false);
+
     enum SplitMode {
       kPruneNonExistant,  ///< Don't add non-existant paths into output
       kFailNonExistant,   ///< Fail on any non-existant paths
@@ -68,7 +79,7 @@ namespace cling {
                          clang::HeaderSearchOptions& Opts,
                          const char* Delim = platform::kEnvDelim);
 
-    ///\brief Write to llvm::errs that directory does not exist in a format
+    ///\brief Write to cling::errs that directory does not exist in a format
     /// matching what 'clang -v' would do
     ///
     void LogNonExistantDirectory(llvm::StringRef Path);
