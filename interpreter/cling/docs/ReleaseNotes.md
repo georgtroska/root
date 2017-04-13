@@ -8,7 +8,7 @@ describe the status of Cling in some detail, including major
 improvements from the previous release and new feature work.
 
 Note that if you are reading this file from a git checkout or the main
-[Cling web page](https://rawgit.com/root-mirror/cling/master/www/index.html),
+[Cling web page](https://rawgit.com/root-project/cling/master/www/index.html),
 this document applies to the *next* release, not the current one.
 
 What's New in Cling 0.4?
@@ -38,6 +38,11 @@ Experimental Features
 ---------------------
 * Code unloading:
 * Dynamic Scopes:
+* Precompiled Headers: cling now has the ability to generate precompiled headers
+cling -x c++-header InputHeader.h -o Output.pch
+* Preprocessed Output: cling now has the ability to generate preprocessed output
+cling -E -dM will show all preprocessor definitions
+
 
 Fixed Bugs
 ----------

@@ -9,9 +9,8 @@
 #ifndef ROOT_strlcpy
 #define ROOT_strlcpy
 
-#ifndef ROOT_RConfig
 #include "RConfig.h"
-#endif
+#include "RtypesCore.h"
 
 #ifndef HAS_STRLCPY
 

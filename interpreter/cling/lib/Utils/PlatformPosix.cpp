@@ -17,6 +17,7 @@
 #include <array>
 #include <atomic>
 #include <string>
+#include <cxxabi.h>
 #include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -197,6 +198,19 @@ bool GetSystemLibraryPaths(llvm::SmallVectorImpl<std::string>& Paths) {
   }
 #endif
   return true;
+}
+
+std::string Demangle(const std::string& Symbol) {
+  struct AutoFree {
+    char* Str;
+    AutoFree(char* Ptr) : Str(Ptr) {}
+    ~AutoFree() { ::free(Str); };
+  };
+  int status = 0;
+  // Some implementations of __cxa_demangle are giving back length of allocation
+  // Passing NULL for length seems to guarantee null termination.
+  AutoFree af(abi::__cxa_demangle(Symbol.c_str(), NULL, NULL, &status));
+  return status == 0 ? std::string(af.Str) : std::string();
 }
 
 } // namespace platform

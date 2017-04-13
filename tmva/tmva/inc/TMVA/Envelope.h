@@ -15,52 +15,32 @@
 #include<iostream>
 #include <memory>
 
-#ifndef ROOT_TROOT
-#include<TROOT.h>
-#endif
+#include <TROOT.h>
 
-#ifndef ROOT_TStopwatch
-#include<TStopwatch.h>
-#endif
+#include <TStopwatch.h>
 
-#ifndef ROOT_TMVA_OptionMap
-#include<TMVA/OptionMap.h>
-#endif
+#include <TMVA/OptionMap.h>
 
-#ifndef ROOT_TMVA_Config
 #include "TMVA/Config.h"
-#endif
 
-#ifndef ROOT_TMVA_Tools
 #include "TMVA/Tools.h"
-#endif
 
-#ifndef ROOT_TMVA_DataLoader
 #include "TMVA/DataLoader.h"
-#endif
 
-#ifndef ROOT_TMVA_ROCCurve
 #include "TMVA/DataLoader.h"
-#endif
 
 
-namespace TMVA {    
-    
-       /**
-        *      \class Envelope
-        *         Base class for all machine learning algorithms
-        *      \ingroup TMVA
-        */
-      
+namespace TMVA {
+
       class Envelope:public Configurable
       {
       protected:
           OptionMap                    fMethod;           //Booked method information
-          std::shared_ptr<DataLoader>  fDataLoader;       //data 
+          std::shared_ptr<DataLoader>  fDataLoader;       //data
           std::shared_ptr<TFile>       fFile;             //!file to save the results
           Bool_t                       fModelPersistence; //flag to save the trained model
           Bool_t                       fVerbose;          //flag for extra information
-          
+
           /**
            Constructor for the initialization of Envelopes,
            differents Envelopes may needs differents constructors then
@@ -72,13 +52,13 @@ namespace TMVA {
           */
 
           Envelope(const TString &name,DataLoader *dataloader=nullptr,TFile *file=nullptr,const TString options="");
-          
+
       public:
           /**
            Default destructor
            */
           ~Envelope();
-          
+
           /**
             Method to book the machine learning method to perform the algorithm.
             \param methodname String with the name of the mva method
@@ -110,13 +90,13 @@ namespace TMVA {
             \param file pointer to TFile object.
           */
           void   SetFile(TFile *file);
-          
+
           /**
             Method to get the pointer to TMVA::DataLoader object.
             \return  pointer to TMVA::DataLoader object.
           */
           DataLoader *GetDataLoader();
-          
+
           /**
             Method to set the pointer to TMVA::DataLoader object.
             \param file pointer to TFile object.
@@ -128,56 +108,56 @@ namespace TMVA {
             \return Boolean with the status.
           */
           Bool_t IsModelPersistence();
-          
+
           /**
             Method enable model persistence, then algorithms model is saved in xml or serialized files.
             \param status Boolean with the status.
           */
           void SetModelPersistence(Bool_t status=kTRUE);
-          
+
           /**
             Method to see if the algorithm should print extra information.
             \return Boolean with the status.
           */
           Bool_t IsVerbose();
-          
+
           /**
             Method enable print extra information in the algorithms.
             \param status Boolean with the status.
           */
           void SetVerbose(Bool_t status);
-          
+
           /**
-            Virtual method to be implmented with your algorithm.
+            Virtual method to be implemented with your algorithm.
           */
           virtual void Evaluate() = 0;
-          
+
       protected:
           /**
             Method get the Booked method in a option map object.
             \return TMVA::OptionMap with the information of the Booked method
           */
           OptionMap &GetMethod();
-          
+
           /**
             Utility method to get TMVA::DataInputHandler reference from the DataLoader.
             \return TMVA::DataInputHandler reference.
           */
           DataInputHandler&        GetDataLoaderDataInput() { return *fDataLoader->fDataInputHandler; }
-          
+
           /**
             Utility method to get TMVA::DataSetInfo reference from the DataLoader.
             \return TMVA::DataSetInfo reference.
           */
           DataSetInfo&             GetDataLoaderDataSetInfo(){return fDataLoader->DefaultDataSetInfo();}
-          
+
           /**
             Utility method to get TMVA::DataSetManager pointer from the DataLoader.
             \return TMVA::DataSetManager pointer.
           */
           DataSetManager*          GetDataLoaderDataSetManager(){return fDataLoader->fDataSetManager;}
           ClassDef(Envelope,0);
-          
+
       };
 }
 

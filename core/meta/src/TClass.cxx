@@ -788,8 +788,19 @@ void TBuildRealData::Inspect(TClass* cl, const char* pname, const char* mname, c
          rname[dot] = '.';
       }
    }
-   rname += mname;
+
    Long_t offset = Long_t(((Long_t) add) - ((Long_t) fRealDataObject));
+
+   if (TClassEdit::IsStdArray(dm->GetTypeName())){ // We tackle the std array case
+      TString rdName;
+      TRealData::GetName(rdName,dm);
+      rname += rdName;
+      TRealData* rd = new TRealData(rname.Data(), offset, dm);
+      fRealDataClass->GetListOfRealData()->Add(rd);
+      return;
+   }
+
+   rname += mname;
 
    if (dm->IsaPointer()) {
       // Data member is a pointer.
@@ -1414,7 +1425,7 @@ void TClass::Init(const char *name, Version_t cversion,
          // This is because we do not expect the CINT dictionary
          // to be present for all STL classes (and we can handle
          // the lack of CINT dictionary in that cases).
-         // However, we cling the dictionary no longer carries
+         // However, the cling the dictionary no longer carries
          // an instantiation with it, unless we request the loading
          // here *or* the user explicitly instantiate the template
          // we would not have a ClassInfo for the template
@@ -1722,17 +1733,7 @@ Int_t TClass::ReadRules()
 {
    static const char *suffix = "class.rules";
    TString sname = suffix;
-#ifdef ROOTETCDIR
-   gSystem->PrependPathName(ROOTETCDIR, sname);
-#else
-   TString etc = gRootDir;
-#ifdef WIN32
-   etc += "\\etc";
-#else
-   etc += "/etc";
-#endif
-   gSystem->PrependPathName(etc, sname);
-#endif
+   gSystem->PrependPathName(TROOT::GetEtcDir(), sname);
 
    Int_t res = -1;
 

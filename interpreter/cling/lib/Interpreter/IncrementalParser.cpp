@@ -26,12 +26,15 @@
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/Transaction.h"
+#include "cling/Utils/Diagnostics.h"
+#include "cling/Utils/Output.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Attr.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclGroup.h"
 #include "clang/AST/RecursiveASTVisitor.h"
+#include "clang/Basic/Diagnostic.h"
 #include "clang/Basic/FileManager.h"
 #include "clang/CodeGen/ModuleBuilder.h"
 #include "clang/Frontend/CompilerInstance.h"
@@ -45,7 +48,6 @@
 #include "llvm/IR/Module.h"
 #include "llvm/Support/CrashRecoveryContext.h"
 #include "llvm/Support/MemoryBuffer.h"
-#include "llvm/Support/raw_os_ostream.h"
 
 #include <iostream>
 #include <sstream>
@@ -55,22 +57,9 @@ using namespace clang;
 
 namespace {
 
-  static const Token* getMacroToken(const Preprocessor& PP, const char* Macro) {
-    if (const IdentifierInfo* II = PP.getIdentifierInfo(Macro)) {
-      if (const DefMacroDirective* MD = llvm::dyn_cast_or_null
-          <DefMacroDirective>(PP.getLocalMacroDirective(II))) {
-        if (const clang::MacroInfo* MI = MD->getMacroInfo()) {
-          if (MI->getNumTokens() == 1)
-            return MI->tokens_begin();
-        }
-      }
-    }
-    return nullptr;
-  }
-
   ///\brief Check the compile-time C++ ABI version vs the run-time ABI version,
   /// a mismatch could cause havoc. Reports if ABI versions differ.
-  static bool CheckABICompatibility(clang::CompilerInstance* CI) {
+  static bool CheckABICompatibility(cling::Interpreter& Interp) {
 #if defined(__GLIBCXX__)
     #define CLING_CXXABI_VERS       std::to_string(__GLIBCXX__)
     const char* CLING_CXXABI_NAME = "__GLIBCXX__";
@@ -84,18 +73,11 @@ namespace {
     #error "Unknown platform for ABI check";
 #endif
 
-    llvm::StringRef CurABI;
-    const clang::Preprocessor& PP = CI->getPreprocessor();
-    const clang::Token* Tok = getMacroToken(PP, CLING_CXXABI_NAME);
-    if (Tok && Tok->isLiteral()) {
-      // Strip any quotation marks.
-      CurABI = llvm::StringRef(Tok->getLiteralData(),
-                               Tok->getLength()).trim("\"");
-      if (CurABI.equals(CLING_CXXABI_VERS))
-        return true;
-    }
+    const std::string CurABI = Interp.getMacroValue(CLING_CXXABI_NAME);
+    if (CurABI == CLING_CXXABI_VERS)
+      return true;
 
-    llvm::errs() <<
+    cling::errs() <<
       "Warning in cling::IncrementalParser::CheckABICompatibility():\n"
       "  Possible C++ standard library mismatch, compiled with "
       << CLING_CXXABI_NAME << " '" << CLING_CXXABI_VERS << "'\n"
@@ -104,6 +86,81 @@ namespace {
 
     return false;
   }
+
+  class FilteringDiagConsumer : public cling::utils::DiagnosticsOverride {
+    std::stack<bool> m_IgnorePromptDiags;
+
+    void SyncDiagCountWithTarget() {
+      NumWarnings = m_PrevClient.getNumWarnings();
+      NumErrors = m_PrevClient.getNumErrors();
+    }
+
+    void BeginSourceFile(const LangOptions &LangOpts,
+                         const Preprocessor *PP=nullptr) override {
+      m_PrevClient.BeginSourceFile(LangOpts, PP);
+    }
+
+    void EndSourceFile() override {
+      m_PrevClient.EndSourceFile();
+      SyncDiagCountWithTarget();
+    }
+  
+    void finish() override {
+      m_PrevClient.finish();
+      SyncDiagCountWithTarget();
+    }
+
+    void clear() override {
+      m_PrevClient.clear();
+      SyncDiagCountWithTarget();
+    }
+
+    bool IncludeInDiagnosticCounts() const override {
+      return m_PrevClient.IncludeInDiagnosticCounts();
+    }
+
+    void HandleDiagnostic(DiagnosticsEngine::Level DiagLevel,
+                          const Diagnostic &Info) override {
+      if (Ignoring()) {
+        if (Info.getID() == diag::warn_unused_expr
+            || Info.getID() == diag::warn_unused_call
+            || Info.getID() == diag::warn_unused_comparison)
+          return; // ignore!
+        if (Info.getID() == diag::warn_falloff_nonvoid_function) {
+          DiagLevel = DiagnosticsEngine::Error;
+        }
+        if (Info.getID() == diag::ext_return_has_expr) {
+          // An error that we need to suppress.
+          auto Diags = const_cast<DiagnosticsEngine*>(Info.getDiags());
+          assert(Diags->hasErrorOccurred() && "Expected ErrorOccurred");
+          if (m_PrevClient.getNumErrors() == 0) { // first error
+            Diags->Reset(true /*soft - only counts, not mappings*/);
+          } // else we had other errors, too.
+          return; // ignore!
+        }
+      }
+      m_PrevClient.HandleDiagnostic(DiagLevel, Info);
+      SyncDiagCountWithTarget();
+    }
+
+    bool Ignoring() const {
+      return !m_IgnorePromptDiags.empty() && m_IgnorePromptDiags.top();
+    }
+
+  public:
+    FilteringDiagConsumer(DiagnosticsEngine& Diags, bool Own) :
+      DiagnosticsOverride(Diags, Own) {
+    }
+
+    struct RAAI {
+      FilteringDiagConsumer& m_Client;
+      RAAI(DiagnosticConsumer& F, bool Ignore) :
+       m_Client(static_cast<FilteringDiagConsumer&>(F)) {
+        m_Client.m_IgnorePromptDiags.push(Ignore);
+      }
+      ~RAAI() { m_Client.m_IgnorePromptDiags.pop(); }
+    };
+  };
 } // unnamed namespace
 
 namespace cling {
@@ -111,14 +168,25 @@ namespace cling {
     m_Interpreter(interp),
     m_CI(CIFactory::createCI("", interp->getOptions(), llvmdir)),
     m_Consumer(nullptr), m_ModuleNo(0) {
-    assert(m_CI.get() && "CompilerInstance is (null)!");
+
+    if (!m_CI) {
+      cling::errs() << "Compiler instance could not be created.\n";
+      return;
+    }
+    // Is the CompilerInstance being used to generate output only?
+    if (m_Interpreter->getOptions().CompilerOpts.HasOutput)
+      return;
 
     m_Consumer = dyn_cast<DeclCollector>(&m_CI->getSema().getASTConsumer());
-    assert(m_Consumer && "Expected ChainedConsumer!");
+    if (!m_Consumer) {
+      cling::errs() << "No AST consumer available.\n";
+      return;
+    }
 
+    DiagnosticsEngine& Diag = m_CI->getDiagnostics();
     if (m_CI->getFrontendOpts().ProgramAction != frontend::ParseSyntaxOnly) {
       m_CodeGen.reset(CreateLLVMCodeGen(
-          m_CI->getDiagnostics(), "cling-module-0", m_CI->getHeaderSearchOpts(),
+          Diag, "cling-module-0", m_CI->getHeaderSearchOpts(),
           m_CI->getPreprocessorOpts(), m_CI->getCodeGenOpts(),
           *m_Interpreter->getLLVMContext()));
       m_Consumer->setContext(this, m_CodeGen.get());
@@ -126,35 +194,39 @@ namespace cling {
       m_Consumer->setContext(this, 0);
     }
 
+    m_DiagConsumer.reset(new FilteringDiagConsumer(Diag, false));
+
     initializeVirtualFile();
   }
 
-  void
+  bool
   IncrementalParser::Initialize(llvm::SmallVectorImpl<ParseResultTransaction>&
                                 result, bool isChildInterpreter) {
     m_TransactionPool.reset(new TransactionPool);
     if (hasCodeGenerator())
       getCodeGenerator()->Initialize(getCI()->getASTContext());
 
-    CompilationOptions CO;
-    CO.DeclarationExtraction = 0;
-    CO.ValuePrinting = CompilationOptions::VPDisabled;
-    CO.CodeGeneration = hasCodeGenerator();
-
+    CompilationOptions CO = m_Interpreter->makeDefaultCompilationOpts();
     Transaction* CurT = beginTransaction(CO);
     Preprocessor& PP = m_CI->getPreprocessor();
+    DiagnosticsEngine& Diags = m_CI->getSema().getDiagnostics();
 
     // Pull in PCH.
     const std::string& PCHFileName
       = m_CI->getInvocation().getPreprocessorOpts().ImplicitPCHInclude;
     if (!PCHFileName.empty()) {
-      Transaction* CurT = beginTransaction(CO);
+      Transaction* PchT = beginTransaction(CO);
+      DiagnosticErrorTrap Trap(Diags);
       m_CI->createPCHExternalASTSource(PCHFileName,
                                        true /*DisablePCHValidation*/,
                                        true /*AllowPCHWithCompilerErrors*/,
                                        0 /*DeserializationListener*/,
                                        true /*OwnsDeserializationListener*/);
-      result.push_back(endTransaction(CurT));
+      result.push_back(endTransaction(PchT));
+      if (Trap.hasErrorOccurred()) {
+        result.push_back(endTransaction(CurT));
+        return false;
+      }
     }
 
     addClingPragmas(*m_Interpreter);
@@ -164,8 +236,8 @@ namespace cling {
     PP.EnterMainSourceFile();
 
     Sema* TheSema = &m_CI->getSema();
-    m_Parser.reset(new Parser(PP, *TheSema,
-                              false /*skipFuncBodies*/));
+    m_Parser.reset(new Parser(PP, *TheSema, false /*skipFuncBodies*/));
+
     // Initialize the parser after PP has entered the main source file.
     m_Parser->Initialize();
 
@@ -173,20 +245,20 @@ namespace cling {
     if (External)
       External->StartTranslationUnit(m_Consumer);
 
-    Parser::DeclGroupPtrTy ADecl;
     // Start parsing the "main file" to warm up lexing (enter caching lex mode
     // for ParseInternal()'s call EnterSourceFile() to make sense.
-    while (!m_Parser->ParseTopLevelDecl(ADecl)) {}
+    while (!m_Parser->ParseTopLevelDecl()) {}
 
-    // If I belong to the parent Interpreter, only then do
-    // the #include <new>
-    if (!isChildInterpreter && m_CI->getLangOpts().CPlusPlus) {
+    // If I belong to the parent Interpreter, am using C++, and -noruntime
+    // wasn't given on command line, then #include <new> and check ABI
+    if (!isChildInterpreter && m_CI->getLangOpts().CPlusPlus &&
+        !m_Interpreter->getOptions().NoRuntime) {
       // <new> is needed by the ValuePrinter so it's a good thing to include it.
       // We need to include it to determine the version number of the standard
       // library implementation.
       ParseInternal("#include <new>");
       // That's really C++ ABI compatibility. C has other problems ;-)
-      CheckABICompatibility(m_CI.get());
+      CheckABICompatibility(*m_Interpreter);
     }
 
     // DO NOT commit the transactions here: static initialization in these
@@ -194,6 +266,13 @@ namespace cling {
     // been defined yet!
     ParseResultTransaction PRT = endTransaction(CurT);
     result.push_back(PRT);
+    return true;
+  }
+
+  bool IncrementalParser::isValid(bool initialized) const {
+    return m_CI && m_CI->hasFileManager() && m_Consumer
+           && !m_VirtualFileID.isInvalid()
+           && (!initialized || (m_TransactionPool && m_Parser));
   }
 
   const Transaction* IncrementalParser::getCurrentTransaction() const {
@@ -261,16 +340,18 @@ namespace cling {
 
     T->setState(Transaction::kCompleted);
 
-    DiagnosticsEngine& Diags = getCI()->getSema().getDiagnostics();
+    DiagnosticsEngine& Diag = getCI()->getSema().getDiagnostics();
 
     //TODO: Make the enum orable.
     EParseResult ParseResult = kSuccess;
 
-    if (Diags.hasErrorOccurred() || Diags.hasFatalErrorOccurred()
-        || T->getIssuedDiags() == Transaction::kErrors) {
+    assert((Diag.hasFatalErrorOccurred() ? Diag.hasErrorOccurred() : true)
+            && "Diag.hasFatalErrorOccurred without Diag.hasErrorOccurred !");
+
+    if (Diag.hasErrorOccurred() || T->getIssuedDiags() == Transaction::kErrors) {
       T->setIssuedDiags(Transaction::kErrors);
       ParseResult = kFailed;
-    } else if (Diags.getNumWarnings() > 0) {
+    } else if (Diag.getNumWarnings() > 0) {
       T->setIssuedDiags(Transaction::kWarnings);
       ParseResult = kSuccessWithWarnings;
     }
@@ -295,14 +376,16 @@ namespace cling {
     return ParseResultTransaction(T, ParseResult);
   }
 
-  void IncrementalParser::commitTransaction(ParseResultTransaction& PRT) {
+  void IncrementalParser::commitTransaction(ParseResultTransaction& PRT,
+                                            bool ClearDiagClient) {
     Transaction* T = PRT.getPointer();
     if (!T) {
       if (PRT.getInt() != kSuccess) {
         // Nothing has been emitted to Codegen, reset the Diags.
         DiagnosticsEngine& Diags = getCI()->getSema().getDiagnostics();
         Diags.Reset(/*soft=*/true);
-        Diags.getClient()->clear();
+        if (ClearDiagClient)
+          Diags.getClient()->clear();
       }
       return;
     }
@@ -333,7 +416,8 @@ namespace cling {
       // Module has been released from Codegen, reset the Diags now.
       DiagnosticsEngine& Diags = getCI()->getSema().getDiagnostics();
       Diags.Reset(/*soft=*/true);
-      Diags.getClient()->clear();
+      if (ClearDiagClient)
+        Diags.getClient()->clear();
 
       PRT.setPointer(nullptr);
       PRT.setInt(kFailed);
@@ -341,12 +425,9 @@ namespace cling {
 
       if (MustStartNewModule) {
         // Create a new module.
-        std::string ModuleName;
-        {
-          llvm::raw_string_ostream strm(ModuleName);
-          strm << "cling-module-" << ++m_ModuleNo;
-        }
-        getCodeGenerator()->StartModule(ModuleName,
+        stdstrstream ModuleName;
+        ModuleName << "cling-module-" << ++m_ModuleNo;
+        getCodeGenerator()->StartModule(ModuleName.str(),
                                         *m_Interpreter->getLLVMContext(),
                                         getCI()->getCodeGenOpts());
       }
@@ -380,7 +461,7 @@ namespace cling {
     {
       Transaction* prevConsumerT = m_Consumer->getTransaction();
       m_Consumer->setTransaction(T);
-      Transaction* nestedT = beginTransaction(CompilationOptions());
+      Transaction* nestedT = beginTransaction(T->getCompilationOpts());
       // Pull all template instantiations in that came from the consumers.
       getCI()->getSema().PerformPendingInstantiations();
       ParseResultTransaction nestedPRT = endTransaction(nestedT);
@@ -401,10 +482,12 @@ namespace cling {
       if (!T->getParent()) {
         if (m_Interpreter->executeTransaction(*T)
             >= Interpreter::kExeFirstError) {
-          // Roll back on error in initializers
-          //assert(0 && "Error on inits.");
+          // Roll back on error in initializers.
+          // T maybe pointing to freed memory after this call:
+          // Interpreter::unload
+          //   IncrementalParser::deregisterTransaction
+          //     TransactionPool::releaseTransaction
           m_Interpreter->unload(*T);
-          T->setState(Transaction::kRolledBackWithErrors);
           return;
         }
       }
@@ -466,7 +549,7 @@ namespace cling {
       std::unique_ptr<llvm::Module> M(getCodeGenerator()->ReleaseModule());
 
       if (M) {
-        m_Interpreter->addModule(M.get());
+        m_Interpreter->addModule(M.get(), T->getCompilationOpts().OptLevel);
         T->setModule(std::move(M));
       }
 
@@ -478,12 +561,9 @@ namespace cling {
       }
 
       // Create a new module.
-      std::string ModuleName;
-      {
-        llvm::raw_string_ostream strm(ModuleName);
-        strm << "cling-module-" << ++m_ModuleNo;
-      }
-      getCodeGenerator()->StartModule(ModuleName,
+      smallstream ModuleName;
+      ModuleName << "cling-module-" << ++m_ModuleNo;
+      getCodeGenerator()->StartModule(ModuleName.str(),
                                       *m_Interpreter->getLLVMContext(),
                                       getCI()->getCodeGenOpts());
     }
@@ -550,7 +630,8 @@ namespace cling {
   void IncrementalParser::initializeVirtualFile() {
     SourceManager& SM = getCI()->getSourceManager();
     m_VirtualFileID = SM.getMainFileID();
-    assert(!m_VirtualFileID.isInvalid() && "No VirtualFileID created?");
+    if (m_VirtualFileID.isInvalid())
+      cling::errs() << "VirtualFileID could not be created.\n";
   }
 
   IncrementalParser::ParseResultTransaction
@@ -646,34 +727,9 @@ namespace cling {
 
     DiagnosticsEngine& Diags = getCI()->getDiagnostics();
 
-    bool IgnorePromptDiags = CO.IgnorePromptDiags;
-    if (IgnorePromptDiags) {
-      // Disable warnings which doesn't make sense when using the prompt
-      // This gets reset with the clang::Diagnostics().Reset(/*soft*/=false)
-      // using clang's API we simulate:
-      // #pragma warning push
-      // #pragma warning ignore ...
-      // #pragma warning ignore ...
-      // #pragma warning pop
-      SourceLocation Loc = SM.getLocForStartOfFile(FID);
-      Diags.pushMappings(Loc);
-      // The source locations of #pragma warning ignore must be greater than
-      // the ones from #pragma push
+    FilteringDiagConsumer::RAAI RAAITmp(*m_DiagConsumer, CO.IgnorePromptDiags);
 
-      auto setIgnore = [&](clang::diag::kind Diag) {
-        Diags.setSeverity(Diag, diag::Severity::Ignored, SourceLocation());
-      };
-
-      setIgnore(clang::diag::warn_unused_expr);
-      setIgnore(clang::diag::warn_unused_call);
-      setIgnore(clang::diag::warn_unused_comparison);
-      setIgnore(clang::diag::ext_return_has_expr);
-    }
-    auto setError = [&](clang::diag::kind Diag) {
-      Diags.setSeverity(Diag, diag::Severity::Error, SourceLocation());
-    };
-    setError(clang::diag::warn_falloff_nonvoid_function);
-
+    DiagnosticErrorTrap Trap(Diags);
     Sema::SavePendingInstantiationsRAII SavedPendingInstantiations(S);
 
     Parser::DeclGroupPtrTy ADecl;
@@ -681,11 +737,14 @@ namespace cling {
       // If we got a null return and something *was* parsed, ignore it.  This
       // is due to a top-level semicolon, an action override, or a parse error
       // skipping something.
-      if (Diags.hasErrorOccurred() || Diags.hasFatalErrorOccurred())
+      if (Trap.hasErrorOccurred())
         m_Consumer->getTransaction()->setIssuedDiags(Transaction::kErrors);
       if (ADecl)
         m_Consumer->HandleTopLevelDecl(ADecl.get());
     };
+    // If never entered the while block, there's a chance an error occured
+    if (Trap.hasErrorOccurred())
+      m_Consumer->getTransaction()->setIssuedDiags(Transaction::kErrors);
 
     if (CO.CodeCompletionOffset != -1) {
       assert((int)SM.getFileOffset(PP.getCodeCompletionLoc())
@@ -717,11 +776,6 @@ namespace cling {
     assert(AssertTok.is(tok::eof) && "Lexer must be EOF when starting incremental parse!");
 #endif
 
-    if (IgnorePromptDiags) {
-      SourceLocation Loc = SM.getLocForEndOfFile(m_MemoryBuffers.back().second);
-      Diags.popMappings(Loc);
-    }
-
     // Process any TopLevelDecls generated by #pragma weak.
     for (llvm::SmallVector<Decl*,2>::iterator I = S.WeakTopLevelDecls().begin(),
          E = S.WeakTopLevelDecls().end(); I != E; ++I) {
@@ -750,7 +804,7 @@ namespace cling {
     std::vector<ASTTPtr_t> ASTTransformers;
     ASTTransformers.emplace_back(new AutoSynthesizer(TheSema));
     ASTTransformers.emplace_back(new EvaluateTSynthesizer(TheSema));
-    if (hasCodeGenerator()) {
+    if (hasCodeGenerator() && !m_Interpreter->getOptions().NoRuntime) {
        // Don't protect against crashes if we cannot run anything.
        // cling might also be in a PCH-generation mode; don't inject our Sema pointer
        // into the PCH.
@@ -759,9 +813,12 @@ namespace cling {
 
     typedef std::unique_ptr<WrapperTransformer> WTPtr_t;
     std::vector<WTPtr_t> WrapperTransformers;
-    WrapperTransformers.emplace_back(new ValuePrinterSynthesizer(TheSema));
+    if (!m_Interpreter->getOptions().NoRuntime)
+      WrapperTransformers.emplace_back(new ValuePrinterSynthesizer(TheSema));
     WrapperTransformers.emplace_back(new DeclExtractor(TheSema));
-    WrapperTransformers.emplace_back(new ValueExtractionSynthesizer(TheSema, isChildInterpreter));
+    if (!m_Interpreter->getOptions().NoRuntime)
+      WrapperTransformers.emplace_back(new ValueExtractionSynthesizer(TheSema,
+                                                           isChildInterpreter));
     WrapperTransformers.emplace_back(new CheckEmptyTransactionTransformer(TheSema));
 
     m_Consumer->SetTransformers(std::move(ASTTransformers),

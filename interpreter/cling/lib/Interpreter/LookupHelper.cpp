@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 
 #include "cling/Interpreter/LookupHelper.h"
+#include "cling/Utils/Output.h"
 
 #include "DeclUnloader.h"
 #include "cling/Interpreter/Interpreter.h"
@@ -161,7 +162,10 @@ namespace cling {
           return true;
         }
         next = utils::Lookup::Named(&S, declName.substr(last, c - last), sofar);
-        if (next && next != (void *) -1) {
+        if (next == (void *) -1) {
+          // Ambiguous result, we need to go through the long path
+          return false;
+        } else if (next && next != (void *) -1) {
           // Need to handle typedef here too.
           const TypedefNameDecl *typedefDecl = dyn_cast<TypedefNameDecl>(next);
           if (typedefDecl) {
@@ -218,7 +222,7 @@ namespace cling {
         }
         if (!sofar) {
           // We are looking into something that is not a decl context,
-          // we won't find anything.
+          // so we won't find anything.
           return true;
         }
         last = c + 2;
@@ -226,7 +230,8 @@ namespace cling {
       } else if (c + 1 == declName.size()) {
         // End of the line.
         next = utils::Lookup::Named(&S, declName.substr(last, c + 1 - last), sofar);
-        if (next == (void *) -1) next = 0;
+        // If there is an ambiguity, we need to go the long route.
+        if (next == (void *) -1) return false;
         if (next) {
           resultDecl = next;
         }
@@ -452,6 +457,13 @@ namespace cling {
     Preprocessor &PP = P.getPreprocessor();
     ASTContext &Context = S.getASTContext();
 
+
+    // The user wants to see the template instantiation, existing or not.
+    // Here we might not have an active transaction to handle
+    // the caused instantiation decl.
+    // Also quickFindDecl could trigger deserialization of decls.
+    Interpreter::PushTransactionRAII pushedT(m_Interpreter);
+
     // See if we can find it without a buffer and any clang parsing,
     // We need to go scope by scope.
     {
@@ -512,11 +524,6 @@ namespace cling {
         }
       }
     }
-
-    // The user wants to see the template instantiation, existing or not.
-    // Here we might not have an active transaction to handle
-    // the caused instantiation decl.
-    Interpreter::PushTransactionRAII pushedT(m_Interpreter);
 
     ParserStateRAII ResetParserState(P, true /*skipToEOF*/);
     prepareForParsing(P,m_Interpreter,
@@ -1777,8 +1784,7 @@ namespace cling {
             else {
               proto += ',';
             }
-            std::string empty;
-            llvm::raw_string_ostream tmp(empty);
+            stdstrstream tmp;
             expr->printPretty(tmp, /*PrinterHelper=*/0, Policy,
                               /*Indentation=*/0);
             proto += tmp.str();

@@ -97,6 +97,12 @@ Begin_Macro(source)
 ../../../tutorials/hist/candleplotstack.C
 End_Macro
 
+Automatic coloring according to the current palette is available as shown in the
+following example:
+
+Begin_Macro(source)
+../../../tutorials/hist/thstackpalettecolor.C
+End_Macro
 */
 
 
@@ -717,6 +723,7 @@ void THStack::Paint(Option_t *choptin)
 
    TString opt = option;
    opt.ToLower();
+   opt.ReplaceAll(" ","");
    Bool_t lsame = kFALSE;
    if (opt.Contains("same")) {
       lsame = kTRUE;
@@ -758,8 +765,6 @@ void THStack::Paint(Option_t *choptin)
       padsav->cd();
       return;
    }
-   Bool_t lnoaxis = kFALSE;
-   if (opt.Contains("a")) lnoaxis = kTRUE;
 
    // compute the min/max of each axis
    TH1 *h;
@@ -781,8 +786,8 @@ void THStack::Paint(Option_t *choptin)
    snprintf(loption,31,"%s",opt.Data());
    char *nostack  = strstr(loption,"nostack");
    char *nostackb = strstr(loption,"nostackb");
-   char *candle = strstr(loption,"candle");
-   char *violin = strstr(loption,"violin");
+   char *candle   = strstr(loption,"candle");
+   char *violin   = strstr(loption,"violin");
 
    // do not delete the stack. Another pad may contain the same object
    // drawn in stack mode!
@@ -898,7 +903,6 @@ void THStack::Paint(Option_t *choptin)
             indivOpt.ToLower();
             if (nostackb) snprintf(loption,31,"%ssame%s b",noption,lnk->GetOption());
             else if (candle && (indivOpt.Contains("candle") || indivOpt.Contains("violin"))) snprintf(loption,31,"%ssame",lnk->GetOption());
-            
             else          snprintf(loption,31,"%ssame%s",noption,lnk->GetOption());
          }
          hAti = (TH1F*)(fHists->At(i));
@@ -949,7 +953,10 @@ void THStack::Paint(Option_t *choptin)
          lnk = (TObjOptLink*)lnk->Prev();
       }
    }
-   if (!lsame && !lnoaxis) fHistogram->Paint("axissame");
+
+   opt.ReplaceAll("nostack","");
+   opt.ReplaceAll("candle","");
+   if (!lsame && !opt.Contains("a")) fHistogram->Paint("axissame");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1014,8 +1021,12 @@ void THStack::SavePrimitive(std::ostream &out, Option_t *option /*= ""*/)
    TH1 *h;
    if (fHists) {
       TObjOptLink *lnk = (TObjOptLink*)fHists->FirstLink();
+      Int_t hcount = 0;
       while (lnk) {
          h = (TH1*)lnk->GetObject();
+         TString hname = h->GetName();
+         hname += Form("_stack_%d",++hcount);
+         h->SetName(hname);
          h->SavePrimitive(out,"nodraw");
          out<<"   "<<GetName()<<"->Add("<<h->GetName()<<","<<quote<<lnk->GetOption()<<quote<<");"<<std::endl;
          lnk = (TObjOptLink*)lnk->Next();
@@ -1041,4 +1052,12 @@ void THStack::SetMinimum(Double_t minimum)
 {
    fMinimum = minimum;
    if (fHistogram) fHistogram->SetMinimum(minimum);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// Get iterator over internal hists list.
+TIter THStack::begin() const
+{
+  return TIter(fHists);
 }

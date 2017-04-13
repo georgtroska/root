@@ -44,6 +44,12 @@ namespace platform {
   ///
   const void* DLSym(const std::string& Name, std::string* Err = nullptr);
 
+  ///\brief Demangle the given symbol name
+  ///
+  /// \returns The demangled name or an empty string
+  ///
+  std::string Demangle(const std::string& Symbol);
+
   ///\brief Close a handle to a shared library.
   ///
   /// \param [in] Lib - Handle to library from previous call to DLOpen
@@ -146,6 +152,15 @@ inline namespace windows {
                            std::string* WindSDK = nullptr,
                            std::string* UniversalSDK = nullptr,
                            bool Verbose = false);
+
+  ///\brief Runtime override for _CxxThrowException in Interpreter.
+  //
+  __declspec(noreturn) void __stdcall ClingRaiseSEHException(void*, void*);
+
+  void RegisterEHFrames(uint8_t* Addr, size_t Size, uintptr_t BaseAddr,
+                        bool Block);
+
+  void DeRegisterEHFrames(uint8_t* Addr, size_t Size);
 
 } // namespace windows
 #endif // LLVM_ON_WIN32

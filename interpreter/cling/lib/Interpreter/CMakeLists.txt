@@ -55,7 +55,6 @@ add_cling_library(clingInterpreter OBJECT
   DynamicLookup.cpp
   DynamicExprInfo.cpp
   Exception.cpp
-  ExceptionRTTI.cpp
   ExternalInterpreterSource.cpp
   ForwardDeclPrinter.cpp
   IncrementalExecutor.cpp
@@ -81,32 +80,11 @@ add_cling_library(clingInterpreter OBJECT
   ${LIBS}
 )
 
-if(NOT WIN32)
-set_source_files_properties(ExceptionRTTI.cpp COMPILE_FLAGS "-fexceptions -frtti")
-endif()
-
-#set_source_files_properties(Exception.cpp COMPILE_FLAGS " /EHsc ")
-# the line above doesn't work, and it gives the following warnings:
-# cl : Command line warning D9025: overriding '/EHs' with '/EHs-'
-# cl : Command line warning D9025: overriding '/EHc' with '/EHc-'
-# so let's change the target compiler flags instead:
-if(MSVC)
-  get_target_property(CI_COMPILE_FLAGS clingInterpreter COMPILE_FLAGS)
-  if(${CI_COMPILE_FLAGS})
-    string(REPLACE "/EHs-c-" "" CI_COMPILE_FLAGS ${CI_COMPILE_FLAGS})
-    # add /EHsc exception handling flag
-    set(CI_COMPILE_FLAGS "${CI_COMPILE_FLAGS} /EHsc")
-  else()
-    set(CI_COMPILE_FLAGS "/EHsc")
-  endif()
-  set_target_properties(clingInterpreter PROPERTIES
-    COMPILE_FLAGS ${CI_COMPILE_FLAGS})
-endif()
-
 #add_dependencies(clangDriver ClangAttrList ClangDiagnosticDriver
 #                 ClangDriverOptions ClangCC1Options ClangCC1AsOptions)
 
 if (UNIX)
+  set_source_files_properties(Exception.cpp COMPILE_FLAGS "-fexceptions -frtti")
 
   # Remove all -I from CMAKE_CXX_FLAGS
   string(REPLACE ";" " " __flags "${CMAKE_CXX_FLAGS}")
@@ -226,7 +204,7 @@ if (UNIX)
       if (CLING_CXX_PATH)
         string(FIND "${CLING_CXX_PATH}" "--gcc-toolchain=" cling_gcc_toolchain)
         if ("${cling_gcc_toolchain}" EQUAL -1)
-          set(CLING_CXX_PATH "${CLING_CXX_PATH} --gcc-toolchain=${gcctoolchain}")
+          set(CLING_CXX_PATH_ARGS "--gcc-toolchain=${gcctoolchain}")
         endif()
       endif()
       if (CLING_CXX_RLTV)
@@ -240,8 +218,9 @@ if (UNIX)
 
   if(NOT CLING_CXX_HEADERS)
     if (CLING_CXX_PATH)
-      execute_process(COMMAND ${CLING_CXX_PATH} -xc++ -E -v /dev/null
+      execute_process(COMMAND ${CLING_CXX_PATH} ${CLING_CXX_PATH_ARGS} -xc++ -E -v /dev/null
                       OUTPUT_QUIET ERROR_VARIABLE CLING_CXX_HEADERS)
+      set(CLING_CXX_PATH "${CLING_CXX_PATH} ${CLING_CXX_PATH_ARGS}")
     else()
       # convert CMAKE_CXX_FLAGS to a list for execute_process
       string(REPLACE " " ";" cling_tmp_arg_list ${CMAKE_CXX_FLAGS})
@@ -280,10 +259,17 @@ if (UNIX)
 
   MESSAGE(STATUS "Cling will look for C++ headers in '${CLING_CXX_HEADERS}' at runtime.")
 
+  # In modules builds we 'mount' our own stl modulemap for libstdc++. In order to do this,
+  # we need to know where is ROOT/cling STL.
+  if (cxxmodules)
+    set_property(GLOBAL PROPERTY ROOT_CLING_CXX_HEADERS_LOCATION "${CLING_CXX_HEADERS}")
+  endif(cxxmodules)
+
   if (CLING_CXX_PATH)
     MESSAGE(STATUS "And if not found, will invoke: '${CLING_CXX_PATH}' for them.")
     if (CLING_CXX_RLTV)
       MESSAGE(STATUS "And then fallback to: '${CLING_CXX_RLTV}'")
+      # FIXME: We should use file(GENERATE) cmake command.
       file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h.in
         "
         #define CLING_CXX_INCL \"${CLING_CXX_HEADERS}\"

@@ -8,10 +8,12 @@
   *                                                                    *
   **********************************************************************/
 
-#include "Math/IFunction.h"
-#include "Math/VirtualIntegrator.h"
 #include "Math/Integrator.h"
+
+#include "Math/Error.h"
+#include "Math/IFunction.h"
 #include "Math/IntegratorMultiDim.h"
+#include "Math/VirtualIntegrator.h"
 
 #include "Math/AdaptiveIntegratorMultiDim.h"
 
@@ -22,9 +24,6 @@
 
 
 #include "RConfigure.h"
-// #ifndef ROOTINCDIR
-// #define MATH_NO_PLUGIN_MANAGER
-// #endif
 
 #include <algorithm>
 #include <functional>

@@ -11,69 +11,37 @@
 
 #include "TRatioPlot.h"
 
-#ifndef ROOT_TROOT
 #include "TROOT.h"
-#endif
 
-#ifndef ROOT_TClassRef
 #include "TClassRef.h"
-#endif
 
-#ifndef ROOT_TVirtualPad
 #include "TVirtualPad.h"
-#endif
 
-#ifndef ROOT_TBrowser
 #include "TBrowser.h"
-#endif
 
-#ifndef ROOT_TH1
 #include "TH1.h"
-#endif
 
-#ifndef ROOT_TF1
 #include "TF1.h"
-#endif
 
-#ifndef ROOT_TPad
 #include "TPad.h"
-#endif
 
-#ifndef ROOT_TString
 #include "TString.h"
-#endif
 
-#ifndef ROOT_TMath
 #include "TMath.h"
-#endif
 
-#ifndef ROOT_TGraphAsymmErrors
 #include "TGraphAsymmErrors.h"
-#endif
 
-#ifndef ROOT_TGraphErrors
 #include "TGraphErrors.h"
-#endif
 
-#ifndef ROOT_TGaxis
 #include "TGaxis.h"
-#endif
 
-#ifndef ROOT_TLine
 #include "TLine.h"
-#endif
 
-#ifndef ROOT_TVirtualFitter
 #include "TVirtualFitter.h"
-#endif
 
-#ifndef ROOT_TFitResult
 #include "TFitResult.h"
-#endif
 
-#ifndef ROOT_THStack
 #include "THStack.h"
-#endif
 
 #include <iostream>
 
@@ -433,6 +401,11 @@ void TRatioPlot::SetupPads() {
       fLowerPad = 0;
    }
 
+   if (!gPad) {
+      Error("SetupPads", "need to create a canvas first");
+      return;
+   }
+
    double pm = fInsetWidth;
    double width = gPad->GetWNDC();
    double height = gPad->GetHNDC();
@@ -568,7 +541,10 @@ Float_t TRatioPlot::GetSeparationMargin() const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Draws the ratio plot to the currently active pad. Takes the following options
+/// Draws the ratio plot to the currently active pad. Therefore it requires that
+/// a TCanvas has been created first.
+///
+/// It takes the following options
 ///
 /// | Option     | Description                                                  |
 /// | ---------- | ------------------------------------------------------------ |
@@ -614,6 +590,11 @@ void TRatioPlot::Draw(Option_t *option)
       fHideLabelMode = TRatioPlot::HideLabelMode::kNoHide;
    } else {
       fHideLabelMode = TRatioPlot::HideLabelMode::kHideLow; // <- default
+   }
+
+   if (!gPad) {
+      Error("Draw", "need to create a canvas first");
+      return;
    }
 
    TVirtualPad *padsav = gPad;

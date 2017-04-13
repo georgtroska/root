@@ -27,6 +27,11 @@
  * (http://tmva.sourceforge.net/LICENSE)                                          *
  **********************************************************************************/
 
+/*! \class TMVA::ResultsMulticlass
+\ingroup TMVA
+Class which takes the results of a multiclass classification
+*/
+
 #include "TMVA/ResultsMulticlass.h"
 
 #include "TMVA/DataSet.h"
@@ -47,7 +52,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 /// constructor
 
-TMVA::ResultsMulticlass::ResultsMulticlass( const DataSetInfo* dsi, TString resultsName  ) 
+TMVA::ResultsMulticlass::ResultsMulticlass( const DataSetInfo* dsi, TString resultsName  )
    : Results( dsi, resultsName  ),
      IFitterTarget(),
      fLogger( new MsgLogger(Form("ResultsMultiClass%s",resultsName.Data()) , kINFO) ),
@@ -61,7 +66,7 @@ TMVA::ResultsMulticlass::ResultsMulticlass( const DataSetInfo* dsi, TString resu
 ////////////////////////////////////////////////////////////////////////////////
 /// destructor
 
-TMVA::ResultsMulticlass::~ResultsMulticlass() 
+TMVA::ResultsMulticlass::~ResultsMulticlass()
 {
    delete fLogger;
 }
@@ -71,45 +76,51 @@ TMVA::ResultsMulticlass::~ResultsMulticlass()
 void TMVA::ResultsMulticlass::SetValue( std::vector<Float_t>& value, Int_t ievt )
 {
    if (ievt >= (Int_t)fMultiClassValues.size()) fMultiClassValues.resize( ievt+1 );
-   fMultiClassValues[ievt] = value; 
+   fMultiClassValues[ievt] = value;
 }
- 
-//_______________________________________________________________________
- 
+
+////////////////////////////////////////////////////////////////////////////////
+
 Double_t TMVA::ResultsMulticlass::EstimatorFunction( std::vector<Double_t> & cutvalues ){
-   
+
    DataSet* ds = GetDataSet();
    ds->SetCurrentType( GetTreeType() );
-   Float_t truePositive = 0;
-   Float_t falsePositive = 0;
-   Float_t sumWeights = 0;
- 
-   for (Int_t ievt=0; ievt<ds->GetNEvents(); ievt++) {
-      const Event* ev = ds->GetEvent(ievt);
-      Float_t w = ev->GetWeight();
-      if(ev->GetClass()==fClassToOptimize)
-         sumWeights += w;
-      bool passed = true;
-      for(UInt_t icls = 0; icls<cutvalues.size(); ++icls){
-         if(cutvalues.at(icls)<0. ? -fMultiClassValues[ievt][icls]<cutvalues.at(icls) : fMultiClassValues[ievt][icls]<=cutvalues.at(icls)){
-            passed = false;
+
+   // Cache optimisation, count true and false positives with memory access
+   // instead of code branch.
+   Float_t positives[2] = {0, 0};
+
+   for (Int_t ievt = 0; ievt < ds->GetNEvents(); ievt++) {
+      UInt_t  evClass = fEventClasses[ievt];
+      Float_t w       = fEventWeights[ievt];
+
+      Bool_t break_outer_loop = false;
+      for (UInt_t icls = 0; icls < cutvalues.size(); ++icls) {
+         auto value    = fMultiClassValues[ievt][icls];
+         auto cutvalue = cutvalues.at(icls);
+         if (cutvalue < 0. ? (-value < cutvalue) : (+value <= cutvalue)) {
+            break_outer_loop = true;
             break;
          }
       }
-      if(!passed)
+
+      if (break_outer_loop) {
          continue;
-      if(ev->GetClass()==fClassToOptimize)
-         truePositive += w;
-      else
-         falsePositive += w;
+      }
+
+      Bool_t isEvCurrClass = (evClass == fClassToOptimize);
+      positives[isEvCurrClass] += w;
    }
-   
-   Float_t eff = truePositive/sumWeights;
-   Float_t pur = truePositive/(truePositive+falsePositive);
+
+   const Float_t truePositive  = positives[1];
+   const Float_t falsePositive = positives[0];
+
+   Float_t eff         = truePositive / fClassSumWeights[fClassToOptimize];
+   Float_t pur         = truePositive / (truePositive + falsePositive);
    Float_t effTimesPur = eff*pur;
-   
+
    Float_t toMinimize = std::numeric_limits<float>::max();
-   if( effTimesPur > 0 )
+   if (effTimesPur > std::numeric_limits<float>::min())
       toMinimize = 1./(effTimesPur); // we want to minimize 1/efficiency*purity
 
    fAchievableEff.at(fClassToOptimize) = eff;
@@ -118,48 +129,64 @@ Double_t TMVA::ResultsMulticlass::EstimatorFunction( std::vector<Double_t> & cut
    return toMinimize;
 }
 
-//_______________________________________________________________________
+////////////////////////////////////////////////////////////////////////////////
+///calculate the best working point (optimal cut values)
+///for the multiclass classifier
 
 std::vector<Double_t> TMVA::ResultsMulticlass::GetBestMultiClassCuts(UInt_t targetClass){
 
-   //calculate the best working point (optimal cut values)
-   //for the multiclass classifier
    const DataSetInfo* dsi = GetDataSetInfo();
-   Log() << kINFO << "Calculating best set of cuts for class " 
+   Log() << kINFO << "Calculating best set of cuts for class "
          << dsi->GetClassInfo( targetClass )->GetName() << Endl;
-  
+
    fClassToOptimize = targetClass;
    std::vector<Interval*> ranges(dsi->GetNClasses(), new Interval(-1,1));
-   
+
+   fClassSumWeights.clear();
+   fEventWeights.clear();
+   fEventClasses.clear();
+
+   for (UInt_t icls = 0; icls < dsi->GetNClasses(); ++icls) {
+      fClassSumWeights.push_back(0);
+   }
+
+   DataSet *ds = GetDataSet();
+   for (Int_t ievt = 0; ievt < ds->GetNEvents(); ievt++) {
+      const Event *ev = ds->GetEvent(ievt);
+      fClassSumWeights[ev->GetClass()] += ev->GetWeight();
+      fEventWeights.push_back(ev->GetWeight());
+      fEventClasses.push_back(ev->GetClass());
+   }
+
    const TString name( "MulticlassGA" );
    const TString opts( "PopSize=100:Steps=30" );
    GeneticFitter mg( *this, name, ranges, opts);
-   
+
    std::vector<Double_t> result;
    mg.Run(result);
 
    fBestCuts.at(targetClass) = result;
-  
+
    UInt_t n = 0;
    for( std::vector<Double_t>::iterator it = result.begin(); it<result.end(); it++ ){
       Log() << kINFO << "  cutValue[" <<dsi->GetClassInfo( n )->GetName()  << "] = " << (*it) << ";"<< Endl;
       n++;
    }
-   
+
    return result;
 }
 
-//_______________________________________________________________________
+////////////////////////////////////////////////////////////////////////////////
+/// this function fills the mva response histos for multiclass classification
 
 void  TMVA::ResultsMulticlass::CreateMulticlassHistos( TString prefix, Int_t nbins, Int_t /* nbins_high */ )
 {
-   //this function fills the mva response histos for multiclass classification
    Log() << kINFO << "Creating multiclass response histograms..." << Endl;
-      
+
    DataSet* ds = GetDataSet();
    ds->SetCurrentType( GetTreeType() );
    const DataSetInfo* dsi = GetDataSetInfo();
-   
+
    std::vector<std::vector<TH1F*> > histos;
    Float_t xmin = 0.-0.0002;
    Float_t xmax = 1.+0.0002;
@@ -201,7 +228,7 @@ void  TMVA::ResultsMulticlass::CreateMulticlassHistos( TString prefix, Int_t nbi
    histos_highbin.at(iCls).push_back(new TH1F(name,name,nbins_high,xmin,xmax));
    }
    }
-      
+
    for (Int_t ievt=0; ievt<ds->GetNEvents(); ievt++) {
    const Event* ev = ds->GetEvent(ievt);
    Int_t cls = ev->GetClass();

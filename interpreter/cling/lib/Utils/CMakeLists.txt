@@ -24,12 +24,15 @@ endif()
 
 add_cling_library(clingUtils OBJECT
   AST.cpp
+  Diagnostics.cpp
   ParserStateRAII.cpp
+  Output.cpp
   Paths.cpp
   PlatformMac.cpp
   PlatformPosix.cpp
   PlatformWin.cpp
   SourceNormalization.cpp
+  UTF8.cpp
   Validation.cpp
 
   LINK_LIBS

@@ -59,7 +59,11 @@ namespace cling {
     ///\param[in] D - The declaration to forward.
     ///\returns true on success.
     ///
-    bool UnloadDecl(clang::Decl* D) { return Visit(D); }
+    bool UnloadDecl(clang::Decl* D) {
+      if (D->isFromASTFile())
+        return true;
+      return Visit(D);
+    }
 
     ///\brief If it falls back in the base class just remove the declaration
     /// only from the declaration context.
@@ -163,6 +167,13 @@ namespace cling {
     ///\returns true on success.
     ///
     bool VisitNamespaceDecl(clang::NamespaceDecl* NSD);
+
+    ///\brief Removes all extern "C" declarations.
+    /// @param[in] LSD - The declaration context to be removed.
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitLinkageSpecDecl(clang::LinkageSpecDecl* LSD);
 
     ///\brief Removes a Tag (class/union/struct/enum). Most of the other
     /// containers fall back into that case.

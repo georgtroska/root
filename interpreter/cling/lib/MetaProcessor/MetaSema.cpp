@@ -17,8 +17,6 @@
 #include "cling/Interpreter/Value.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
 
-#include "../lib/Interpreter/IncrementalParser.h"
-
 #include "clang/AST/ASTContext.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Frontend/CompilerInstance.h"
@@ -63,6 +61,22 @@ namespace cling {
       return AR_Success;
     }
     return AR_Failure;
+  }
+
+  MetaSema::ActionResult MetaSema::actOnOCommand(int optLevel) {
+    if (optLevel >= 0 && optLevel < 4) {
+      m_Interpreter.setDefaultOptLevel(optLevel);
+      return AR_Success;
+    }
+    m_MetaProcessor.getOuts()
+      << "Refusing to set invalid cling optimization level "
+      << optLevel << '\n';
+    return AR_Failure;
+  }
+
+  void MetaSema::actOnOCommand() {
+    m_MetaProcessor.getOuts() << "Current cling optimization level: "
+                              << m_Interpreter.getDefaultOptLevel() << '\n';
   }
 
   MetaSema::ActionResult MetaSema::actOnTCommand(llvm::StringRef inputFile,
@@ -125,15 +139,20 @@ namespace cling {
           expression = FuncName + args.str();
           // Give the user some context in case we have a problem invoking
           expression += " /* invoking function corresponding to '.x' */";
+
+          // Above transaction might have set a different OptLevel; use that.
+          int prevOptLevel = m_Interpreter.getDefaultOptLevel();
+          m_Interpreter.setDefaultOptLevel(T->getCompilationOpts().OptLevel);
           if (m_Interpreter.echo(expression, result) != Interpreter::kSuccess)
             actionResult = AR_Failure;
+          m_Interpreter.setDefaultOptLevel(prevOptLevel);
         }
       } else
         FuncName = file; // Not great, but pass the diagnostics below something
 
       if (expression.empty()) {
         using namespace clang;
-        DiagnosticsEngine& Diags = m_Interpreter.getCI()->getDiagnostics();
+        DiagnosticsEngine& Diags = m_Interpreter.getDiagnostics();
         unsigned diagID
           = Diags.getCustomDiagID (DiagnosticsEngine::Level::Warning,
                                    "cannot find function '%0()'; falling back to .L");
@@ -287,10 +306,9 @@ namespace cling {
     m_Interpreter.compareInterpreterState(name);
   }
 
-  void MetaSema::actOnstatsCommand(llvm::StringRef name) const {
-    if (name.equals("ast")) {
-      m_Interpreter.getCI()->getSema().getASTContext().PrintStats();
-    }
+  void MetaSema::actOnstatsCommand(llvm::StringRef name,
+                                   llvm::StringRef args) const {
+    m_Interpreter.dump(name, args);
   }
 
   void MetaSema::actOndynamicExtensionsCommand(SwitchMode mode/* = kToggle*/)
@@ -361,8 +379,11 @@ namespace cling {
       "   " << metaString << "compareState <filename>\t- Compare the interpreter's state with the one"
                              "\n\t\t\t\t  saved in a given file\n"
       "\n"
-      "   " << metaString << "stats [name]\t\t- Show stats for various internal data"
-                             "\n\t\t\t\t  structures (only 'ast' for the time being)\n"
+      "   " << metaString << "stats [name]\t\t- Show stats for internal data structures\n"
+                             "\t\t\t\t  'ast'  abstract syntax tree stats\n"
+                             "\t\t\t\t  'asttree [filter]'  abstract syntax tree layout\n"
+                             "\t\t\t\t  'decl' dump ast declarations\n"
+                             "\t\t\t\t  'undo' show undo stack\n"
       "\n"
       "   " << metaString << "help\t\t\t- Shows this information\n"
       "\n"

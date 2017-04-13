@@ -65,8 +65,9 @@ class. All details about the various painting options are given in this class.
     That’s why it did not have any title and name parameters in the constructors.
 
 The picture below gives an example:
+
 Begin_Macro(source)
-TCanvas* GraphExample() {
+{
    TCanvas *c1 = new TCanvas("c1","A Simple Graph Example",200,10,700,500);
    Double_t x[100], y[100];
    Int_t n = 20;
@@ -76,7 +77,6 @@ TCanvas* GraphExample() {
    }
    TGraph* gr = new TGraph(n,x,y);
    gr->Draw("AC*");
-   return c1;
 }
 End_Macro
 */
@@ -869,7 +869,7 @@ Double_t TGraph::Eval(Double_t x, TSpline *spline, Option_t *option) const
    if (fNpoints == 0) return 0;
    if (fNpoints == 1) return fY[0];
 
-   if (option) {
+   if (option && *option) {
       TString opt = option;
       opt.ToLower();
       // create a TSpline every time when using option "s" and no spline pointer is given

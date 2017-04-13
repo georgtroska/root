@@ -67,6 +67,16 @@ namespace cling {
     ActionResult actOnLCommand(llvm::StringRef file,
                                Transaction** transaction = 0);
 
+    ///\brief O command sets the optimization level.
+    ///
+    ///\param[in] optLevel - The optimization level to set.
+    ///
+    ActionResult actOnOCommand(int optLevel);
+
+    ///\brief O command prints the current optimization level.
+    ///
+    void actOnOCommand();
+
     ///\brief T command prepares the tag files for giving semantic hints.
     ///
     ///\param[in] inputFile - The source file of the map.
@@ -169,8 +179,10 @@ namespace cling {
     ///\brief Show stats for various internal data structures.
     ///
     ///\param[in] name - Name of the structure.
+    ///\param[in] filter - Optional predicate for filtering displayed stats.
     ///
-    void actOnstatsCommand(llvm::StringRef name) const;
+    void actOnstatsCommand(llvm::StringRef name,
+                           llvm::StringRef filter = llvm::StringRef()) const;
 
     ///\brief Switches on/off the experimental dynamic extensions (dynamic
     /// scopes) and late binding.

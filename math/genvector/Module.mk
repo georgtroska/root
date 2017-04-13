@@ -16,12 +16,7 @@ GENVECTORDIRT := $(call stripsrc,$(GENVECTORDIR)/test)
 ##### libGenvector #####
 GENVECTORL    := $(MODDIRI)/Math/LinkDef_GenVector.h
 GENVECTORL32  := $(MODDIRI)/Math/LinkDef_GenVector32.h
-GENVECTORLINC :=  \
-                $(MODDIRI)/Math/LinkDef_Point3D.h \
-                $(MODDIRI)/Math/LinkDef_Vector3D.h \
-                $(MODDIRI)/Math/LinkDef_Vector4D.h \
-                $(MODDIRI)/Math/LinkDef_GenVector2.h \
-                $(MODDIRI)/Math/LinkDef_Rotation.h
+GENVECTORLINC := $(MODDIRI)/Math/LinkDef_GenVector2.h 
 GENVECTORDS   := $(call stripsrc,$(MODDIRS)/G__GenVector.cxx)
 GENVECTORDS32 := $(call stripsrc,$(MODDIRS)/G__GenVector32.cxx)
 GENVECTORDO   := $(GENVECTORDS:.cxx=.o)
@@ -71,9 +66,18 @@ GENVECTORMAP  := $(GENVECTORLIB:.$(SOEXT)=.rootmap)
 GENVECTORMAP32:= $(GENVECTORLIB:.$(SOEXT)=32.rootmap)
 
 # used in the main Makefile
-ALLHDRS      += $(patsubst $(MODDIRI)/Math/%.h,include/Math/%.h,$(GENVECTORH))
+GENVECTORH_REL := $(patsubst $(MODDIRI)/Math/%.h,include/Math/%.h,$(GENVECTORH))
+ALLHDRS      += $(GENVECTORH_REL)
 ALLLIBS      += $(GENVECTORLIB)
 ALLMAPS      += $(GENVECTORMAP) $(GENVECTORMAP32)
+ifeq ($(CXXMODULES),yes)
+  CXXMODULES_HEADERS := $(patsubst include/%,header \"%\"\\n,$(GENVECTORH_REL))
+  CXXMODULES_MODULEMAP_CONTENTS += module Math_GenVector { \\n
+  CXXMODULES_MODULEMAP_CONTENTS += $(CXXMODULES_HEADERS)
+  CXXMODULES_MODULEMAP_CONTENTS += "export \* \\n"
+  CXXMODULES_MODULEMAP_CONTENTS += link \"$(GENVECTORLIB)\" \\n
+  CXXMODULES_MODULEMAP_CONTENTS += } \\n
+endif
 
 # include all dependency files
 INCLUDEFILES += $(GENVECTORDEP)

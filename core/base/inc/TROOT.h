@@ -25,15 +25,9 @@
 //                                                                      //
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef ROOT_TDirectory
 #include "TDirectory.h"
-#endif
-#ifndef ROOT_TList
 #include "TList.h"
-#endif
-#ifndef ROOT_RConfigure
 #include "RConfigure.h"
-#endif
 
 #include <atomic>
 
@@ -95,10 +89,12 @@ namespace ROOT {
    // Enable support for multi-threading within the ROOT code,
    // in particular, enables the global mutex to make ROOT thread safe/aware.
    void EnableThreadSafety();
-   // Manage implicit multi-threading within ROOT
+   /// \brief Enable ROOT's implicit multi-threading for all objects and methods that provide an internal
+   /// parallelisation mechanism.
    void EnableImplicitMT(UInt_t numthreads = 0);
    void DisableImplicitMT();
    Bool_t IsImplicitMTEnabled();
+   UInt_t GetImplicitMTPoolSize();
 }
 
 class TROOT : public TDirectory {
@@ -349,6 +345,21 @@ public:
    static Int_t       ConvertVersionInt2Code(Int_t v);
    static Int_t       RootVersionCode();
    static const char**&GetExtraInterpreterArgs();
+
+   static const TString& GetRootSys();
+   static const TString& GetBinDir();
+   static const TString& GetLibDir();
+   static const TString& GetIncludeDir();
+   static const TString& GetEtcDir();
+   static const TString& GetDataDir();
+   static const TString& GetDocDir();
+   static const TString& GetMacroDir();
+   static const TString& GetTutorialDir();
+   static const TString& GetSourceDir();
+   static const TString& GetIconPath();
+   static const TString& GetTTFFontDir();
+
+   // Backward compatibility function - do not use for new code
    static const char *GetTutorialsDir();
 
    ClassDef(TROOT,0)  //Top level (or root) structure for all classes

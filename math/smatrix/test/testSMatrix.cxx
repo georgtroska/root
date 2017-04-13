@@ -1036,8 +1036,12 @@ int test18() {
   SMatrix<double,7,7,MatRepSym<double,7> > Sinv = S.Inverse(ifail);
   iret |= compare(ifail,0,"sym7x7 inversion");
   SMatrix<double,7> Id = S*Sinv;
+  int tol = 10;
+#ifdef __FAST_MATH__
+  tol = 16;
+#endif
   for (int i = 0; i < 7; ++i) {
-     int iiret = compare(Id(i,i),1.,"inv result",10);
+     int iiret = compare(Id(i,i),1.,"inv result",tol);
      if (iiret) {
         std::cout << "Comparison failed for Id(" << i << "," << i << ") == " << Id(i,i) << " != 1."
                   << " with delta == " << std::abs(Id(i,i) - 1)
@@ -1102,7 +1106,7 @@ int test19() {
   //std::cout << S << "\n" << Sinv << "\n" << Id << "\n";
 
   for (int i = 0; i < 7; ++i)
-     iret |= compare(Id(i,i),float(1.),"inv sym result",50);
+     iret |= compare(Id(i,i),float(1.),"inv sym result",1000);
 
   double sum = 0;
   for (int i = 0; i < 7; ++i)
@@ -1129,14 +1133,14 @@ int test19() {
   //std::cout << M << "\n" << Minv << "\n" << Id << "\n";
 
   for (int i = 0; i < 7; ++i)
-     iret |= compare(Id(i,i),float(1.),"inv result",50);
+     iret |= compare(Id(i,i),float(1.),"inv result",1000);
 
   sum = 0;
   for (int i = 0; i < 7; ++i)
     for (int j = 0; j <i; ++j)
       sum+= std::fabs(Id(i,j) );  // sum of off diagonal elements
 
-  iret |= compare(sum < 1.E-4, true,"inv off diag");
+  iret |= compare(sum < 1.E-3, true,"inv off diag");
 
 
   return iret;

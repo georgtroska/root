@@ -20,15 +20,13 @@
 
 #include "TError.h"
 #include "TThread.h"
-
+#include "ROOT/TPoolManager.hxx"
 #include <atomic>
-#include "tbb/task_scheduler_init.h"
 
-
-static tbb::task_scheduler_init &GetScheduler()
+static std::shared_ptr<ROOT::Internal::TPoolManager> &R__GetPoolManagerMT()
 {
-   static tbb::task_scheduler_init scheduler(tbb::task_scheduler_init::deferred);
-   return scheduler;
+   static std::shared_ptr<ROOT::Internal::TPoolManager> schedMT;
+   return schedMT;
 }
 
 static bool &GetImplicitMTFlag()
@@ -52,17 +50,12 @@ static std::atomic_int &GetParTreeProcessingCount()
 extern "C" void ROOT_TImplicitMT_EnableImplicitMT(UInt_t numthreads)
 {
    if (!GetImplicitMTFlag()) {
-      if (!GetScheduler().is_active()) {
+      if (ROOT::Internal::TPoolManager::GetPoolSize() == 0) {
          TThread::Initialize();
-
-         if (numthreads == 0)
-            numthreads = tbb::task_scheduler_init::automatic;
-
-         GetScheduler().initialize(numthreads);
       }
+      R__GetPoolManagerMT() = ROOT::Internal::GetPoolManager(numthreads);
       GetImplicitMTFlag() = true;
-   }
-   else {
+   } else {
       ::Warning("ROOT_TImplicitMT_EnableImplicitMT", "Implicit multi-threading is already enabled");
    }
 };
@@ -71,8 +64,8 @@ extern "C" void ROOT_TImplicitMT_DisableImplicitMT()
 {
    if (GetImplicitMTFlag()) {
       GetImplicitMTFlag() = false;
-   }
-   else {
+      R__GetPoolManagerMT().reset();
+   } else {
       ::Warning("ROOT_TImplicitMT_DisableImplicitMT", "Implicit multi-threading is already disabled");
    }
 };
@@ -81,6 +74,12 @@ extern "C" bool ROOT_TImplicitMT_IsImplicitMTEnabled()
 {
    return GetImplicitMTFlag();
 };
+
+extern "C" UInt_t ROOT_TImplicitMT_GetImplicitMTPoolSize()
+{
+   return ROOT::Internal::TPoolManager::GetPoolSize();
+};
+
 
 extern "C" void ROOT_TImplicitMT_EnableParBranchProcessing()
 {

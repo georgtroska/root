@@ -3,7 +3,8 @@
 #  @author Attila Bagoly <battila93@gmail.com>
 # This class will transform the TMVA original output to HTML formated output.
 
-import DataLoader
+from JsMVA import DataLoader
+from JsMVA.Utils import xrange
 import cgi
 import re
 
@@ -281,7 +282,7 @@ class transformTMVAOutputToHTML:
                         self.iterLines.next()
                         lineIter.next()
                     tmp_str += "<td><b>" + WelcomeHeader.group(1) + "</b></td></tr>"
-                    tmp_str += "<tr><td><img src='https://rawgit.com/root-mirror/root/master/tutorials/tmva/tmva_logo.svg' width='100%' /><br />"
+                    tmp_str += "<tr><td><img src='https://rawgit.com/root-project/root/master/tutorials/tmva/tmva_logo.svg' width='100%' /><br />"
                     tmp_str += "<center><b>" + EndWelcome.group(1) + "</b></center></td></tr>"
                 else:
                     lmatch = re.match(r"\s*(<\w+>\s*)*\s*:\s*(.*)", nextline)

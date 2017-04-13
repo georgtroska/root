@@ -2,13 +2,17 @@
 #  CheckCompiler.cmake
 #---------------------------------------------------------------------------------------------------
 
+include(CheckLanguage)
 #---Enable FORTRAN (unfortunatelly is not not possible in all cases)-------------------------------
 if(fortran)
   #--Work-around for CMake issue 0009220
   if(DEFINED CMAKE_Fortran_COMPILER AND CMAKE_Fortran_COMPILER MATCHES "^$")
     set(CMAKE_Fortran_COMPILER CMAKE_Fortran_COMPILER-NOTFOUND)
   endif()
-  enable_language(Fortran OPTIONAL)
+  check_language(Fortran)
+  if(CMAKE_Fortran_COMPILER)
+    enable_language(Fortran)
+  endif()
 else()
   set(CMAKE_Fortran_COMPILER CMAKE_Fortran_COMPILER-NOTFOUND)
 endif()
@@ -29,6 +33,11 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   string(REGEX REPLACE "^.*[ ]version[ ][0-9]+\\.([0-9]+).*" "\\1" CLANG_MINOR "${_clang_version_info}")
   message(STATUS "Found Clang. Major version ${CLANG_MAJOR}, minor version ${CLANG_MINOR}")
   set(COMPILER_VERSION clang${CLANG_MAJOR}${CLANG_MINOR})
+  if(ccache)
+    # https://bugzilla.samba.org/show_bug.cgi?id=8118 and color.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qunused-arguments -fcolor-diagnostics")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Qunused-arguments -fcolor-diagnostics")
+  endif()
 else()
   set(CLANG_MAJOR 0)
   set(CLANG_MINOR 0)
@@ -111,36 +120,6 @@ if(libcxx)
   endif()
 endif()
 
-
-#---Check for cxxmodules option------------------------------------------------------------
-if(cxxmodules)
-  # Copy-pasted from HandleLLVMOptions.cmake, please keep up to date.
-  set(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
-  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -fmodules -fcxx-modules")
-  # Check that we can build code with modules enabled, and that repeatedly
-  # including <cassert> still manages to respect NDEBUG properly.
-  CHECK_CXX_SOURCE_COMPILES("#undef NDEBUG
-                             #include <cassert>
-                             #define NDEBUG
-                             #include <cassert>
-                             int main() { assert(this code is not compiled); }"
-                             CXX_SUPPORTS_MODULES)
-  set(CMAKE_REQUIRED_FLAGS ${OLD_CMAKE_REQUIRED_FLAGS})
-  if(CXX_SUPPORTS_MODULES)
-    file(COPY ${CMAKE_SOURCE_DIR}/build/unix/module.modulemap DESTINATION ${ROOT_INCLUDE_DIR})
-    # This var is useful when we want to compile things without cxxmodules.
-    set(ROOT_CXXMODULES_CXXFLAGS "-fmodules -fcxx-modules -fmodules-cache-path=${CMAKE_BINARY_DIR}/include/pcms/")
-    if(NOT APPLE)
-      set(ROOT_CXXMODULES_CXXFLAGS "${ROOT_CXXMODULES_CXXFLAGS} -Xclang -fmodules-local-submodule-visibility")
-    endif(NOT APPLE)
-    set(ROOT_CXXMODULES_CFLAGS "-fmodules -fmodules-cache-path=${CMAKE_BINARY_DIR}/include/pcms/")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ROOT_CXXMODULES_CFLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ROOT_CXXMODULES_CXXFLAGS}")
-  else()
-    message(FATAL_ERROR "cxxmodules is not supported by this compiler")
-  endif()
-endif(cxxmodules)
-
 #---Need to locate thead libraries and options to set properly some compilation flags----------------
 find_package(Threads)
 if(CMAKE_USE_PTHREADS_INIT)
@@ -186,6 +165,18 @@ endif()
 if(gnuinstall)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DR__HAVE_CONFIG")
 endif()
+
+#---Check if we use the new libstdc++ CXX11 ABI-----------------------------------------------------
+# Necessary to compile check_cxx_source_compiles this early
+include(CheckCXXSourceCompiles)
+check_cxx_source_compiles(
+"
+#include <string>
+#if _GLIBCXX_USE_CXX11_ABI == 0
+  #error NOCXX11
+#endif
+int main() {}
+" GLIBCXX_USE_CXX11_ABI)
 
 #---Print the final compiler flags--------------------------------------------------------------------
 message(STATUS "ROOT Platform: ${ROOT_PLATFORM}")
