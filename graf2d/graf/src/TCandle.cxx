@@ -60,6 +60,36 @@ TCandle::TCandle()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+/// TCandle constructor passing a draw-option.
+
+TCandle::TCandle(char *opt)
+{
+   fIsCalculated  = 0;
+   fIsRaw         = 0;
+   fPosCandleAxis = 0.;
+   fCandleWidth   = 1.0;
+   fMean          = 0.;
+   fMedian        = 0.;
+   fMedianErr     = 0;
+   fBoxUp         = 0.;
+   fBoxDown       = 0.;
+   fWhiskerUp     = 0.;
+   fWhiskerDown   = 0.;
+   fNDatapoints   = 0;
+   fDismiss = 0;
+   fLogX          = 0;
+   fLogY          = 0;
+   fNDrawPoints   = 0;
+   fNHistoPoints  = 0;
+   fAxisMin       = 0.;
+   fAxisMax       = 0.;
+   fOption        = kNoOption;
+   fProj          = NULL;
+   fDatapoints    = 0;
+   ParseOption(opt);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 /// TCandle constructor for raw-data candles.
 
 TCandle::TCandle(const Double_t candlePos, const Double_t candleWidth, Long64_t n, Double_t * points)
@@ -126,6 +156,39 @@ TCandle::TCandle(const Double_t candlePos, const Double_t candleWidth, TH1D *pro
 
 TCandle::~TCandle() {
    if (fIsRaw && fProj) delete fProj;
+}
+////////////////////////////////////////////////////////////////////////////////
+/// Getting the DrawOption by passing any option string
+/// The return value will be only the candle-draw-option
+
+char * TCandle::GetDrawOption() {
+   if (fOption == 0) return 0;
+   //Doing this allow also calls of CANDLE1X or CANDLEX and so on
+   if (fOption == TCandle("CANDLEX1").GetOption()) return "CANDLEX1";
+   if (fOption == TCandle("CANDLEX2").GetOption()) return "CANDLEX2";
+   if (fOption == TCandle("CANDLEX3").GetOption()) return "CANDLEX3";
+   if (fOption == TCandle("CANDLEX4").GetOption()) return "CANDLEX4";
+   if (fOption == TCandle("CANDLEX5").GetOption()) return "CANDLEX5";
+   if (fOption == TCandle("CANDLEX6").GetOption()) return "CANDLEX6";
+   if (fOption == TCandle("CANDLEY1").GetOption()) return "CANDLEY1";
+   if (fOption == TCandle("CANDLEY2").GetOption()) return "CANDLEY2";
+   if (fOption == TCandle("CANDLEY3").GetOption()) return "CANDLEY3";
+   if (fOption == TCandle("CANDLEY4").GetOption()) return "CANDLEY4";
+   if (fOption == TCandle("CANDLEY5").GetOption()) return "CANDLEY5";
+   if (fOption == TCandle("CANDLEY6").GetOption()) return "CANDLEY6";
+   if (fOption == TCandle("VIOLIN1X").GetOption()) return "VIOLIN1X";
+   if (fOption == TCandle("VIOLIN2X").GetOption()) return "VIOLIN2X";
+   if (fOption == TCandle("VIOLIN1Y").GetOption()) return "VIOLIN1Y";
+   if (fOption == TCandle("VIOLIN2Y").GetOption()) return "VIOLIN2Y";
+   
+   // all other cases are a CANDLE(..)-command - or VIOLIN...
+   
+   char out[64];
+   if (IsVertical())
+      sprintf(out, "CANDLEX(%d)", myOption%kHorizontal);
+   else
+      sprintf(out, "CANDLEY(%d)", myOption%kHorizontal);
+   return out;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

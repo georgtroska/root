@@ -92,6 +92,7 @@ protected:
 public:
 
    TCandle();
+   TCandle(char *opt);
    TCandle(const Double_t candlePos, const Double_t candleWidth, Long64_t n, Double_t * points);
    TCandle(const Double_t candlePos, const Double_t candleWidth, TH1D *proj);
    TCandle(const TCandle &candle);
@@ -122,6 +123,8 @@ public:
    virtual void   SetQ3(Double_t q3) { fBoxDown = q3; }
 
    int            ParseOption(char *optin);
+   char *         GetDrawOption();
+   long           GetOption() { return fOption; }
 
    ClassDef(TCandle,1)  //A Candle
 };
