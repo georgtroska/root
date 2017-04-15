@@ -92,7 +92,7 @@ protected:
 public:
 
    TCandle();
-   TCandle(char *opt);
+   TCandle(const char *opt);
    TCandle(const Double_t candlePos, const Double_t candleWidth, Long64_t n, Double_t * points);
    TCandle(const Double_t candlePos, const Double_t candleWidth, TH1D *proj);
    TCandle(const TCandle &candle);

@@ -1035,7 +1035,7 @@ void TH2Editor::SetModel(TObject* obj)
       fAddBB->SetState(kButtonDown);
       
       std::cout << "Drawoption is: " << str << std::endl;
-      TCandle myCandle(str);
+      TCandle myCandle(str.Data());
       if (myCandle.GetOption() != 0) {
          fAddCandle->SetState(kButtonDown);
          if (myCandle.IsVertical()) {
@@ -1045,8 +1045,8 @@ void TH2Editor::SetModel(TObject* obj)
             fCandleGroup->SetButton(kCANDLE_Y, kTRUE);
             fCandleGroup->SetButton(kCANDLE_X, kFALSE);
          }
-         char myCandleOpt[64];
-         myCandleOpt = myCandle.GetDrawOption()
+         char *myCandleOpt;
+         myCandleOpt = myCandle.GetDrawOption();
          if (myCandleOpt == "CANDLEX1" || myCandleOpt == "CANDLEY1") fCandleCombo->Select(kCANDLE_1);
          else if (myCandleOpt == "CANDLEX2" || myCandleOpt == "CANDLEY2") fCandleCombo->Select(kCANDLE_2);        
          else if (myCandleOpt == "CANDLEX3" || myCandleOpt == "CANDLEY3") fCandleCombo->Select(kCANDLE_3);        

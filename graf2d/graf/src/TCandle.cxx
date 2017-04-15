@@ -62,7 +62,7 @@ TCandle::TCandle()
 ////////////////////////////////////////////////////////////////////////////////
 /// TCandle constructor passing a draw-option.
 
-TCandle::TCandle(char *opt)
+TCandle::TCandle(const char *opt)
 {
    fIsCalculated  = 0;
    fIsRaw         = 0;
@@ -86,7 +86,12 @@ TCandle::TCandle(char *opt)
    fOption        = kNoOption;
    fProj          = NULL;
    fDatapoints    = 0;
-   ParseOption(opt);
+   
+   // Conversion necessarry in order to cast from const char* to char*
+   char myopt[128];
+   strlcpy(myopt,opt,128);
+   
+   ParseOption(myopt);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -185,9 +190,9 @@ char * TCandle::GetDrawOption() {
    
    char out[64];
    if (IsVertical())
-      sprintf(out, "CANDLEX(%d)", myOption%kHorizontal);
+      sprintf(out, "CANDLEX(%d)", fOption%kHorizontal);
    else
-      sprintf(out, "CANDLEY(%d)", myOption%kHorizontal);
+      sprintf(out, "CANDLEY(%d)", fOption%kHorizontal);
    return out;
 }
 
