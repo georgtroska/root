@@ -251,7 +251,7 @@ TH2Editor::TH2Editor(const TGWindow *p, Int_t width,
    
    fAddCandle = new TGCheckButton(f7, "Candle",kCANDLE_ONOFF);
    fAddCandle ->SetToolTipText("Draw candle plot or violin plot");
-   f7->AddFrame(fAddCandle, new TGLayoutHints(kLHintsLeft, 6, 1, 1, 3));
+   f7->AddFrame(fAddCandle, new TGLayoutHints(kLHintsLeft, 6, 0, 1, 3));
 
    TGCompositeFrame *f8 = new TGCompositeFrame(f6, 40, 20, kVerticalFrame);
    f6->AddFrame(f8, new TGLayoutHints(kLHintsLeft, 5, 1, 0, 0));
@@ -271,15 +271,15 @@ TH2Editor::TH2Editor(const TGWindow *p, Int_t width,
 
    fAddBox = new TGCheckButton(f8, "Box", kBOX_ONOFF);
    fAddBox ->SetToolTipText("A box is drawn for each cell with surface proportional to contents");
-   f8->AddFrame(fAddBox, new TGLayoutHints(kLHintsLeft, 6, 1, 3, 0));
+   f8->AddFrame(fAddBox, new TGLayoutHints(kLHintsLeft, 4, 1, 3, 0));
 
    fAddScat = new TGCheckButton(f8, "Scat", kSCAT_ONOFF);
    fAddScat ->SetToolTipText("Draw a scatter-plot");
-   f8->AddFrame(fAddScat, new TGLayoutHints(kLHintsLeft, 6, 1, 1, 0));
+   f8->AddFrame(fAddScat, new TGLayoutHints(kLHintsLeft, 4, 1, 1, 0));
 
    fAddPalette = new TGCheckButton(f8, "Palette", kPALETTE_ONOFF);
    fAddPalette ->SetToolTipText("Add color palette beside the histogram");
-   f8->AddFrame(fAddPalette, new TGLayoutHints(kLHintsLeft, 6, 1, 1, 0));
+   f8->AddFrame(fAddPalette, new TGLayoutHints(kLHintsLeft, 4, 1, 1, 0));
 
    f9 = new TGCompositeFrame(this, 80, 20, kHorizontalFrame);
    AddFrame(f9, new TGLayoutHints(kLHintsTop, 3, 1, 2, 0));
@@ -729,7 +729,7 @@ void TH2Editor::CreateCandleTab()
    //f1->AddFrame(fCandleX, new TGLayoutHints(kLHintsLeft ,3 ,3,3,-7));
    //f1->AddFrame(fCandleY, new TGLayoutHints(kLHintsLeft ,0 ,3,3,-7));
    fCandleGroup->AddFrame(fCandleCombo, new TGLayoutHints(kLHintsLeft, 4, -12, -2, -7));
-   fCandleCombo->Resize(61, 20);
+   fCandleCombo->Resize(70, 20);
    fCandleCombo->Associate(this);
    
    fCandleGroup->SetLayoutHints(new TGLayoutHints(kLHintsLeft ,-8,1,-2,-7),fCandleX);
@@ -764,7 +764,7 @@ void TH2Editor::CreateCandleTab()
       f2->AddFrame(fAddLabel, new TGLayoutHints(kLHintsLeft, 15, 10, 4, 4));
       
       fCandleUserCombo[i] = BuildUserCandleComboBox(f3, myEnum[i]);
-      f3->AddFrame(fCandleUserCombo[i], new TGLayoutHints(kLHintsLeft, 10, 1, 2, 1));
+      f3->AddFrame(fCandleUserCombo[i], new TGLayoutHints(kLHintsLeft, 10, 1, 3, 2));
       fCandleUserCombo[i]->Resize(61, 20);
       fCandleUserCombo[i]->Associate(this);
    }
@@ -1047,14 +1047,14 @@ void TH2Editor::SetModel(TObject* obj)
          }
          char *myCandleOpt;
          myCandleOpt = myCandle.GetDrawOption();
-         if (myCandleOpt == "CANDLEX1" || myCandleOpt == "CANDLEY1") fCandleCombo->Select(kCANDLE_1);
-         else if (myCandleOpt == "CANDLEX2" || myCandleOpt == "CANDLEY2") fCandleCombo->Select(kCANDLE_2);        
-         else if (myCandleOpt == "CANDLEX3" || myCandleOpt == "CANDLEY3") fCandleCombo->Select(kCANDLE_3);        
-         else if (myCandleOpt == "CANDLEX4" || myCandleOpt == "CANDLEY4") fCandleCombo->Select(kCANDLE_4);        
-         else if (myCandleOpt == "CANDLEX5" || myCandleOpt == "CANDLEY5") fCandleCombo->Select(kCANDLE_5);        
-         else if (myCandleOpt == "CANDLEX6" || myCandleOpt == "CANDLEY6") fCandleCombo->Select(kCANDLE_6);
-         else if (myCandleOpt == "VIOLINX1" || myCandleOpt == "VIOLINY1") fCandleCombo->Select(kVIOLIN_1);
-         else if (myCandleOpt == "VIOLINX2" || myCandleOpt == "VIOLINY2") fCandleCombo->Select(kVIOLIN_2); 
+         if (strstr(myCandleOpt,"CANDLEX1") || strstr(myCandleOpt,"CANDLEY1") ) fCandleCombo->Select(kCANDLE_1);
+         else if (strstr(myCandleOpt,"CANDLEX2") || strstr(myCandleOpt,"CANDLEY2") ) fCandleCombo->Select(kCANDLE_2);        
+         else if (strstr(myCandleOpt,"CANDLEX3") || strstr(myCandleOpt,"CANDLEY3") ) fCandleCombo->Select(kCANDLE_3);        
+         else if (strstr(myCandleOpt,"CANDLEX4") || strstr(myCandleOpt,"CANDLEY4") ) fCandleCombo->Select(kCANDLE_4);        
+         else if (strstr(myCandleOpt,"CANDLEX5") || strstr(myCandleOpt,"CANDLEY5") ) fCandleCombo->Select(kCANDLE_5);        
+         else if (strstr(myCandleOpt,"CANDLEX6") || strstr(myCandleOpt,"CANDLEY6") ) fCandleCombo->Select(kCANDLE_6);
+         else if (strstr(myCandleOpt,"VIOLINX1") || strstr(myCandleOpt,"VIOLINY1") ) fCandleCombo->Select(kVIOLIN_1);
+         else if (strstr(myCandleOpt,"VIOLINX2") || strstr(myCandleOpt,"VIOLINY2") ) fCandleCombo->Select(kVIOLIN_2); 
          else InterpretCandleOption(str);
                   
          
