@@ -34,7 +34,7 @@ directly to draw a candle.
 /// TCandle default constructor.
 
 TCandle::TCandle()
-   : TAttLine(), TAttFill(), TAttMarker(), fOptionStr("")
+  // : TAttLine(), TAttFill(), TAttMarker(), fOptionStr("")
 {
    fIsCalculated  = 0;
    fIsRaw         = 0;
@@ -64,7 +64,7 @@ TCandle::TCandle()
 /// TCandle constructor passing a draw-option.
 
 TCandle::TCandle(const char *opt)
-   : TAttLine(), TAttFill(), TAttMarker(), fOptionStr("")
+  // : TAttLine(), TAttFill(), TAttMarker(), fOptionStr("")
 {
    fIsCalculated  = 0;
    fIsRaw         = 0;
@@ -217,6 +217,7 @@ int TCandle::ParseOption(char * opt) {
 
       Bool_t useIndivOption = false;
 
+      if (direction == ' ') direction = 'X';
       if (preset == ' ') { // Check if the user wants to set the properties individually
          char *brOpen = strstr(opt,"(");
          char *brClose = strstr(opt,")");
@@ -237,6 +238,7 @@ int TCandle::ParseOption(char * opt) {
       //Handle option "CANDLE" ,"CANDLEX" or "CANDLEY" to behave like "CANDLEX1" or "CANDLEY1"
       if (!useIndivOption && !fOption ) {
          fOption = fallbackCandle;
+         sprintf(fOptionStr,"CANDLE%c2",direction);
       }
    }
 
@@ -269,7 +271,8 @@ int TCandle::ParseOption(char * opt) {
          strncpy(l,"        ",6);
 
       Bool_t useIndivOption = false;
-
+      
+      if (direction == ' ') direction = 'X';
       if (preset == ' ') { // Check if the user wants to set the properties individually
          char *brOpen = strstr(opt,"(");
          char *brClose = strstr(opt,")");
@@ -281,12 +284,18 @@ int TCandle::ParseOption(char * opt) {
             sscanf(indivOption,"(%d)", (int*) &fOption);
             if (isHorizontal) {fOption = (CandleOption)(fOption + kHorizontal);}
             strncpy(brOpen,"                ",brClose-brOpen+1); //Cleanup
+            
+            
+            sprintf(fOptionStr,"VIOLIN%c(%d)",direction,fOption);
 
-         }
+         } 
+      } else {
+         sprintf(fOptionStr,"VIOLIN%c%c",direction,preset);
       }
       //Handle option "VIOLIN" ,"VIOLINX" or "VIOLINY" to behave like "VIOLINX1" or "VIOLINY1"
       if (!useIndivOption && !fOption ) {
          fOption = fallbackCandle;
+         sprintf(fOptionStr,"VIOLIN%c1",direction);
       }
    }
 

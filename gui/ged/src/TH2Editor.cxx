@@ -1035,7 +1035,6 @@ void TH2Editor::SetModel(TObject* obj)
       fAddFB->SetState(kButtonDown);
       fAddBB->SetState(kButtonDown);
       
-      std::cout << "TH2Editor: Drawoption is: " << str << std::endl;
       TCandle myCandle(str.Data());
       if (myCandle.GetOption() != 0) {
          fAddCandle->SetState(kButtonDown);
@@ -1046,11 +1045,11 @@ void TH2Editor::SetModel(TObject* obj)
             fCandleGroup->SetButton(kCANDLE_Y, kTRUE);
             fCandleGroup->SetButton(kCANDLE_X, kFALSE);
          }
-         std::cout << "TH2Editor: HERE!" << std::endl;
          
          const char * myCandleOpt = myCandle.GetDrawOption();
-         std::cout << "TH2Editor: Candleoption: " << myCandleOpt << std::endl;
          
+         //setting the preset boxes
+         for (int i = 0; i < 8; i++) fCandleUserCombo[i]->SetEnabled(kFALSE);
          if (strstr(myCandleOpt,"CANDLEX1") || strstr(myCandleOpt,"CANDLEY1") ) fCandleCombo->Select(kCANDLE_1);
          else if (strstr(myCandleOpt,"CANDLEX2") || strstr(myCandleOpt,"CANDLEY2") ) fCandleCombo->Select(kCANDLE_2);        
          else if (strstr(myCandleOpt,"CANDLEX3") || strstr(myCandleOpt,"CANDLEY3") ) fCandleCombo->Select(kCANDLE_3);        
@@ -1059,7 +1058,12 @@ void TH2Editor::SetModel(TObject* obj)
          else if (strstr(myCandleOpt,"CANDLEX6") || strstr(myCandleOpt,"CANDLEY6") ) fCandleCombo->Select(kCANDLE_6);
          else if (strstr(myCandleOpt,"VIOLINX1") || strstr(myCandleOpt,"VIOLINY1") ) fCandleCombo->Select(kVIOLIN_1);
          else if (strstr(myCandleOpt,"VIOLINX2") || strstr(myCandleOpt,"VIOLINY2") ) fCandleCombo->Select(kVIOLIN_2); 
-         else InterpretCandleOption(myCandleOpt);
+         else {
+            fCandleCombo->Select(kCANDLE_USER);
+            for (int i = 0; i < 8; i++) fCandleUserCombo[i]->SetEnabled(kTRUE);
+         }
+         //setting the individual combo boxes
+         InterpretCandleOption(myCandleOpt);
                
          
    

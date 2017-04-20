@@ -76,7 +76,7 @@ protected:
    int  fNHistoPoints;
 
    CandleOption fOption;                  ///< Setting the style of the candle
-   char fOptionStr[16];                   ///< String to draw the candle
+   char fOptionStr[128];                   ///< String to draw the candle
    int fLogX;                             ///< make the candle appear logx-like
    int fLogY;                             ///< make the candle appear logy-like
 
