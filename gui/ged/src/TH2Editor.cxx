@@ -886,6 +886,7 @@ Bool_t TH2Editor::AcceptModel(TObject* obj)
 void TH2Editor::InterpretCandleOption(TString str) {
     char chopt[128];
     strlcpy(chopt,str,128);
+    std::cout << "Doing individual candle interpretation!" << std::endl;
     
     TCandle candle;
     long myCandleOption = candle.ParseOption(chopt);
@@ -1034,7 +1035,7 @@ void TH2Editor::SetModel(TObject* obj)
       fAddFB->SetState(kButtonDown);
       fAddBB->SetState(kButtonDown);
       
-      std::cout << "Drawoption is: " << str << std::endl;
+      std::cout << "TH2Editor: Drawoption is: " << str << std::endl;
       TCandle myCandle(str.Data());
       if (myCandle.GetOption() != 0) {
          fAddCandle->SetState(kButtonDown);
@@ -1045,8 +1046,11 @@ void TH2Editor::SetModel(TObject* obj)
             fCandleGroup->SetButton(kCANDLE_Y, kTRUE);
             fCandleGroup->SetButton(kCANDLE_X, kFALSE);
          }
-         char *myCandleOpt;
-         myCandleOpt = myCandle.GetDrawOption();
+         std::cout << "TH2Editor: HERE!" << std::endl;
+         
+         const char * myCandleOpt = myCandle.GetDrawOption();
+         std::cout << "TH2Editor: Candleoption: " << myCandleOpt << std::endl;
+         
          if (strstr(myCandleOpt,"CANDLEX1") || strstr(myCandleOpt,"CANDLEY1") ) fCandleCombo->Select(kCANDLE_1);
          else if (strstr(myCandleOpt,"CANDLEX2") || strstr(myCandleOpt,"CANDLEY2") ) fCandleCombo->Select(kCANDLE_2);        
          else if (strstr(myCandleOpt,"CANDLEX3") || strstr(myCandleOpt,"CANDLEY3") ) fCandleCombo->Select(kCANDLE_3);        
@@ -1055,8 +1059,8 @@ void TH2Editor::SetModel(TObject* obj)
          else if (strstr(myCandleOpt,"CANDLEX6") || strstr(myCandleOpt,"CANDLEY6") ) fCandleCombo->Select(kCANDLE_6);
          else if (strstr(myCandleOpt,"VIOLINX1") || strstr(myCandleOpt,"VIOLINY1") ) fCandleCombo->Select(kVIOLIN_1);
          else if (strstr(myCandleOpt,"VIOLINX2") || strstr(myCandleOpt,"VIOLINY2") ) fCandleCombo->Select(kVIOLIN_2); 
-         else InterpretCandleOption(str);
-                  
+         else InterpretCandleOption(myCandleOpt);
+               
          
    
       } else  {

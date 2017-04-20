@@ -34,6 +34,7 @@ directly to draw a candle.
 /// TCandle default constructor.
 
 TCandle::TCandle()
+   : TAttLine(), TAttFill(), TAttMarker(), fOptionStr("")
 {
    fIsCalculated  = 0;
    fIsRaw         = 0;
@@ -63,6 +64,7 @@ TCandle::TCandle()
 /// TCandle constructor passing a draw-option.
 
 TCandle::TCandle(const char *opt)
+   : TAttLine(), TAttFill(), TAttMarker(), fOptionStr("")
 {
    fIsCalculated  = 0;
    fIsRaw         = 0;
@@ -87,18 +89,22 @@ TCandle::TCandle(const char *opt)
    fProj          = NULL;
    fDatapoints    = 0;
    
+   std::cout << "TCandle: " << opt << std::endl;
+   
    // Conversion necessarry in order to cast from const char* to char*
    char myopt[128];
    strlcpy(myopt,opt,128);
    
+   
    ParseOption(myopt);
+   std::cout << "End of TCandle(const char*)" << myopt << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// TCandle constructor for raw-data candles.
 
 TCandle::TCandle(const Double_t candlePos, const Double_t candleWidth, Long64_t n, Double_t * points)
-   : TAttLine(), TAttFill(), TAttMarker()
+   : TAttLine(), TAttFill(), TAttMarker(), fOptionStr("")
 {
    //Preliminary values only, need to be calculated before paint
    fMean          = 0;
@@ -129,7 +135,7 @@ TCandle::TCandle(const Double_t candlePos, const Double_t candleWidth, Long64_t 
 /// TCandle TH1 data constructor.
 
 TCandle::TCandle(const Double_t candlePos, const Double_t candleWidth, TH1D *proj)
-   : TAttLine(), TAttFill(), TAttMarker()
+   : TAttLine(), TAttFill(), TAttMarker(), fOptionStr("")
 {
    //Preliminary values only, need to be calculated before paint
    fMean          = 0;
@@ -162,39 +168,6 @@ TCandle::TCandle(const Double_t candlePos, const Double_t candleWidth, TH1D *pro
 TCandle::~TCandle() {
    if (fIsRaw && fProj) delete fProj;
 }
-////////////////////////////////////////////////////////////////////////////////
-/// Getting the DrawOption by passing any option string
-/// The return value will be only the candle-draw-option
-
-char * TCandle::GetDrawOption() {
-   if (fOption == 0) return 0;
-   //Doing this allow also calls of CANDLE1X or CANDLEX and so on
-   if (fOption == TCandle("CANDLEX1").GetOption()) return "CANDLEX1";
-   if (fOption == TCandle("CANDLEX2").GetOption()) return "CANDLEX2";
-   if (fOption == TCandle("CANDLEX3").GetOption()) return "CANDLEX3";
-   if (fOption == TCandle("CANDLEX4").GetOption()) return "CANDLEX4";
-   if (fOption == TCandle("CANDLEX5").GetOption()) return "CANDLEX5";
-   if (fOption == TCandle("CANDLEX6").GetOption()) return "CANDLEX6";
-   if (fOption == TCandle("CANDLEY1").GetOption()) return "CANDLEY1";
-   if (fOption == TCandle("CANDLEY2").GetOption()) return "CANDLEY2";
-   if (fOption == TCandle("CANDLEY3").GetOption()) return "CANDLEY3";
-   if (fOption == TCandle("CANDLEY4").GetOption()) return "CANDLEY4";
-   if (fOption == TCandle("CANDLEY5").GetOption()) return "CANDLEY5";
-   if (fOption == TCandle("CANDLEY6").GetOption()) return "CANDLEY6";
-   if (fOption == TCandle("VIOLIN1X").GetOption()) return "VIOLIN1X";
-   if (fOption == TCandle("VIOLIN2X").GetOption()) return "VIOLIN2X";
-   if (fOption == TCandle("VIOLIN1Y").GetOption()) return "VIOLIN1Y";
-   if (fOption == TCandle("VIOLIN2Y").GetOption()) return "VIOLIN2Y";
-   
-   // all other cases are a CANDLE(..)-command - or VIOLIN...
-   
-   char out[64];
-   if (IsVertical())
-      sprintf(out, "CANDLEX(%d)", fOption%kHorizontal);
-   else
-      sprintf(out, "CANDLEY(%d)", fOption%kHorizontal);
-   return out;
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Parsing of the option-string.
@@ -210,6 +183,8 @@ int TCandle::ParseOption(char * opt) {
 
       char direction = ' ';
       char preset = ' ';
+      
+      
 
       if (l[6] >= 'A' && l[6] <= 'Z') direction = l[6];
       if (l[6] >= '1' && l[6] <= '9') preset = l[6];
@@ -253,8 +228,11 @@ int TCandle::ParseOption(char * opt) {
             sscanf(indivOption,"(%d)", (int*) &fOption);
             if (isHorizontal) {fOption = (CandleOption)(fOption + kHorizontal);}
             strncpy(brOpen,"                ",brClose-brOpen+1); //Cleanup
-
+            
+            sprintf(fOptionStr,"CANDLE%c(%d)",direction,fOption);
          }
+      } else {
+         sprintf(fOptionStr,"CANDLE%c%c",direction,preset);
       }
       //Handle option "CANDLE" ,"CANDLEX" or "CANDLEY" to behave like "CANDLEX1" or "CANDLEY1"
       if (!useIndivOption && !fOption ) {
@@ -313,6 +291,7 @@ int TCandle::ParseOption(char * opt) {
    }
 
    fIsCalculated = false;
+
    return fOption;
 
 }

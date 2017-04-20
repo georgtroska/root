@@ -76,6 +76,7 @@ protected:
    int  fNHistoPoints;
 
    CandleOption fOption;                  ///< Setting the style of the candle
+   char fOptionStr[16];                   ///< String to draw the candle
    int fLogX;                             ///< make the candle appear logx-like
    int fLogY;                             ///< make the candle appear logy-like
 
@@ -123,7 +124,7 @@ public:
    virtual void   SetQ3(Double_t q3) { fBoxDown = q3; }
 
    int            ParseOption(char *optin);
-   char *         GetDrawOption();
+   const char *         GetDrawOption() { return fOptionStr; }
    long           GetOption() { return fOption; }
 
    ClassDef(TCandle,1)  //A Candle
