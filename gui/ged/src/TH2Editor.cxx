@@ -3240,6 +3240,7 @@ void TH2Editor::DoCandleCombo() {
         
     } else if (fCandleCombo->GetSelected() == kCANDLE_USER) { // Individual candle
         long candleOption = 0;
+        for (int i = 0; i < 8; i++) fCandleUserCombo[i]->SetEnabled(kTRUE);
         //Box
         if (fCandleUserCombo[0]->GetSelected() == kCANDLE_BOX1)          candleOption +=1;
         //Median
@@ -3267,6 +3268,7 @@ void TH2Editor::DoCandleCombo() {
         
         sprintf(myOptionStr, "CANDLE%c(%ld)",direction, candleOption);
     } else { //Candle or violin with presets
+        for (int i = 0; i < 8; i++) fCandleUserCombo[i]->SetEnabled(kFALSE);
         char type[7] = "CANDLE";
         int preset = 0;
         if (fCandleCombo->GetSelected() == kCANDLE_1) preset = 1;
