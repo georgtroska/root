@@ -45,6 +45,7 @@ public:
       kHistoZeroIndicator = 10000000,
       kHorizontal         = 1000000000 ///< If this bit is not set it is vertical
    };
+  
 
 protected:
 

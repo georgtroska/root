@@ -152,9 +152,6 @@
 #include "TCandle.h"
 
 
-//REMOVE!!
-#include <iostream>
-
 
 ClassImp(TH2Editor)
 
@@ -176,7 +173,7 @@ enum ETH2Wid {
    kXBINOFFSET, kYBINOFFSET,
    kCANDLE_X, kCANDLE_Y,
    kCANDLE_TYPE,
-   kCANDLE_USER, kCANDLE_1, kCANDLE_2, kCANDLE_3, kCANDLE_4, kCANDLE_5, kCANDLE_6,
+   kCANDLE_NONE, kCANDLE_USER, kCANDLE_1, kCANDLE_2, kCANDLE_3, kCANDLE_4, kCANDLE_5, kCANDLE_6,
    kVIOLIN_1, kVIOLIN_2,
    kCANDLE_BOX_TYPE, kCANDLE_MEDIAN_TYPE, kCANDLE_MEAN_TYPE, kCANDLE_WHISKER_TYPE, kCANDLE_ANCHOR_TYPE, kCANDLE_POINTS_TYPE, kCANDLE_HISTO_TYPE, kCANDLE_ZERO_TYPE,
    kCANDLE_BOX0, kCANDLE_BOX1,
@@ -863,7 +860,8 @@ void TH2Editor::ConnectSignals2Slots()
    fSldYMax->Connect("ReturnPressed()", "TH2Editor", this, "DoYAxisRange()");
    fFrameColor->Connect("ColorSelected(Pixel_t)", "TH2Editor", this, "DoFillColor(Pixel_t)");
    fFramePattern->Connect("PatternSelected(Style_t)", "TH2Editor", this, "DoFillPattern(Style_t)");
-
+   fCandleCombo->Connect("Selected(Int_t)","TH2Editor", this, "DoCandleCombo()");
+   for (int i = 0; i < 7; i++) fCandleUserCombo[i]->Connect("Selected(Int_t)","TH2Editor", this, "DoCandleCombo()");
    fInit = kFALSE;
 }
 
@@ -886,7 +884,6 @@ Bool_t TH2Editor::AcceptModel(TObject* obj)
 void TH2Editor::InterpretCandleOption(TString str) {
     char chopt[128];
     strlcpy(chopt,str,128);
-    std::cout << "Doing individual candle interpretation!" << std::endl;
     
     TCandle candle;
     long myCandleOption = candle.ParseOption(chopt);
@@ -971,7 +968,6 @@ void TH2Editor::SetModel(TObject* obj)
 
    if (str == "") {
       // default options = Scatter-Plot
-      std::cout << "NO DRAW-OPTION" << std::endl;
       ShowFrame(f6);
       HideFrame(f9);
       HideFrame(f12);
@@ -1449,7 +1445,6 @@ void TH2Editor::DoHistChanges()
    if (!str.Contains(fCutString) && !str.Contains(ocut))
       str+=fCutString;
    SetDrawOption(str);
-   std::cout << "Setting draw option: " << str << std::endl;
    Update();
 }
 
@@ -1751,7 +1746,9 @@ void TH2Editor::DoAddBB()
 void TH2Editor::DoAddCandle(Bool_t on)
 {
    if (fAvoidSignal) return;
+   if (on) ShowFrame(fCandle); else HideFrame(fCandle);
    DoHistChanges();
+   Update();
 
 }
 
@@ -3106,7 +3103,7 @@ TGComboBox* TH2Editor::BuildCandlePresetsComboBox(TGFrame* parent, Int_t id)
 {
    TGComboBox *c = new TGComboBox(parent, id);
 
-   c->AddEntry("None" , kCONT_NONE);
+   c->AddEntry("None" , kCANDLE_NONE);
    c->AddEntry("(..)", kCANDLE_USER);
    c->AddEntry("Candle1", kCANDLE_1);
    c->AddEntry("Candle2", kCANDLE_2);
@@ -3231,5 +3228,67 @@ void TH2Editor::RecursiveRemove(TObject* obj)
    if (obj == fHist) {
       fHist = 0;
    }
+}
+
+void TH2Editor::DoCandleCombo() {
+  
+    char direction = 'X';
+    if (fCandleY->IsOn()) direction = 'Y';
+    char myOptionStr[255];
+    
+    if (fCandleCombo->GetSelected() == kCANDLE_NONE) { //Switch off all candles
+        
+    } else if (fCandleCombo->GetSelected() == kCANDLE_USER) { // Individual candle
+        long candleOption = 0;
+        //Box
+        if (fCandleUserCombo[0]->GetSelected() == kCANDLE_BOX1)          candleOption +=1;
+        //Median
+        if (fCandleUserCombo[1]->GetSelected() == kCANDLE_MEDIAN1)       candleOption +=10;
+        else if (fCandleUserCombo[1]->GetSelected() == kCANDLE_MEDIAN2)  candleOption +=20;
+        else if (fCandleUserCombo[1]->GetSelected() == kCANDLE_MEDIAN3)  candleOption +=30;
+        //Mean
+        if (fCandleUserCombo[2]->GetSelected() == kCANDLE_MEAN1)         candleOption +=100;
+        else if (fCandleUserCombo[2]->GetSelected() == kCANDLE_MEAN3)    candleOption +=300;
+        //Whister
+        if (fCandleUserCombo[3]->GetSelected() == kCANDLE_WHISKER1)      candleOption +=1000;
+        else if (fCandleUserCombo[3]->GetSelected() == kCANDLE_WHISKER2) candleOption +=2000;
+        //Anchor
+        if (fCandleUserCombo[4]->GetSelected() == kCANDLE_ANCHOR1)       candleOption +=10000;
+        //Points
+        if (fCandleUserCombo[5]->GetSelected() == kCANDLE_POINTS1)       candleOption +=100000;
+        else if (fCandleUserCombo[5]->GetSelected() == kCANDLE_POINTS2)  candleOption +=200000;
+        else if (fCandleUserCombo[5]->GetSelected() == kCANDLE_POINTS3)  candleOption +=300000;
+        //Histo
+        if (fCandleUserCombo[6]->GetSelected() == kCANDLE_HISTO1)        candleOption +=1000000;
+        else if (fCandleUserCombo[6]->GetSelected() == kCANDLE_HISTO2)   candleOption +=2000000;
+        else if (fCandleUserCombo[6]->GetSelected() == kCANDLE_HISTO3)   candleOption +=3000000;
+        //ZeroLine
+        if (fCandleUserCombo[7]->GetSelected() == kCANDLE_ZERO1)         candleOption +=10000000;
+        
+        sprintf(myOptionStr, "CANDLE%c(%ld)",direction, candleOption);
+    } else { //Candle or violin with presets
+        char type[7] = "CANDLE";
+        int preset = 0;
+        if (fCandleCombo->GetSelected() == kCANDLE_1) preset = 1;
+        else if (fCandleCombo->GetSelected() == kCANDLE_2) preset = 2;
+        else if (fCandleCombo->GetSelected() == kCANDLE_3) preset = 3;
+        else if (fCandleCombo->GetSelected() == kCANDLE_4) preset = 4;
+        else if (fCandleCombo->GetSelected() == kCANDLE_5) preset = 5;
+        else if (fCandleCombo->GetSelected() == kCANDLE_6) preset = 6; 
+        else { 
+            sprintf(type,"VIOLIN");
+            //In case of violin reset the fillcolor too, in case its white!
+            /* not implemented */
+            
+        }
+        if (fCandleCombo->GetSelected() == kVIOLIN_1) preset = 1;
+        else if (fCandleCombo->GetSelected() == kVIOLIN_2) preset = 2;
+        
+        sprintf(myOptionStr, "%s%c%d",type, direction, preset);
+    }
+    
+    SetDrawOption(myOptionStr);
+    Update();
+    
 }
 

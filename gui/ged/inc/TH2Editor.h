@@ -212,6 +212,7 @@ public:
    virtual void DoYAxisRange();
    virtual void DoFillColor(Pixel_t);
    virtual void DoFillPattern(Style_t);
+   virtual void DoCandleCombo();
 
    Int_t* Dividers(Int_t n);
 

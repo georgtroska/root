@@ -100,6 +100,7 @@ TCandle::TCandle(const char *opt)
    std::cout << "End of TCandle(const char*)" << myopt << std::endl;
 }
 
+
 ////////////////////////////////////////////////////////////////////////////////
 /// TCandle constructor for raw-data candles.
 
@@ -230,7 +231,7 @@ int TCandle::ParseOption(char * opt) {
             if (isHorizontal) {fOption = (CandleOption)(fOption + kHorizontal);}
             strncpy(brOpen,"                ",brClose-brOpen+1); //Cleanup
             
-            sprintf(fOptionStr,"CANDLE%c(%d)",direction,fOption);
+            sprintf(fOptionStr,"CANDLE%c(%ld)",direction,fOption);
          }
       } else {
          sprintf(fOptionStr,"CANDLE%c%c",direction,preset);
@@ -286,7 +287,7 @@ int TCandle::ParseOption(char * opt) {
             strncpy(brOpen,"                ",brClose-brOpen+1); //Cleanup
             
             
-            sprintf(fOptionStr,"VIOLIN%c(%d)",direction,fOption);
+            sprintf(fOptionStr,"VIOLIN%c(%ld)",direction,fOption);
 
          } 
       } else {
