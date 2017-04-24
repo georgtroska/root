@@ -25,16 +25,20 @@ elseif(APPLE)
   set(ld_library_path DYLD_LIBRARY_PATH)
   set(ssuffix .csh)
   set(scomment \#)
-  set(libprefix lib)
-  set(libsuffix .so)
+  set(libprefix ${CMAKE_SHARED_LIBRARY_PREFIX})
+  if(CMAKE_PROJECT_NAME STREQUAL ROOT)
+    set(libsuffix .so)
+  else()
+    set(libsuffix ${CMAKE_SHARED_LIBRARY_SUFFIX})
+  endif()
   set(localruntimedir ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
   set(runtimedir ${CMAKE_INSTALL_LIBDIR})
 else()
   set(ld_library_path LD_LIBRARY_PATH)
   set(ssuffix .csh)
   set(scomment \#)
-  set(libprefix lib)
-  set(libsuffix .so)
+  set(libprefix ${CMAKE_SHARED_LIBRARY_PREFIX})
+  set(libsuffix ${CMAKE_SHARED_LIBRARY_SUFFIX})
   set(localruntimedir ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
   set(runtimedir ${CMAKE_INSTALL_LIBDIR})
 endif()
@@ -450,8 +454,8 @@ function (ROOT_CXXMODULES_APPEND_TO_MODULEMAP library library_headers)
                         DllImport.h TGenericClassInfo.h
                         TSchemaHelper.h ESTLType.h RStringView.h Varargs.h
                         RootMetaSelection.h libcpp_string_view.h
-                        RWrap_libcpp_string_view.h TAtomicCountGcc.h
-                        TException.h ThreadLocalStorage.h ROOT/TThreadExecutor.hxx
+                        RWrap_libcpp_string_view.h
+                        TException.h ThreadLocalStorage.h 
                         TBranchProxyTemplate.h TGLIncludes.h TGLWSIncludes.h
                         snprintf.h strlcpy.h")
 
