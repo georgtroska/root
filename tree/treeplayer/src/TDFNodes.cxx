@@ -120,7 +120,8 @@ unsigned int TSlotStack::Pop()
 }
 
 TDataFrameImpl::TDataFrameImpl(TTree *tree, const BranchNames_t &defaultBranches)
-   : fTree(tree), fDefaultBranches(defaultBranches), fNSlots(ROOT::Internal::GetNSlots())
+   : fTree(std::shared_ptr<TTree>(tree, [](TTree *) {})), fDefaultBranches(defaultBranches),
+     fNSlots(ROOT::Internal::GetNSlots())
 {
 }
 
@@ -147,7 +148,7 @@ void TDataFrameImpl::Run()
       });
    } else {
 #endif // R__USE_IMT
-      TTreeReader r(fTree);
+      TTreeReader r(fTree.get());
 
       CreateSlots(1);
       BuildAllReaderValues(r, 0);
@@ -214,7 +215,7 @@ const BranchNames_t &TDataFrameImpl::GetDefaultBranches() const
 
 TTree *TDataFrameImpl::GetTree() const
 {
-   return fTree;
+   return fTree.get();
 }
 
 TDataFrameBranchBase *TDataFrameImpl::GetBookedBranch(const std::string &name) const

@@ -21,6 +21,9 @@ branches:
   only:
     - master
 
+# Without the top-level env, no job will be allowed to fail.
+env:
+
 matrix:
   # Abort all builds on a single failing matrix entry.
   fast_finish: true
@@ -29,6 +32,7 @@ matrix:
     # Note: Workaround travis-ci/travis-ci#4681
     # Exclude default job which lacks our included environment variables.
     - os: linux
+    - env:
 
   include:
     # There seems to be a hard limit to how many machines a Travis build will
@@ -50,6 +54,9 @@ matrix:
           packages: ['clang-3.9', 'clang-tidy-3.9', 'libstdc++-6-dev']
       compiler: clang
 
+  allow_failures:
+    # clang-tidy is still experimental
+    - env: TOOL=clang-tidy
 install:
   - |
     if [[ $TOOL == 'clang-tidy' ]]; then

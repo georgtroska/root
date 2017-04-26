@@ -375,11 +375,16 @@ function(ROOT_GENERATE_DICTIONARY dictionary)
     set(excludepathsargs ${excludepathsargs} -excludePath ${excludepath})
   endforeach()
 
+  #---build the implicit dependencies arguments
+  foreach(_dep ${_linkdef} ${_list_of_header_dependencies})
+    list(APPEND _implicitdeps CXX ${_dep})
+  endforeach()
+
   #---call rootcint------------------------------------------
   add_custom_command(OUTPUT ${dictionary}.cxx ${pcm_name} ${rootmap_name}
                      COMMAND ${command} -f  ${dictionary}.cxx ${newargs} ${excludepathsargs} ${rootmapargs}
                                         ${ARG_OPTIONS} ${definitions} ${includedirs} ${headerfiles} ${_linkdef}
-                     IMPLICIT_DEPENDS CXX ${_linkdef} ${_list_of_header_dependencies}
+                     IMPLICIT_DEPENDS ${_implicitdeps}
                      DEPENDS ${_list_of_header_dependencies} ${_linkdef} ${ROOTCINTDEP})
   get_filename_component(dictname ${dictionary} NAME)
 
@@ -772,7 +777,8 @@ function(ROOT_INSTALL_HEADERS)
     ROOT_GLOB_FILES(include_files
       RECURSE
       RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/${d}
-      FILTER ${filter} ${d}/*)
+      FILTER ${filter} 
+      ${d}/*.h ${d}/*.hxx ${d}/*.icc )
     foreach (include_file ${include_files})
       set (src ${CMAKE_CURRENT_SOURCE_DIR}/${d}/${include_file})
       set (dst ${CMAKE_BINARY_DIR}/include/${include_file})
