@@ -87,7 +87,7 @@ protected:
    void Calculate();
 
    int  GetCandleOption(const int pos) {return (fOption/(int)TMath::Power(10,pos))%10;}
-   bool IsOption(CandleOption opt);
+   
    void PaintBox(Int_t nPoints, Double_t *x, Double_t *y, Bool_t swapXY);
    void PaintLine(Double_t x1, Double_t y1, Double_t x2, Double_t y2, Bool_t swapXY);
 
@@ -127,6 +127,7 @@ public:
    int            ParseOption(char *optin);
    const char *         GetDrawOption() { return fOptionStr; }
    long           GetOption() { return fOption; }
+   bool           IsOption(CandleOption opt);
 
    ClassDef(TCandle,1)  //A Candle
 };

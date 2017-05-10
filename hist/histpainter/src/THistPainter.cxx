@@ -4930,8 +4930,23 @@ void THistPainter::PaintCandlePlot(Option_t *)
 
    Bool_t swapXY = myCandle.IsHorizontal();
    const Double_t standardCandleWidth = 0.66;
+   
+   double allMaxContent = h2->GetBinContent(h2->GetMaximumBin());
+   double allMaxIntegral = 0;
+   bool isCandle = false;
+   bool isHisto = false;
+   bool isScaled = true;
+      
+   if (myCandle.IsOption(TCandle::kHistoRight) || myCandle.IsOption(TCandle::kHistoLeft) || myCandle.IsOption(TCandle::kHistoViolin)) isHisto = true;
+   if (myCandle.IsOption(TCandle::kBox)) isCandle = true;
+   
 
    if (!swapXY) { // Vertical candle
+      //Determining the slice with the maximum content
+      for (Int_t i=Hparam.xfirst; i<=Hparam.xlast; i++) {
+         hproj = h2->ProjectionY("_px", i, i);
+         if (hproj->Integral() > allMaxIntegral) allMaxIntegral = hproj->Integral();
+      }
       for (Int_t i=Hparam.xfirst; i<=Hparam.xlast; i++) {
          Double_t binPosX = fXaxis->GetBinLowEdge(i);
          Double_t binWidth = fXaxis->GetBinWidth(i);
@@ -4939,7 +4954,11 @@ void THistPainter::PaintCandlePlot(Option_t *)
          if (hproj->GetEntries() !=0) {
             Double_t width = fH->GetBarWidth();
             Double_t offset = fH->GetBarOffset()*binWidth;
+            double myMaxContent = hproj->GetBinContent(hproj->GetMaximumBin());
+            double myIntegral = hproj->Integral();
             if (width > 0.999 && width < 1.001) width = standardCandleWidth;
+            if (isScaled && isHisto) width *= myMaxContent/allMaxContent;
+            if (isScaled && isCandle) width *= myIntegral/allMaxIntegral;
             myCandle.SetAxisPosition(binPosX+binWidth/2. + offset);
             myCandle.SetWidth(width*binWidth);
             myCandle.SetHistogram(hproj);
@@ -4947,6 +4966,11 @@ void THistPainter::PaintCandlePlot(Option_t *)
          }
       }
    } else { // Horizontal candle
+      //Determining the slice with the maximum content
+      for (Int_t i=Hparam.yfirst; i<=Hparam.ylast; i++) {
+         hproj = h2->ProjectionX("_py", i, i);
+         if (hproj->Integral() > allMaxIntegral) allMaxIntegral = hproj->Integral();
+      }
       for (Int_t i=Hparam.yfirst; i<=Hparam.ylast; i++) {
          Double_t binPosY = fYaxis->GetBinLowEdge(i);
          Double_t binWidth = fYaxis->GetBinWidth(i);
@@ -4954,7 +4978,11 @@ void THistPainter::PaintCandlePlot(Option_t *)
          if (hproj->GetEntries() !=0) {
             Double_t width = fH->GetBarWidth();
             Double_t offset = fH->GetBarOffset()*binWidth;
+            double myMaxContent = hproj->GetBinContent(hproj->GetMaximumBin());
+            double myIntegral = hproj->Integral();
             if (width > 0.999 && width < 1.001) width = standardCandleWidth;
+            if (isScaled && isHisto) width *= myMaxContent/allMaxContent;
+            if (isScaled && isCandle) width *= myIntegral/allMaxIntegral;
             myCandle.SetAxisPosition(binPosY+binWidth/2. + offset);
             myCandle.SetWidth(width*binWidth);
             myCandle.SetHistogram(hproj);
