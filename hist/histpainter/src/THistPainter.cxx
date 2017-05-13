@@ -4922,6 +4922,7 @@ void THistPainter::PaintCandlePlot(Option_t *)
    myCandle.SetOption((TCandle::CandleOption)Hoption.Candle);
    myCandle.SetMarkerColor(fH->GetLineColor());
    myCandle.SetLineColor(fH->GetLineColor());
+   myCandle.SetLineWidth(fH->GetLineWidth());
    myCandle.SetFillColor(fH->GetFillColor());
    myCandle.SetFillStyle(fH->GetFillStyle());
    myCandle.SetMarkerSize(fH->GetMarkerSize());
