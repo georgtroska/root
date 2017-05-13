@@ -83,6 +83,9 @@ protected:
 
    Double_t fAxisMin;                     ///< The Minimum which is visible by the axis (used by zero indicator)
    Double_t fAxisMax;                     ///< The Maximum which is visible by the axis (used by zero indicator)
+   
+   static Double_t fWhiskerRange;         ///< The fraction which is covered by the whiskers (0 < x < 1), default 1
+   static Double_t fBoxRange;             ///< The fraction which is covered by the box (0 < x < 1), default 0.5
 
    void Calculate();
 
@@ -128,6 +131,8 @@ public:
    const char *         GetDrawOption() { return fOptionStr; }
    long           GetOption() { return fOption; }
    bool           IsOption(CandleOption opt);
+   static void    SetWhiskerRange(const Double_t wRange);
+   static void    SetBoxRange(const Double_t bRange);
 
    ClassDef(TCandle,1)  //A Candle
 };

@@ -17,6 +17,9 @@
 #include "TPad.h"
 #include "TRandom2.h"
 
+Double_t TCandle::fWhiskerRange  = 1.0;
+Double_t TCandle::fBoxRange      = 0.5;
+
 ClassImp(TCandle)
 
 /** \class TCandle
@@ -58,6 +61,7 @@ TCandle::TCandle()
    fOption        = kNoOption;
    fProj          = NULL;
    fDatapoints    = 0;
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -169,6 +173,35 @@ TCandle::TCandle(const Double_t candlePos, const Double_t candleWidth, TH1D *pro
 TCandle::~TCandle() {
    if (fIsRaw && fProj) delete fProj;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+/// Static function to set fWhiskerRange, by setting whiskerrange, one can force
+/// the whiskers to cover the fraction of the distribution.
+/// Set wRange between 0 and 1. Default is 1
+/// TCandle::SetWhiskerRange(0.95) will set all candle-charts to cover 95% of
+/// the distribution with the whiskers.
+/// Can only be used with the standard-whisker definition
+
+void TCandle::SetWhiskerRange(const Double_t wRange) {
+   if (wRange < 0) fWhiskerRange = 0;
+   else if (wRange > 1) fWhiskerRange = 1;
+   else fWhiskerRange = wRange;
+   
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Static function to set fBoxRange, by setting whsikerrange, one can force the
+/// box of the candle-chart to cover that given fraction of the distribution.
+/// Set bRange between 0 and 1. Defaut is 0.5
+/// TCandle::SetBoxRange(0.68) will set all candle-charts to cover 68% of the
+/// distribution by the box
+
+void TCandle::SetBoxRange(const Double_t bRange) {
+   if (bRange < 0) fBoxRange = 0;
+   else if (bRange > 1) fBoxRange = 1;
+   else fBoxRange = bRange;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Parsing of the option-string.
@@ -325,7 +358,27 @@ void TCandle::Calculate() {
 
    // Determining the quantiles
    Double_t *prob = new Double_t[5];
-   prob[0]=1E-15; prob[1]=0.25; prob[2]=0.5; prob[3]=0.75; prob[4]=1-1E-15;
+   
+   if (fWhiskerRange >= 1) {
+      prob[0] = 1e-15;
+      prob[4] = 1-1e-15;
+   } else {
+      prob[0] = 0.5 - fWhiskerRange/2.;
+      prob[4] = 0.5 + fWhiskerRange/2.;
+   }
+   
+   
+   if (fBoxRange >= 1) {
+      prob[1] = 1E-14;
+      prob[3] = 1-1E-14;
+   } else {
+      prob[1] = 0.5 - fBoxRange/2.;
+      prob[3] = 0.5 + fBoxRange/2.;
+   }
+   
+   std::cout << "WhiskerRange: " << fWhiskerRange << std::endl;
+   
+   prob[2]=0.5; 
    Double_t *quantiles = new Double_t[5];
    quantiles[0]=0.; quantiles[1]=0.; quantiles[2] = 0.; quantiles[3] = 0.; quantiles[4] = 0.;
    if (!fIsRaw && fProj) { //Need a calculation for a projected histo
