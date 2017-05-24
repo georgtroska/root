@@ -351,6 +351,7 @@ void TCandle::Calculate() {
    Bool_t swapXY = IsOption(kHorizontal);
    Bool_t doLogY = (!(swapXY) && fLogY) || (swapXY && fLogX);
    Bool_t doLogX = (!(swapXY) && fLogX) || (swapXY && fLogY);
+   Bool_t doLogZ = fLogZ;
 
    //Will be min and max values of raw-data
    Double_t min = 1e15;
@@ -587,6 +588,9 @@ void TCandle::Calculate() {
             }
          }
          Double_t myBinValue = fProj->GetBinContent(bin);
+         if (doLogZ) {
+            if (myBinValue > 0) myBinValue = TMath::Log10(myBinValue); else myBinValue = 0;
+         }
          fHistoPointsX[fNHistoPoints] = fPosCandleAxis + myBinValue/maxContent*maxHistoHeight;
          fHistoPointsY[fNHistoPoints] = fProj->GetBinLowEdge(bin);
          fNHistoPoints++;

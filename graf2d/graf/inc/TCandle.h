@@ -43,6 +43,7 @@ public:
       kHistoRight         = 2000000,
       kHistoViolin        = 3000000,
       kHistoZeroIndicator = 10000000,
+      kScale              = 100000000,
       kHorizontal         = 1000000000 ///< If this bit is not set it is vertical
    };
   
@@ -77,9 +78,10 @@ protected:
    int  fNHistoPoints;
 
    CandleOption fOption;                  ///< Setting the style of the candle
-   char fOptionStr[128];                   ///< String to draw the candle
+   char fOptionStr[128];                  ///< String to draw the candle
    int fLogX;                             ///< make the candle appear logx-like
    int fLogY;                             ///< make the candle appear logy-like
+   int fLogZ;                             ///< make the candle appear logz-like
 
    Double_t fAxisMin;                     ///< The Minimum which is visible by the axis (used by zero indicator)
    Double_t fAxisMax;                     ///< The Maximum which is visible by the axis (used by zero indicator)
@@ -110,9 +112,12 @@ public:
    Double_t       GetQ3() const {return fBoxDown;}
    Bool_t         IsHorizontal() {return (IsOption(kHorizontal)); }
    Bool_t         IsVertical() {return (!IsOption(kHorizontal)); }
+   Bool_t         IsScaled() {return (IsOption(kScaled)); }
+   Bool_t         IsCandle() {return (IsOption(kBox)); }
+   Bool_t         IsViolin() {return (IsOption(kHistoLeft) || IsOption(kHistoRight) || IsOption(kViolin)); }
 
    void           SetOption(CandleOption opt) { fOption = opt; }
-   void           SetLog(int x, int y) { fLogX = x; fLogY = y; }
+   void           SetLog(int x, int y, int z) { fLogX = x; fLogY = y; fLogZ = z;}
    void           SetAxisPosition(const Double_t candlePos) { fPosCandleAxis = candlePos; }
 
    void           SetWidth(const Double_t width) { fCandleWidth = width; }
@@ -128,7 +133,7 @@ public:
    virtual void   SetQ3(Double_t q3) { fBoxDown = q3; }
 
    int            ParseOption(char *optin);
-   const char *         GetDrawOption() { return fOptionStr; }
+   const char *   GetDrawOption() { return fOptionStr; }
    long           GetOption() { return fOption; }
    bool           IsOption(CandleOption opt);
    static void    SetWhiskerRange(const Double_t wRange);
