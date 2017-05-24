@@ -541,7 +541,19 @@ public:
    static  void            SetMaxTreeSize(Long64_t maxsize = 100000000000LL);
    virtual void            SetMaxVirtualSize(Long64_t size = 0) { fMaxVirtualSize = size; } // *MENU*
    virtual void            SetName(const char* name); // *MENU*
+
+   /**
+    * @brief Sets the address of the object to be notified when the tree is loaded.
+    *
+    * The method TObject::Notify is called for the given object when the tree
+    * is loaded. Specifically this occurs in the TTree::LoadTree method. To
+    * remove the notification call this method with nullptr:
+    * @code tree->SetNotify(nullptr); @endcode
+    *
+    * @param[in] obj Pointer to a TObject to be notified.
+    */
    virtual void            SetNotify(TObject* obj) { fNotify = obj; }
+
    virtual void            SetObject(const char* name, const char* title);
    virtual void            SetParallelUnzip(Bool_t opt=kTRUE, Float_t RelSize=-1);
    virtual void            SetPerfStats(TVirtualPerfStats* perf);

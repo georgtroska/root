@@ -233,10 +233,6 @@ function(ROOT_GENERATE_DICTIONARY dictionary)
     endforeach()
   endif(ARG_OPTIONS)
 
-  if (ARG_DEPENDENCIES)
-    message(FATAL_ERROR "Unimplemented switch!")
-  endif(ARG_DEPENDENCIES)
-
   #---roottest compability---------------------------------
   if(CMAKE_ROOTTEST_DICT)
     set(CMAKE_INSTALL_LIBDIR ${CMAKE_CURRENT_BINARY_DIR})
@@ -354,6 +350,13 @@ function(ROOT_GENERATE_DICTIONARY dictionary)
     set(rootmapargs )
   else()
     set(rootmapargs -rml ${library_name} -rmf ${rootmap_name})
+  endif()
+
+  #---Get the library and module dependencies-----------------
+  if(ARG_DEPENDENCIES)
+    foreach(dep ${ARG_DEPENDENCIES})
+      set(newargs ${newargs} -m  ${libprefix}${dep}_rdict.pcm)
+    endforeach()
   endif()
 
   #---what rootcling command to use--------------------------
@@ -1120,15 +1123,13 @@ function(ROOT_PATH_TO_STRING resultvar path)
 endfunction(ROOT_PATH_TO_STRING)
 
 #----------------------------------------------------------------------------
-# ROOT_ADD_UNITTEST_SUBDIRECTORY( <name> LIBRARIES)
+# ROOT_ADD_UNITTEST_DIR(<libraries ...>)
 #----------------------------------------------------------------------------
-function(ROOT_ADD_UNITTEST_SUBDIRECTORY subdir)
-  ROOT_GLOB_FILES(test_files ${CMAKE_CURRENT_SOURCE_DIR}/${subdir}/*.cxx)
+function(ROOT_ADD_UNITTEST_DIR)
+  ROOT_GLOB_FILES(test_files ${CMAKE_CURRENT_SOURCE_DIR}/*.cxx)
   # Get the component from the path. Eg. core to form coreTests test suite name.
-  ROOT_PATH_TO_STRING(test_name ${CMAKE_CURRENT_SOURCE_DIR}/Tests/)
-  ROOT_ADD_GTEST(${test_name} ${test_files} ${ARGN})
-  # Override the target output folder for to put the binaries in the ${subdir}.
-  set_property(TARGET ${test_name} PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${subdir}/)
+  ROOT_PATH_TO_STRING(test_name ${CMAKE_CURRENT_SOURCE_DIR}/)
+  ROOT_ADD_GTEST(${test_name}Unit ${test_files} LIBRARIES ${ARGN})
 endfunction()
 
 #----------------------------------------------------------------------------
@@ -1149,7 +1150,7 @@ function(ROOT_ADD_GTEST test_suite)
   target_link_libraries(${test_suite} gtest gtest_main gmock gmock_main)
 
   ROOT_PATH_TO_STRING(mangled_name ${test_suite} PATH_SEPARATOR_REPLACEMENT "-")
-  ROOT_ADD_TEST(gtest${mangled_name} COMMAND ${test_suite})
+  ROOT_ADD_TEST(gtest${mangled_name} COMMAND ${test_suite} WORKING_DIR ${CMAKE_CURRENT_BINARY_DIR})
 endfunction()
 
 
