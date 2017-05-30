@@ -43,7 +43,7 @@ public:
       kHistoRight         = 2000000,
       kHistoViolin        = 3000000,
       kHistoZeroIndicator = 10000000,
-      kScale              = 100000000,
+      kScale              = 100000000, ///< Scale histo per max-bin and candles per content
       kHorizontal         = 1000000000 ///< If this bit is not set it is vertical
    };
   
@@ -57,6 +57,7 @@ protected:
 
    Double_t fPosCandleAxis;               ///< x-pos for a vertical candle
    Double_t fCandleWidth;                 ///< The candle width
+   Double_t fHistoWidth;                  ///< The histo width (the height of the max bin)
 
    Double_t fMean;                        ///< Position of the mean
    Double_t fMedian;                      ///< Position of the median
@@ -91,7 +92,7 @@ protected:
 
    void Calculate();
 
-   int  GetCandleOption(const int pos) {return (fOption/(int)TMath::Power(10,pos))%10;}
+   int  GetCandleOption(const int pos) {return (fOption/(long)TMath::Power(10,pos))%10;}
    
    void PaintBox(Int_t nPoints, Double_t *x, Double_t *y, Bool_t swapXY);
    void PaintLine(Double_t x1, Double_t y1, Double_t x2, Double_t y2, Bool_t swapXY);
@@ -112,15 +113,16 @@ public:
    Double_t       GetQ3() const {return fBoxDown;}
    Bool_t         IsHorizontal() {return (IsOption(kHorizontal)); }
    Bool_t         IsVertical() {return (!IsOption(kHorizontal)); }
-   Bool_t         IsScaled() {return (IsOption(kScaled)); }
+   Bool_t         IsScaled() {return (IsOption(kScale)); }
    Bool_t         IsCandle() {return (IsOption(kBox)); }
-   Bool_t         IsViolin() {return (IsOption(kHistoLeft) || IsOption(kHistoRight) || IsOption(kViolin)); }
+   Bool_t         IsViolin() {return (IsOption(kHistoLeft) || IsOption(kHistoRight) || IsOption(kHistoViolin)); }
 
    void           SetOption(CandleOption opt) { fOption = opt; }
    void           SetLog(int x, int y, int z) { fLogX = x; fLogY = y; fLogZ = z;}
    void           SetAxisPosition(const Double_t candlePos) { fPosCandleAxis = candlePos; }
 
-   void           SetWidth(const Double_t width) { fCandleWidth = width; }
+   void           SetCandleWidth(const Double_t width) { fCandleWidth = width; }
+   void           SetHistoWidth(const Double_t width) { fHistoWidth = width; }
    void           SetHistogram(TH1D *proj) { fProj = proj; fIsCalculated = false;}
 
    virtual void   Paint(Option_t *option="");

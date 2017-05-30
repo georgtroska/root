@@ -43,6 +43,7 @@ TCandle::TCandle()
    fIsRaw         = 0;
    fPosCandleAxis = 0.;
    fCandleWidth   = 1.0;
+   fHistoWidth    = 1.0;
    fMean          = 0.;
    fMedian        = 0.;
    fMedianErr     = 0;
@@ -74,6 +75,7 @@ TCandle::TCandle(const char *opt)
    fIsRaw         = 0;
    fPosCandleAxis = 0.;
    fCandleWidth   = 1.0;
+   fHistoWidth    = 1.0;
    fMean          = 0.;
    fMedian        = 0.;
    fMedianErr     = 0;
@@ -124,6 +126,7 @@ TCandle::TCandle(const Double_t candlePos, const Double_t candleWidth, Long64_t 
    fIsRaw         = true;
    fPosCandleAxis = candlePos;
    fCandleWidth   = candleWidth;
+   fHistoWidth    = candleWidth;
    fDatapoints    = points;
    fProj          = NULL;
    fDismiss       = 0;
@@ -155,6 +158,7 @@ TCandle::TCandle(const Double_t candlePos, const Double_t candleWidth, TH1D *pro
    fIsRaw         = 0;
    fPosCandleAxis = candlePos;
    fCandleWidth   = candleWidth;
+   fHistoWidth    = candleWidth;
    fDatapoints    = 0;
    fProj          = proj;
    fDismiss       = 0;
@@ -278,7 +282,7 @@ int TCandle::ParseOption(char * opt) {
 
    l = strstr(opt,"VIOLIN");
    if (l) {
-      const CandleOption fallbackCandle = (CandleOption)(kMeanCircle + kWhiskerAll + kHistoViolin + kHistoZeroIndicator);
+      const CandleOption fallbackCandle = (CandleOption)(kMeanCircle + kWhiskerAll + kHistoViolin + kHistoZeroIndicator + kScale);
 
       char direction = ' ';
       char preset = ' ';
@@ -293,7 +297,7 @@ int TCandle::ParseOption(char * opt) {
       if (preset == '1') //Standard candle using old candle-definition
          fOption = (CandleOption)(fOption + fallbackCandle);
       else if (preset == '2') //New standard candle with better whisker definition + outlier
-         fOption = (CandleOption)(fOption + kMeanCircle + kWhisker15 + kHistoViolin + kHistoZeroIndicator + kPointsOutliers);
+         fOption = (CandleOption)(fOption + kMeanCircle + kWhisker15 + kHistoViolin + kHistoZeroIndicator + kPointsOutliers + kScale);
       else if (preset != ' ') //For all other presets not implemented yet used fallback candle
          fOption = (CandleOption)(fOption + fallbackCandle);
 
@@ -376,9 +380,7 @@ void TCandle::Calculate() {
       prob[1] = 0.5 - fBoxRange/2.;
       prob[3] = 0.5 + fBoxRange/2.;
    }
-   
-   std::cout << "WhiskerRange: " << fWhiskerRange << std::endl;
-   
+      
    prob[2]=0.5; 
    Double_t *quantiles = new Double_t[5];
    quantiles[0]=0.; quantiles[1]=0.; quantiles[2] = 0.; quantiles[3] = 0.; quantiles[4] = 0.;
@@ -565,7 +567,7 @@ void TCandle::Calculate() {
 
       fNHistoPoints = 0;
       Double_t maxContent = fProj->GetMaximum();
-      Double_t maxHistoHeight = fCandleWidth*0.8;
+      Double_t maxHistoHeight = fHistoWidth;
       if (IsOption(kHistoViolin)) maxHistoHeight *= 0.5;
 
       bool isFirst = true;
