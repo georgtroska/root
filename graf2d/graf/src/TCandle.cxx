@@ -19,6 +19,8 @@
 
 Double_t TCandle::fWhiskerRange  = 1.0;
 Double_t TCandle::fBoxRange      = 0.5;
+Bool_t TCandle::fScaledCandle = false;
+Bool_t TCandle::fScaledViolin = true;
 
 ClassImp(TCandle)
 
@@ -206,6 +208,23 @@ void TCandle::SetBoxRange(const Double_t bRange) {
    else fBoxRange = bRange;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+/// Static function to set scaling between candles-withs. A candle containing
+/// 100 entries with be two times wider than a candle containing 50 entries
+
+void TCandle::SetScaledCandle(const Bool_t cScale) {
+   fScaledCandle = cScale;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Static function to set scaling between violin-withs. A violin or histochart 
+/// with a maximum bincontent to 100 will be two times as high as a violin with
+/// a maximum bincontent of 50
+
+void TCandle::SetScaledViolin(const Bool_t vScale) {
+   fScaledViolin = vScale;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Parsing of the option-string.
@@ -269,7 +288,10 @@ int TCandle::ParseOption(char * opt) {
             strncpy(brOpen,"                ",brClose-brOpen+1); //Cleanup
             
             sprintf(fOptionStr,"CANDLE%c(%ld)",direction,fOption);
-         }
+         } else {
+            preset = 1;
+            fOption = (CandleOption)(fOption + fallbackCandle);
+            }
       } else {
          sprintf(fOptionStr,"CANDLE%c%c",direction,preset);
       }
@@ -282,7 +304,7 @@ int TCandle::ParseOption(char * opt) {
 
    l = strstr(opt,"VIOLIN");
    if (l) {
-      const CandleOption fallbackCandle = (CandleOption)(kMeanCircle + kWhiskerAll + kHistoViolin + kHistoZeroIndicator + kScale);
+      const CandleOption fallbackCandle = (CandleOption)(kMeanCircle + kWhiskerAll + kHistoViolin + kHistoZeroIndicator);
 
       char direction = ' ';
       char preset = ' ';
@@ -297,7 +319,7 @@ int TCandle::ParseOption(char * opt) {
       if (preset == '1') //Standard candle using old candle-definition
          fOption = (CandleOption)(fOption + fallbackCandle);
       else if (preset == '2') //New standard candle with better whisker definition + outlier
-         fOption = (CandleOption)(fOption + kMeanCircle + kWhisker15 + kHistoViolin + kHistoZeroIndicator + kPointsOutliers + kScale);
+         fOption = (CandleOption)(fOption + kMeanCircle + kWhisker15 + kHistoViolin + kHistoZeroIndicator + kPointsOutliers);
       else if (preset != ' ') //For all other presets not implemented yet used fallback candle
          fOption = (CandleOption)(fOption + fallbackCandle);
 
@@ -326,7 +348,10 @@ int TCandle::ParseOption(char * opt) {
             
             sprintf(fOptionStr,"VIOLIN%c(%ld)",direction,fOption);
 
-         } 
+         } else {
+            preset = 1;
+            fOption = (CandleOption)(fOption + fallbackCandle);
+         }
       } else {
          sprintf(fOptionStr,"VIOLIN%c%c",direction,preset);
       }
@@ -553,7 +578,6 @@ void TCandle::Calculate() {
          }
       }
    }
-
    if (IsOption(kHistoRight) || IsOption(kHistoLeft) || IsOption(kHistoViolin)) {
       //We are starting with kHistoRight, left will be modified from right later
       if (fIsRaw) { //This is a raw-data candle
@@ -589,6 +613,7 @@ void TCandle::Calculate() {
                continue;
             }
          }
+         
          Double_t myBinValue = fProj->GetBinContent(bin);
          if (doLogZ) {
             if (myBinValue > 0) myBinValue = TMath::Log10(myBinValue); else myBinValue = 0;

@@ -43,8 +43,7 @@ public:
       kHistoRight         = 2000000,
       kHistoViolin        = 3000000,
       kHistoZeroIndicator = 10000000,
-      kScale              = 100000000, ///< Scale histo per max-bin and candles per content
-      kHorizontal         = 1000000000 ///< If this bit is not set it is vertical
+      kHorizontal         = 100000000     ///< If this bit is not set it is vertical
    };
   
 
@@ -89,6 +88,9 @@ protected:
    
    static Double_t fWhiskerRange;         ///< The fraction which is covered by the whiskers (0 < x < 1), default 1
    static Double_t fBoxRange;             ///< The fraction which is covered by the box (0 < x < 1), default 0.5
+   
+   static Bool_t fScaledCandle;           ///< shall the box-width be scaled to each other by the integral of a box?
+   static Bool_t fScaledViolin;           ///< shall the violin or histos be scaled to each other by the maximum height?
 
    void Calculate();
 
@@ -113,9 +115,10 @@ public:
    Double_t       GetQ3() const {return fBoxDown;}
    Bool_t         IsHorizontal() {return (IsOption(kHorizontal)); }
    Bool_t         IsVertical() {return (!IsOption(kHorizontal)); }
-   Bool_t         IsScaled() {return (IsOption(kScale)); }
-   Bool_t         IsCandle() {return (IsOption(kBox)); }
-   Bool_t         IsViolin() {return (IsOption(kHistoLeft) || IsOption(kHistoRight) || IsOption(kHistoViolin)); }
+   Bool_t         IsCandleScaled() {return fScaledCandle; }
+   Bool_t         IsViolinScaled() {return fScaledViolin; }
+   //Bool_t         IsCandle() {return (IsOption(kBox)); }
+   //Bool_t         IsViolin() {return (IsOption(kHistoLeft) || IsOption(kHistoRight) || IsOption(kHistoViolin)); }
 
    void           SetOption(CandleOption opt) { fOption = opt; }
    void           SetLog(int x, int y, int z) { fLogX = x; fLogY = y; fLogZ = z;}
@@ -140,6 +143,8 @@ public:
    bool           IsOption(CandleOption opt);
    static void    SetWhiskerRange(const Double_t wRange);
    static void    SetBoxRange(const Double_t bRange);
+   static void    SetScaledCandle(const Bool_t cScale = true);
+   static void    SetScaledViolin(const Bool_t vScale = true);
 
    ClassDef(TCandle,1)  //A Candle
 };

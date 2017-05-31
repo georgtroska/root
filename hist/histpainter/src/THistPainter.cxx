@@ -4935,13 +4935,7 @@ void THistPainter::PaintCandlePlot(Option_t *)
    
    double allMaxContent = h2->GetBinContent(h2->GetMaximumBin());
    double allMaxIntegral = 0;
-   bool isCandle = myCandle.IsCandle();
-   bool isHisto = myCandle.IsViolin();
-   int isScaled = myCandle.IsScaled();
-   //std::cout << "Scaled: " << isScaled << std::endl;
-      
    
-
    if (!swapXY) { // Vertical candle
       //Determining the slice with the maximum content
       for (Int_t i=Hparam.xfirst; i<=Hparam.xlast; i++) {
@@ -4964,11 +4958,10 @@ void THistPainter::PaintCandlePlot(Option_t *)
             } 
             if (Hoption.Logz && myMaxContent > 0) {
                 histoWidth *= myMaxContent/TMath::Log10(myMaxContent);
-                if (isScaled && myMaxContent > 0 && allMaxContent > 0) histoWidth *= TMath::Log10(myMaxContent)/TMath::Log10(allMaxContent);
-            } else if (isScaled) {
-                 histoWidth *= myMaxContent/allMaxContent;
-                 candleWidth *= myIntegral/allMaxIntegral;
-            } 
+                if (myCandle.IsViolinScaled() && myMaxContent > 0 && allMaxContent > 0) histoWidth *= TMath::Log10(myMaxContent)/TMath::Log10(allMaxContent);
+            } else if (myCandle.IsViolinScaled()) histoWidth *= myMaxContent/allMaxContent;
+            if (myCandle.IsCandleScaled()) candleWidth *= myIntegral/allMaxIntegral;
+            
             myCandle.SetAxisPosition(binPosX+binWidth/2. + offset);
             myCandle.SetCandleWidth(candleWidth*binWidth);
             myCandle.SetHistoWidth(histoWidth*binWidth);
@@ -4998,16 +4991,16 @@ void THistPainter::PaintCandlePlot(Option_t *)
             }            
             if (Hoption.Logz && myMaxContent > 0) {
                 histoWidth *= myMaxContent/TMath::Log10(myMaxContent);
-                if (isScaled && myMaxContent > 0 && allMaxContent > 0) histoWidth *= TMath::Log10(myMaxContent)/TMath::Log10(allMaxContent);
-            } else if (isScaled == 1) {
-                histoWidth *= myMaxContent/allMaxContent;
-                candleWidth *= myIntegral/allMaxIntegral;
-            }
+                if (myCandle.IsViolinScaled() && myMaxContent > 0 && allMaxContent > 0) histoWidth *= TMath::Log10(myMaxContent)/TMath::Log10(allMaxContent);
+            } else if (myCandle.IsViolinScaled()) histoWidth *= myMaxContent/allMaxContent;
+            if (myCandle.IsCandleScaled()) candleWidth *= myIntegral/allMaxIntegral;
+            
             myCandle.SetAxisPosition(binPosY+binWidth/2. + offset);
             myCandle.SetCandleWidth(candleWidth*binWidth);
             myCandle.SetHistoWidth(histoWidth*binWidth);
             myCandle.SetHistogram(hproj);
             myCandle.Paint();
+            std::cout << "painting hcandle with histowidth " << histoWidth << std::endl;
          }
       }
    }
