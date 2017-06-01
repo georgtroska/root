@@ -707,7 +707,7 @@ void TCanvas::Clear(Option_t *option)
 {
    if (fCanvasID == -1) return;
 
-   R__LOCKGUARD2(gROOTMutex);
+   R__LOCKGUARD(gROOTMutex);
 
    TString opt = option;
    opt.ToLower();
@@ -767,7 +767,7 @@ void TCanvas::Close(Option_t *option)
          return;
       }
 
-      R__LOCKGUARD2(gROOTMutex);
+      R__LOCKGUARD(gROOTMutex);
 
       FeedbackMode(kFALSE);
 
@@ -1120,7 +1120,7 @@ void TCanvas::UseCurrentStyle()
       return;
    }
 
-   R__LOCKGUARD2(gROOTMutex);
+   R__LOCKGUARD(gROOTMutex);
 
    TPad::UseCurrentStyle();
 
@@ -1566,7 +1566,7 @@ void TCanvas::Resize(Option_t *)
       return;
    }
 
-   R__LOCKGUARD2(gROOTMutex);
+   R__LOCKGUARD(gROOTMutex);
 
    TPad *padsav  = (TPad*)gPad;
    cd();
@@ -1776,7 +1776,12 @@ void TCanvas::SaveSource(const char *filename, Option_t *option)
 //    out <<""<<std::endl;
    Int_t p = mname.Last('.');
    Int_t s = mname.Last('/')+1;
-   out <<"void " << mname(s,p-s) << "()" <<std::endl;
+
+   // A named macro is generated only if the function name is valid. If not, the
+   // macro is unnamed.
+   TString first(mname(s,s+1));
+   if (!first.IsDigit()) out <<"void " << mname(s,p-s) << "()" << std::endl;
+
    out <<"{"<<std::endl;
    out <<"//=========Macro generated from canvas: "<<GetName()<<"/"<<GetTitle()<<std::endl;
    out <<"//=========  ("<<t.AsString()<<") by ROOT version "<<gROOT->GetVersion()<<std::endl;
@@ -2240,7 +2245,7 @@ void TCanvas::Update()
       return;
    }
 
-   R__LOCKGUARD2(gROOTMutex);
+   R__LOCKGUARD(gROOTMutex);
 
    fUpdating = kTRUE;
 
