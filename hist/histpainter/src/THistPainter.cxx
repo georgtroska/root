@@ -5032,7 +5032,6 @@ void THistPainter::PaintCandlePlot(Option_t *)
             myCandle.SetHistoWidth(histoWidth*binWidth);
             myCandle.SetHistogram(hproj);
             myCandle.Paint();
-            std::cout << "painting hcandle with histowidth " << histoWidth << std::endl;
          }
       }
    }

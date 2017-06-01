@@ -97,15 +97,13 @@ TCandle::TCandle(const char *opt)
    fProj          = NULL;
    fDatapoints    = 0;
    
-   std::cout << "TCandle: " << opt << std::endl;
-   
+ 
    // Conversion necessarry in order to cast from const char* to char*
    char myopt[128];
    strlcpy(myopt,opt,128);
    
    
    ParseOption(myopt);
-   std::cout << "End of TCandle(const char*)" << myopt << std::endl;
 }
 
 
