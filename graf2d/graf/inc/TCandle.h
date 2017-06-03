@@ -45,7 +45,7 @@ public:
       kHistoZeroIndicator = 10000000,
       kHorizontal         = 100000000     ///< If this bit is not set it is vertical
    };
-  
+
 
 protected:
 
@@ -85,17 +85,17 @@ protected:
 
    Double_t fAxisMin;                     ///< The Minimum which is visible by the axis (used by zero indicator)
    Double_t fAxisMax;                     ///< The Maximum which is visible by the axis (used by zero indicator)
-   
+
    static Double_t fWhiskerRange;         ///< The fraction which is covered by the whiskers (0 < x < 1), default 1
    static Double_t fBoxRange;             ///< The fraction which is covered by the box (0 < x < 1), default 0.5
-   
+
    static Bool_t fScaledCandle;           ///< shall the box-width be scaled to each other by the integral of a box?
    static Bool_t fScaledViolin;           ///< shall the violin or histos be scaled to each other by the maximum height?
 
    void Calculate();
 
    int  GetCandleOption(const int pos) {return (fOption/(long)TMath::Power(10,pos))%10;}
-   
+
    void PaintBox(Int_t nPoints, Double_t *x, Double_t *y, Bool_t swapXY);
    void PaintLine(Double_t x1, Double_t y1, Double_t x2, Double_t y2, Bool_t swapXY);
 
@@ -117,8 +117,6 @@ public:
    Bool_t         IsVertical() {return (!IsOption(kHorizontal)); }
    Bool_t         IsCandleScaled() {return fScaledCandle; }
    Bool_t         IsViolinScaled() {return fScaledViolin; }
-   //Bool_t         IsCandle() {return (IsOption(kBox)); }
-   //Bool_t         IsViolin() {return (IsOption(kHistoLeft) || IsOption(kHistoRight) || IsOption(kHistoViolin)); }
 
    void           SetOption(CandleOption opt) { fOption = opt; }
    void           SetLog(int x, int y, int z) { fLogX = x; fLogY = y; fLogZ = z;}
@@ -146,6 +144,6 @@ public:
    static void    SetScaledCandle(const Bool_t cScale = true);
    static void    SetScaledViolin(const Bool_t vScale = true);
 
-   ClassDef(TCandle,1)  //A Candle
+   ClassDef(TCandle,2)  //A Candle
 };
 #endif

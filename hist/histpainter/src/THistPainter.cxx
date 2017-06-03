@@ -1046,6 +1046,7 @@ Begin_Macro(source)
 End_Macro
 
 \since **ROOT version 6.09/01:**
+
 When the option SAME (or "SAMES") is used with the option COL, the boxes' color
 are computing taking the previous plots into account. The range along the Z axis
 is imposed by the first plot (the one without option SAME); therefore the order
@@ -1092,6 +1093,7 @@ Begin_Macro(source)
 End_Macro
 
 \since **ROOT version 6.07/03:**
+
 A second rendering technique is also available with the COL2 and COLZ2 options.
 
 These options provide potential performance improvements compared to the standard
@@ -1177,7 +1179,10 @@ mechanism. In deed the keywords CANDLE(<option-string>) and VIOLIN(<option-strin
 meaning. So you can parametrise an option-string for a candle plot and use the keywords VIOLIN and
 vice versa, if you wish.
 
-Using a logarithmic x- or y-axis is possible for candle and violin charts. \since **ROOT version 6.11/01**
+Using a logarithmic x- or y-axis is possible for candle and violin charts.
+
+\since **ROOT version 6.11/01**
+
 a logarithmic z-axis is possible, too but will only affect violin charts of course.
 
 #### <a name="HP140a"></a> The CANDLE option
@@ -1231,16 +1236,17 @@ enough and gaussian shaped the end-points of the box represent \f$ 0.6745\times\
 (Where \f$ \sigma \f$ is the standard deviation of the gaussian). The width and
 the position of the box can be modified by SetBarWidth() and SetBarOffset().
 The +-25% quantiles are calculated by the GetQuantiles() methods.
- 
+
 \since **ROOT version 6.11/01**
-Using the static function TCandle::SetBoxRange(double) the box definition will be 
+
+Using the static function TCandle::SetBoxRange(double) the box definition will be
 overwritten. E.g. using a box range of 0.68 will redefine the area of the lower box edge
-to the upper box edge in order to cover 68% of the distribution illustrated by that candle. 
+to the upper box edge in order to cover 68% of the distribution illustrated by that candle.
 The static function will affect all candle-charts in the running program.
 Default is 0.5.
 
-Using the static function TCandle::SetScaledCandle(bool) the width of the box (and the 
-whole candle) can be influenced. Deactived, the width is constant (to be set by 
+Using the static function TCandle::SetScaledCandle(bool) the width of the box (and the
+whole candle) can be influenced. Deactivated, the width is constant (to be set by
 SetBarWidth() ). Activated, the width of the boxes will be scaled to each other based on the
 amount of data in the corresponding candle, the maximum width can be influenced by
 SetBarWidth(). The static function will affect all candle-charts in the running program.
@@ -1316,14 +1322,15 @@ Two representations are available.
     by the whiskers. Usually these missing parts will be represented by the outliers
     (see points). Of course the upper and the lower whisker may differ in length.
     In this representation the whiskers are drawn as solid lines.
-    
+
 \since **ROOT version 6.11/01**
+
 Using the static function TCandle::SetWhiskerRange(double) the whisker definition w=1
-will be overwritten. E.g. using a whiskerrange of 0.95 and w=1 will redefine the area of
+will be overwritten. E.g. using a whisker-range of 0.95 and w=1 will redefine the area of
 the lower whisker to the upper whisker in order to cover 95% of the distribution inside
 that candle. The static function will affect all candle-charts in the running program.
 Default is 1.
-    
+
 If the distribution is large enough and gaussian shaped, the maximum length of
 the whisker will be located at \f$ \pm 2.698 \sigma \f$ (when using the
 1.5*iqr-definition (w=2), where \f$ \sigma \f$ is the standard deviation
@@ -1454,12 +1461,13 @@ be modified by using SetBarWidth() and the position can be changed with SetBarOf
 A solid fill style is recommended.
 
 \since **ROOT version 6.11/01**
+
 Using the static function TCandle::SetScaledViolin(bool) the height of the histogram or the
-violin can be influenced. Activated, the height of the bins of the individual violins will be 
-scaled with respect to each other, the maximum height can be influenced by SetBarWidth(). 
-Deactivated, the height of the bin with the maximum content of each individual violin is 
-set to a constant value using SetBarWidth(). The static function will affect all violin-charts 
-in the running program. Default is true. Scaling between multiple violin-charts 
+violin can be influenced. Activated, the height of the bins of the individual violins will be
+scaled with respect to each other, the maximum height can be influenced by SetBarWidth().
+Deactivated, the height of the bin with the maximum content of each individual violin is
+set to a constant value using SetBarWidth(). The static function will affect all violin-charts
+in the running program. Default is true. Scaling between multiple violin-charts
 (using "same" or THStack) is not supported, yet.
 
 ##### The zero indicator line
@@ -1574,6 +1582,7 @@ Begin_Macro(source)
 End_Macro
 
 \since **ROOT version 6.07/07:**
+
 In case several histograms are drawn on top ot each other (using option `SAME`),
 the text can be shifted using `SetBarOffset()`. It specifies an offset for the
 text position in each cell, in percentage of the bin width.
@@ -4964,10 +4973,10 @@ void THistPainter::PaintCandlePlot(Option_t *)
    Bool_t swapXY = myCandle.IsHorizontal();
    const Double_t standardCandleWidth = 0.66;
    const Double_t standardHistoWidth = 0.8;
-   
+
    double allMaxContent = h2->GetBinContent(h2->GetMaximumBin());
    double allMaxIntegral = 0;
-   
+
    if (!swapXY) { // Vertical candle
       //Determining the slice with the maximum content
       for (Int_t i=Hparam.xfirst; i<=Hparam.xlast; i++) {
@@ -4987,13 +4996,13 @@ void THistPainter::PaintCandlePlot(Option_t *)
             if (candleWidth > 0.999 && candleWidth < 1.001) {
                 candleWidth = standardCandleWidth;
                 histoWidth = standardHistoWidth;
-            } 
+            }
             if (Hoption.Logz && myMaxContent > 0) {
                 histoWidth *= myMaxContent/TMath::Log10(myMaxContent);
                 if (myCandle.IsViolinScaled() && myMaxContent > 0 && allMaxContent > 0) histoWidth *= TMath::Log10(myMaxContent)/TMath::Log10(allMaxContent);
             } else if (myCandle.IsViolinScaled()) histoWidth *= myMaxContent/allMaxContent;
             if (myCandle.IsCandleScaled()) candleWidth *= myIntegral/allMaxIntegral;
-            
+
             myCandle.SetAxisPosition(binPosX+binWidth/2. + offset);
             myCandle.SetCandleWidth(candleWidth*binWidth);
             myCandle.SetHistoWidth(histoWidth*binWidth);
@@ -5020,13 +5029,13 @@ void THistPainter::PaintCandlePlot(Option_t *)
             if (candleWidth > 0.999 && candleWidth < 1.001) {
                 candleWidth = standardCandleWidth;
                 histoWidth = standardHistoWidth;
-            }            
+            }
             if (Hoption.Logz && myMaxContent > 0) {
                 histoWidth *= myMaxContent/TMath::Log10(myMaxContent);
                 if (myCandle.IsViolinScaled() && myMaxContent > 0 && allMaxContent > 0) histoWidth *= TMath::Log10(myMaxContent)/TMath::Log10(allMaxContent);
             } else if (myCandle.IsViolinScaled()) histoWidth *= myMaxContent/allMaxContent;
             if (myCandle.IsCandleScaled()) candleWidth *= myIntegral/allMaxIntegral;
-            
+
             myCandle.SetAxisPosition(binPosY+binWidth/2. + offset);
             myCandle.SetCandleWidth(candleWidth*binWidth);
             myCandle.SetHistoWidth(histoWidth*binWidth);

@@ -38,6 +38,8 @@ public:
    using BranchTypes_t = typename TRemoveFirst<typename TFunctionTraits<F>::Args_t>::Types_t;
    ForeachSlotHelper(F &&f) : fCallable(f) {}
 
+   void Init(TTreeReader*, unsigned int) {}
+
    template <typename... Args>
    void Exec(unsigned int slot, Args &&... args)
    {
@@ -56,6 +58,7 @@ class CountHelper {
 public:
    using BranchTypes_t = TTypeList<>;
    CountHelper(const std::shared_ptr<unsigned int> &resultCount, unsigned int nSlots);
+   void Init(TTreeReader*, unsigned int) {}
    void Exec(unsigned int slot);
    void Finalize();
 };
@@ -78,6 +81,7 @@ class FillHelper {
 
 public:
    FillHelper(const std::shared_ptr<Hist_t> &h, unsigned int nSlots);
+   void Init(TTreeReader*, unsigned int) {}
    void Exec(unsigned int slot, double v);
    void Exec(unsigned int slot, double v, double w);
 
@@ -137,6 +141,8 @@ public:
          fTo->GetAtSlot(i);
       }
    }
+
+   void Init(TTreeReader*, unsigned int) {}
 
    void Exec(unsigned int slot, double x0) // 1D histos
    {
@@ -236,6 +242,8 @@ public:
       for (unsigned int i = 1; i < nSlots; ++i) fColls.emplace_back(std::make_shared<COLL>());
    }
 
+   void Init(TTreeReader*, unsigned int) {}
+
    template <typename V, typename std::enable_if<!TIsContainer<V>::fgValue, int>::type = 0>
    void Exec(unsigned int slot, V v)
    {
@@ -279,6 +287,8 @@ public:
       }
    }
 
+   void Init(TTreeReader*, unsigned int) {}
+
    template <typename V, typename std::enable_if<!TIsContainer<V>::fgValue, int>::type = 0>
    void Exec(unsigned int slot, V v)
    {
@@ -318,6 +328,8 @@ public:
    {
    }
 
+   void Init(TTreeReader*, unsigned int) {}
+
    void Exec(unsigned int slot, const T &value) { fReduceObjs[slot] = fReduceFun(fReduceObjs[slot], value); }
 
    void Finalize()
@@ -332,6 +344,9 @@ class MinHelper {
 
 public:
    MinHelper(const std::shared_ptr<double> &minVPtr, unsigned int nSlots);
+
+   void Init(TTreeReader*, unsigned int) {}
+
    void Exec(unsigned int slot, double v);
 
    template <typename T, typename std::enable_if<TIsContainer<T>::fgValue, int>::type = 0>
@@ -355,6 +370,7 @@ class MaxHelper {
 
 public:
    MaxHelper(const std::shared_ptr<double> &maxVPtr, unsigned int nSlots);
+   void Init(TTreeReader*, unsigned int) {}
    void Exec(unsigned int slot, double v);
 
    template <typename T, typename std::enable_if<TIsContainer<T>::fgValue, int>::type = 0>
@@ -379,6 +395,7 @@ class MeanHelper {
 
 public:
    MeanHelper(const std::shared_ptr<double> &meanVPtr, unsigned int nSlots);
+   void Init(TTreeReader*, unsigned int) {}
    void Exec(unsigned int slot, double v);
 
    template <typename T, typename std::enable_if<TIsContainer<T>::fgValue, int>::type = 0>
@@ -398,6 +415,28 @@ extern template void MeanHelper::Exec(unsigned int, const std::vector<double> &)
 extern template void MeanHelper::Exec(unsigned int, const std::vector<char> &);
 extern template void MeanHelper::Exec(unsigned int, const std::vector<int> &);
 extern template void MeanHelper::Exec(unsigned int, const std::vector<unsigned int> &);
+
+template <typename F1, typename F2>
+class SnapshotHelper {
+   F1 fInitFunc;
+   F2 fExecFunc;
+
+public:
+   using BranchTypes_t = typename TRemoveFirst<typename TFunctionTraits<F2>::Args_t>::Types_t;
+   SnapshotHelper(F1 &&f1, F2 &&f2) : fInitFunc(f1), fExecFunc(f2) {}
+
+   void Init(TTreeReader *r, unsigned int slot) { fInitFunc(r, slot); }
+
+   template <typename... Args>
+   void Exec(unsigned int slot, Args &&... args)
+   {
+      // check that the decayed types of Args are the same as the branch types
+      static_assert(std::is_same<TTypeList<typename std::decay<Args>::type...>, BranchTypes_t>::value, "");
+      fExecFunc(slot, std::forward<Args>(args)...);
+   }
+
+   void Finalize() { /* noop */}
+};
 
 } // end of NS TDF
 } // end of NS Internal
