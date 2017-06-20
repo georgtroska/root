@@ -59,7 +59,7 @@ Long_t JitTransformation(void *thisPtr, const std::string &methodName, const std
                          const std::map<std::string, TmpBranchBasePtr_t> &tmpBookedBranches, TTree *tree);
 
 void JitBuildAndBook(const ColumnNames_t &bl, const std::string &nodeTypename, void *thisPtr, const std::type_info &art,
-                     const std::type_info &at, const void *r, TTree &tree, unsigned int nSlots,
+                     const std::type_info &at, const void *r, TTree *tree, unsigned int nSlots,
                      const std::map<std::string, TmpBranchBasePtr_t> &tmpBranches);
 
 } // namespace TDF
@@ -180,7 +180,7 @@ public:
    {
       auto df = GetDataFrameChecked();
       auto tree = df->GetTree();
-      auto branches = tree->GetListOfBranches();
+      auto branches = tree ? tree->GetListOfBranches() : nullptr;
       auto tmpBranches = fProxiedPtr->GetTmpBranches();
       auto tmpBookedBranches = df->GetBookedBranches();
       const std::string expressionInt(expression);
@@ -286,7 +286,7 @@ public:
       bool first = true;
       for (auto &b : bnames) {
          if (!first) snapCall << ", ";
-         snapCall << TDFInternal::ColumnName2ColumnTypeName(b, *tree, df->GetBookedBranch(b));
+         snapCall << TDFInternal::ColumnName2ColumnTypeName(b, tree, df->GetBookedBranch(b));
          first = false;
       };
       // TODO is there a way to use ColumnNames_t instead of std::vector<std::string> without parsing the whole header?
@@ -333,11 +333,14 @@ public:
       }
 
       auto df = GetDataFrameChecked();
-      const auto branches = df->GetTree()->GetListOfBranches();
-      for (auto branch : *branches) {
-         auto branchName = branch->GetName();
-         if (isEmptyRegex || -1 != regexp.Index(branchName, &dummy)) {
-            selectedColumns.emplace_back(branchName);
+      auto tree = df->GetTree();
+      if (tree) {
+         const auto branches = tree->GetListOfBranches();
+         for (auto branch : *branches) {
+            auto branchName = branch->GetName();
+            if (isEmptyRegex || -1 != regexp.Index(branchName, &dummy)) {
+               selectedColumns.emplace_back(branchName);
+            }
          }
       }
 
@@ -1022,7 +1025,7 @@ private:
       const auto &tmpBranches = df->GetBookedBranches();
       auto tree = df->GetTree();
       TDFInternal::JitBuildAndBook(bl, GetNodeTypeName(), this, typeid(std::shared_ptr<ActionResultType>),
-                                   typeid(ActionType), &r, *tree, nSlots, tmpBranches);
+                                   typeid(ActionType), &r, tree, nSlots, tmpBranches);
       fProxiedPtr->IncrChildrenCount();
       return MakeResultProxy(r, df);
    }
@@ -1072,7 +1075,8 @@ protected:
    TInterface<TLoopManager> SnapshotImpl(std::string_view treename, std::string_view filename,
                                          const ColumnNames_t &bnames, TDFInternal::TStaticSeq<S...> /*dummy*/)
    {
-      const std::string treenameInt(treename);
+      std::string treenameInt;
+      std::string dirnameInt;
       const std::string filenameInt(filename);
       const auto templateParamsN = sizeof...(S);
       const auto bNamesN = bnames.size();
@@ -1085,9 +1089,28 @@ protected:
          throw std::runtime_error(err_msg.c_str());
       }
 
+      // splits name into directory and treename if needed
+      auto getDirTreeName = [](std::string_view treePath) {
+         auto lastSlash = treePath.rfind('/');
+         std::string_view treeDir, treeName;
+         if (std::string_view::npos != lastSlash) {
+            treeDir = treePath.substr(0,lastSlash);
+            treeName = treePath.substr(lastSlash+1,treePath.size());
+         } else {
+            treeName = treePath;
+         }
+         // need to convert to string for TTree and TDirectory ctors anyway
+         return std::make_pair(std::string(treeDir), std::string(treeName));
+      };
+
       auto df = GetDataFrameChecked();
       if (!ROOT::IsImplicitMTEnabled()) {
          std::unique_ptr<TFile> ofile(TFile::Open(filenameInt.c_str(), "RECREATE"));
+         std::tie(dirnameInt, treenameInt) = getDirTreeName(treename);
+         if (!dirnameInt.empty()) {
+            ofile->mkdir(dirnameInt.c_str());
+            ofile->cd(dirnameInt.c_str());
+         }
          TTree t(treenameInt.c_str(), treenameInt.c_str());
 
          bool FirstEvent = true;
@@ -1120,7 +1143,7 @@ protected:
          unsigned int nSlots = df->GetNSlots();
          TBufferMerger merger(filenameInt.c_str(), "RECREATE");
          std::vector<std::shared_ptr<TBufferMergerFile>> files(nSlots);
-         std::vector<TTree *> trees(nSlots); // ROOT owns/manages these TTrees
+         std::vector<TTree *> trees(nSlots, nullptr); // ROOT owns/manages these TTrees
          std::vector<int> isFirstEvent(nSlots, 1); // vector<bool> is evil
 
          auto fillTree = [&](unsigned int slot, Args &... args) {
@@ -1137,12 +1160,18 @@ protected:
          };
 
          // called at the beginning of each task
-         auto initLambda = [&trees, &merger, &files, &treenameInt, &isFirstEvent] (TTreeReader *r, unsigned int slot) {
+         auto initLambda = [&trees, &merger, &files, &treenameInt, &dirnameInt, &treename, &isFirstEvent, &getDirTreeName] (TTreeReader *r, unsigned int slot) {
+            ::TDirectory::TContext c;
             if(!trees[slot]) {
                // first time this thread executes something, let's create a TBufferMerger output directory
                files[slot] = merger.GetFile();
             } else {
                files[slot]->Write();
+            }
+            std::tie(dirnameInt, treenameInt) = getDirTreeName(treename);
+            if (!dirnameInt.empty()) {
+               files[slot]->mkdir(dirnameInt.c_str());
+               files[slot]->cd(dirnameInt.c_str());
             }
             trees[slot] = new TTree(treenameInt.c_str(), treenameInt.c_str());
             trees[slot]->ResetBit(kMustCleanup);
@@ -1159,14 +1188,17 @@ protected:
          df->Book(std::make_shared<DFA_t>(Op_t(std::move(initLambda), std::move(fillTree)), bnames, *fProxiedPtr));
          fProxiedPtr->IncrChildrenCount();
          df->Run();
-         for (auto &&file : files) file->Write();
+         for (auto &&file : files) {
+            if (file) file->Write();
+         }
       }
 
       ::TDirectory::TContext ctxt;
+      std::string fullTreeNameInt(treename);
       // Now we mimic a constructor for the TDataFrame. We cannot invoke it here
       // since this would introduce a cyclic headers dependency.
       TInterface<TLoopManager> snapshotTDF(std::make_shared<TLoopManager>(nullptr, bnames));
-      auto chain = new TChain(treenameInt.c_str());
+      auto chain = new TChain(fullTreeNameInt.c_str());
       chain->Add(filenameInt.c_str());
       snapshotTDF.fProxiedPtr->SetTree(std::shared_ptr<TTree>(static_cast<TTree *>(chain)));
 

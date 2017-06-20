@@ -153,7 +153,7 @@
 
 
 
-ClassImp(TH2Editor)
+ClassImp(TH2Editor);
 
 enum ETH2Wid {
    kTH2_TITLE,

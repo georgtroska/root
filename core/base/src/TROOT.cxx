@@ -497,6 +497,9 @@ namespace Internal {
    /// Enables the global mutex to make ROOT thread safe/aware.
    void EnableThreadSafety()
    {
+      // 'Insure' gROOT is created before initializing the Thread safe behavior
+      // (to make sure we do not have two attempting to create it).
+      GetROOT();
       static void (*sym)() = (void(*)())Internal::GetSymInLibImt("ROOT_TThread_Initialize");
       if (sym)
          sym();
@@ -588,7 +591,7 @@ TROOT *ROOT::Internal::gROOTLocal = ROOT::GetROOT();
 Int_t gDebug;
 
 
-ClassImp(TROOT)
+ClassImp(TROOT);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Default ctor.
@@ -780,6 +783,8 @@ TROOT::TROOT(const char *name, const char *title, VoidFuncPtr_t *initfunc)
    fCleanups->Add(fTasks);    fTasks->SetBit(kMustCleanup);
    fCleanups->Add(fFiles);    fFiles->SetBit(kMustCleanup);
    fCleanups->Add(fClosedObjects); fClosedObjects->SetBit(kMustCleanup);
+   // And add TROOT's TDirectory personality
+   fCleanups->Add(fList);
 
    fExecutingMacro= kFALSE;
    fForceStyle    = kFALSE;
@@ -1076,7 +1081,7 @@ void TROOT::CloseFiles()
       R__ListSlowClose(static_cast<TList*>(fFiles));
    }
    // and Close TROOT itself.
-   Close();
+   Close("slow");
    // Now sockets.
    if (fSockets && fSockets->First()) {
       if (0==fCleanups->FindObject(fSockets) ) {
@@ -1161,7 +1166,7 @@ void TROOT::EndOfProcessCleanups()
    fFunctions->Delete();
    fGeometries->Delete();
    fBrowsers->Delete();
-   fCanvases->Delete();
+   fCanvases->Delete("slow");
    fColors->Delete();
    fStyles->Delete();
 }

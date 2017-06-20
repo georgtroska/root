@@ -25,6 +25,7 @@ namespace llvm {
   class ExecutionEngine;
   class LLVMContext;
   class Module;
+  class StringRef;
   class Type;
   template <typename T> class SmallVectorImpl;
 }
@@ -380,9 +381,7 @@ namespace cling {
 
     ///\brief Adds a single include path (-I).
     ///
-    void AddIncludePath(llvm::StringRef PathsStr) {
-      return AddIncludePaths(PathsStr, nullptr);
-    }
+     void AddIncludePath(llvm::StringRef PathsStr);
 
     ///\brief Prints the current include paths that are used.
     ///

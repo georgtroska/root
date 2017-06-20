@@ -27,6 +27,7 @@
 #include "cling/Interpreter/ClangInternalState.h"
 #include "cling/Interpreter/ClingCodeCompleteConsumer.h"
 #include "cling/Interpreter/CompilationOptions.h"
+#include "cling/Interpreter/DynamicExprInfo.h"
 #include "cling/Interpreter/DynamicLibraryManager.h"
 #include "cling/Interpreter/LookupHelper.h"
 #include "cling/Interpreter/Transaction.h"
@@ -38,14 +39,15 @@
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/GlobalDecl.h"
-#include "clang/Basic/TargetInfo.h"
 #include "clang/Basic/SourceManager.h"
+#include "clang/Basic/TargetInfo.h"
 #include "clang/CodeGen/ModuleBuilder.h"
 #include "clang/Frontend/ASTConsumers.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/Utils.h"
-#include "clang/Lex/Preprocessor.h"
+#include "clang/Lex/ExternalPreprocessorSource.h"
 #include "clang/Lex/HeaderSearch.h"
+#include "clang/Lex/Preprocessor.h"
 #include "clang/Parse/Parser.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaDiagnostic.h"
@@ -477,6 +479,10 @@ namespace cling {
     }
   }
 
+  void Interpreter::AddIncludePath(llvm::StringRef PathsStr) {
+    return AddIncludePaths(PathsStr, nullptr);
+  }
+
   void Interpreter::DumpIncludePath(llvm::raw_ostream* S) {
     utils::DumpIncludePaths(getCI()->getHeaderSearchOpts(), S ? *S : cling::outs(),
                             true /*withSystem*/, true /*withFlags*/);
@@ -488,7 +494,8 @@ namespace cling {
     if (what.equals("asttree")) {
       std::unique_ptr<clang::ASTConsumer> printer =
           clang::CreateASTDumper(filter, true  /*DumpDecls*/,
-                                         false /*DumpLookups*/ );
+                                         false /*Deserialize*/,
+                                         false /*DumpLookups*/);
       printer->HandleTranslationUnit(getSema().getASTContext());
     } else if (what.equals("ast"))
       getSema().getASTContext().PrintStats();
@@ -566,12 +573,17 @@ namespace cling {
   }
 
   const MacroInfo* Interpreter::getMacro(llvm::StringRef Macro) const {
-    const clang::Preprocessor& PP = getCI()->getPreprocessor();
-    if (const IdentifierInfo* II = PP.getIdentifierInfo(Macro)) {
-      if (const DefMacroDirective* MD = llvm::dyn_cast_or_null
-          <DefMacroDirective>(PP.getLocalMacroDirective(II))) {
-          return MD->getMacroInfo();
-      }
+    clang::Preprocessor& PP = getCI()->getPreprocessor();
+    if (IdentifierInfo* II = PP.getIdentifierInfo(Macro)) {
+      // If the information about this identifier is out of date, update it from
+      // the external source.
+      // FIXME: getIdentifierInfo will probably do this for us once we update
+      // clang. If so, please remove this manual update.
+      if (II->isOutOfDate())
+        PP.getExternalSource()->updateOutOfDateIdentifier(*II);
+      MacroDefinition MDef = PP.getMacroDefinition(II);
+      MacroInfo* MI = MDef.getMacroInfo();
+      return MI;
     }
     return nullptr;
   }
@@ -654,6 +666,7 @@ namespace cling {
     SourceLocation fileNameLoc;
     PP.LookupFile(fileNameLoc, headerFile, isAngled, FromDir, FromFile, CurDir,
                   /*SearchPath*/0, /*RelativePath*/ 0, &suggestedModule,
+                  0 /*IsMapped*/,
                   /*SkipCache*/false, /*OpenFile*/ false, /*CacheFail*/ false);
     if (!suggestedModule)
       return Interpreter::kFailure;
@@ -1072,6 +1085,14 @@ namespace cling {
     if (addr)
       return addr;
 
+    if (const CXXRecordDecl *CXX = dyn_cast<CXXRecordDecl>(RD)) {
+      // Don't generate a stub for a destructor that does nothing
+      // This also fixes printing of lambdas and C structures as they
+      // have no dtor test/ValuePrinter/Destruction.C
+      if (CXX->hasIrrelevantDestructor())
+        return nullptr;
+    }
+
     smallstream funcname;
     funcname << "__cling_Destruct_" << RD;
 
@@ -1188,7 +1209,7 @@ namespace cling {
     SourceLocation fileNameLoc;
     FE = PP.LookupFile(fileNameLoc, canonicalFile, isAngled, FromDir, FromFile,
                        CurDir, /*SearchPath*/0, /*RelativePath*/ 0,
-                       /*suggestedModule*/0, /*SkipCache*/false,
+                       /*suggestedModule*/0, 0 /*IsMapped*/, /*SkipCache*/false,
                        /*OpenFile*/ false, /*CacheFail*/ false);
     if (FE)
       return FE->getName();
@@ -1541,6 +1562,14 @@ namespace cling {
     T.setState(Transaction::kCommitted);
   }
 
-
+  namespace runtime {
+    namespace internal {
+      Value EvaluateDynamicExpression(Interpreter* interp, DynamicExprInfo* DEI,
+                                      clang::DeclContext* DC) {
+        return interp->Evaluate(DEI->getExpr(), DC,
+                                DEI->isValuePrinterRequested());
+      }
+    } // namespace internal
+  }  // namespace runtime
 
 } //end namespace cling
