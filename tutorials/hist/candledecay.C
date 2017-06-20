@@ -30,7 +30,7 @@ void candledecay()
    h1->GetXaxis()->SetTitle("probability density");
 
    c1->cd(1);
-   h1->Draw("violiny(112000000)");
+   h1->Draw("violiny(12000000)");
    c1->cd(2);
    TH2I *h2 = (TH2I*)h1->Clone("h2");
    h2->SetBarWidth(0.8);
