@@ -343,6 +343,7 @@ int TCandle::ParseOption(char * opt) {
             strncpy(brOpen,"                ",brClose-brOpen+1); //Cleanup
 
             sprintf(fOptionStr,"VIOLIN%c(%ld)",direction,fOption);
+            
 
          } else {
             preset = 1;
