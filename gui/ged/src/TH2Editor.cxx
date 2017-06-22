@@ -865,6 +865,8 @@ void TH2Editor::ConnectSignals2Slots()
    fFramePattern->Connect("PatternSelected(Style_t)", "TH2Editor", this, "DoFillPattern(Style_t)");
    fCandleCombo->Connect("Selected(Int_t)","TH2Editor", this, "DoCandleCombo()");
    for (int i = 0; i < 7; i++) fCandleUserCombo[i]->Connect("Selected(Int_t)","TH2Editor", this, "DoCandleCombo()");
+   fCandleX->Connect("Clicked()","TH2Editor", this, "DoCandleCombo()");
+   fCandleY->Connect("Clicked()","TH2Editor", this, "DoCandleCombo()");
    fInit = kFALSE;
 }
 
@@ -1781,7 +1783,11 @@ void TH2Editor::DoAddCandle(Bool_t on)
 {
    if (fAvoidSignal) return;
    ShowCandleTab(on);
-   DoHistChanges();
+   if (on) 
+      DoCandleCombo();
+   else
+      DoHistChanges();
+
    Update();
 }
 
