@@ -213,6 +213,7 @@ public:
    virtual void DoFillColor(Pixel_t);
    virtual void DoFillPattern(Style_t);
    virtual void DoCandleCombo();
+   virtual void ShowCandleTab(Bool_t show = kTRUE);
 
    Int_t* Dividers(Int_t n);
 

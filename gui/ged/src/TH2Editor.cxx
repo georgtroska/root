@@ -246,7 +246,7 @@ TH2Editor::TH2Editor(const TGWindow *p, Int_t width,
    fAddText ->SetToolTipText("Draw bin contents as text");
    f7->AddFrame(fAddText, new TGLayoutHints(kLHintsLeft, 6, 1, 1, 0));
    
-   fAddCandle = new TGCheckButton(f7, "Candle",kCANDLE_ONOFF);
+   fAddCandle = new TGCheckButton(f7, "Candle", kCANDLE_ONOFF);
    fAddCandle ->SetToolTipText("Draw candle plot or violin plot");
    f7->AddFrame(fAddCandle, new TGLayoutHints(kLHintsLeft, 6, 0, 1, 3));
 
@@ -725,25 +725,25 @@ void TH2Editor::CreateCandleTab()
    fCandleCombo = BuildCandlePresetsComboBox(f1, kCANDLE_TYPE);
    //f1->AddFrame(fCandleX, new TGLayoutHints(kLHintsLeft ,3 ,3,3,-7));
    //f1->AddFrame(fCandleY, new TGLayoutHints(kLHintsLeft ,0 ,3,3,-7));
-   fCandleGroup->AddFrame(fCandleCombo, new TGLayoutHints(kLHintsLeft, 4, -12, -2, -7));
+   fCandleGroup->AddFrame(fCandleCombo, new TGLayoutHints(kLHintsLeft, 5, -7, 4, -5));
    fCandleCombo->Resize(70, 20);
    fCandleCombo->Associate(this);
    
-   fCandleGroup->SetLayoutHints(new TGLayoutHints(kLHintsLeft ,-8,1,-2,-7),fCandleX);
-   fCandleGroup->SetLayoutHints(new TGLayoutHints(kLHintsLeft ,0,-1,-2,-7),fCandleY);
+   fCandleGroup->SetLayoutHints(new TGLayoutHints(kLHintsLeft , -10, 0, 5, -5), fCandleX);
+   fCandleGroup->SetLayoutHints(new TGLayoutHints(kLHintsLeft , 0, 0, 5, -5), fCandleY);
    //fCandleGroup->SetLayoutHints(new TGLayoutHints(kLHintsLeft ,0,-1,3,-7),fCandleCombo);
    
    //f1->Show();
    f1->ChangeOptions(kFitWidth|kChildFrame|kHorizontalFrame);
-   f1->AddFrame(fCandleGroup, new TGLayoutHints(kLHintsTop, 1, 1, 0, 0));
+   f1->AddFrame(fCandleGroup, new TGLayoutHints(kLHintsTop, 2, 2, 0, 0));
    fCandle->AddFrame(f1, new TGLayoutHints(kLHintsTop, 1, 1, 2, 5));
    
    
-   TGCompositeFrame *title2 = new TGCompositeFrame(fCandle, 145, 10,
-                                                         kHorizontalFrame |
-                                                         kLHintsExpandX   |
-                                                         kFixedWidth      |
-                                                         kOwnBackground);
+   TGCompositeFrame *title2 = new TGCompositeFrame(fCandle, 145, 10, 
+                                                   kHorizontalFrame |
+                                                   kLHintsExpandX | 
+                                                   kFixedWidth | 
+                                                   kOwnBackground);
    title2->AddFrame(new TGLabel(title2, "Individual Candle"),
                     new TGLayoutHints(kLHintsLeft, 1, 1, 0, 0));
    title2->AddFrame(new TGHorizontal3DLine(title2),
@@ -752,25 +752,28 @@ void TH2Editor::CreateCandleTab()
    
    TGCompositeFrame *f4 = new TGCompositeFrame(fCandle, 80, 18, kHorizontalFrame);
    TGCompositeFrame *f2 = new TGCompositeFrame(f4, 80, 18, kVerticalFrame);
-   TGCompositeFrame *f3 = new TGCompositeFrame(f4, 80, 18, kVerticalFrame);
+   TGCompositeFrame *hf;
    
-   ETH2Wid myEnum[] = {kCANDLE_BOX_TYPE, kCANDLE_MEDIAN_TYPE, kCANDLE_MEAN_TYPE, kCANDLE_WHISKER_TYPE, kCANDLE_ANCHOR_TYPE, kCANDLE_POINTS_TYPE, kCANDLE_HISTO_TYPE, kCANDLE_ZERO_TYPE};
-   char myLabel[][16] = {"Box:","Median:","Mean:","Whisker:","Anchor:","Points:","Histo:","Zero:"};
+   ETH2Wid myEnum[] = { kCANDLE_BOX_TYPE, kCANDLE_MEDIAN_TYPE, kCANDLE_MEAN_TYPE,
+                        kCANDLE_WHISKER_TYPE, kCANDLE_ANCHOR_TYPE, kCANDLE_POINTS_TYPE,
+                        kCANDLE_HISTO_TYPE, kCANDLE_ZERO_TYPE };
+   char myLabel[][16] = { "Box:", "Median:", "Mean:", "Whisker:", "Anchor:",
+                          "Points:", "Histo:", "Zero:" };
    for (int i = 0; i < 8; i++) {
-      TGLabel *fAddLabel = new TGLabel(f2, myLabel[i]);
-      f2->AddFrame(fAddLabel, new TGLayoutHints(kLHintsLeft, 15, 10, 4, 4));
+      hf = new TGCompositeFrame(f2, 80, 18, kHorizontalFrame);
+      TGLabel *fAddLabel = new TGLabel(hf, myLabel[i]);
+      hf->AddFrame(fAddLabel, new TGLayoutHints(kLHintsLeft|kLHintsCenterY, 0, 0, 0, 0));
       
-      fCandleUserCombo[i] = BuildUserCandleComboBox(f3, myEnum[i]);
-      f3->AddFrame(fCandleUserCombo[i], new TGLayoutHints(kLHintsLeft, 10, 1, 3, 2));
+      fCandleUserCombo[i] = BuildUserCandleComboBox(hf, myEnum[i]);
+      hf->AddFrame(fCandleUserCombo[i], new TGLayoutHints(kLHintsRight | kLHintsCenterY,
+                                                          0, 0, 0, 0));
       fCandleUserCombo[i]->Resize(61, 20);
       fCandleUserCombo[i]->Associate(this);
+      f2->AddFrame(hf, new TGLayoutHints(kLHintsExpandX, 0, 0, 1, 1));
    }
-   f4->AddFrame(f2, new TGLayoutHints(kLHintsTop, 0, 0, 0, 0));
-   f4->AddFrame(f3, new TGLayoutHints(kLHintsTop, 0, 0, 0, 0));
+   f4->AddFrame(f2, new TGLayoutHints(kLHintsTop|kLHintsExpandX, 10, 25, 5, 0));
    
-   
-   fCandle->AddFrame(f4, new TGLayoutHints(kLHintsTop, 1, 1, 2, 5));
-
+   fCandle->AddFrame(f4, new TGLayoutHints(kLHintsTop|kLHintsExpandX, 1, 1, 2, 5));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1034,6 +1037,7 @@ void TH2Editor::SetModel(TObject* obj)
       TCandle myCandle(str.Data());
       if (myCandle.GetOption() != 0) {
          fAddCandle->SetState(kButtonDown);
+         ShowCandleTab();
          if (myCandle.IsVertical()) {
             fCandleGroup->SetButton(kCANDLE_X, kTRUE);
             fCandleGroup->SetButton(kCANDLE_Y, kFALSE);
@@ -1060,11 +1064,10 @@ void TH2Editor::SetModel(TObject* obj)
          }
          //setting the individual combo boxes
          InterpretCandleOption(myCandleOpt);
-               
-         
    
       } else  {
          fAddCandle->SetState(kButtonUp);
+         ShowCandleTab(kFALSE);
       }
      
 
@@ -1740,16 +1743,46 @@ void TH2Editor::DoAddBB()
    }
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+/// Show or hide the "Candle" tab element.
+
+void TH2Editor::ShowCandleTab(Bool_t show)
+{
+   static TGTabElement *tabel = 0;
+   static TGCompositeFrame *cont = 0;
+   TGTab *tab = fGedEditor->GetTab();
+   if (!tabel && !cont) {
+      tabel = tab->GetTabTab("Candle");
+      cont = tab->GetTabContainer("Candle");
+   }
+   if (tab && tabel && cont) {
+      if (show) {
+         tabel->MapWindow();
+         tab->ShowFrame(tabel);
+         cont->MapWindow();
+         tab->ShowFrame(cont);
+      } else {
+         tabel->UnmapWindow();
+         tab->HideFrame(tabel);
+         cont->UnmapWindow();
+         tab->HideFrame(cont);
+         if (tab->GetCurrent() == 2)
+            tab->SetTab(0);
+      }
+   }
+   tab->Layout();
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Slot connected to the "candle draw option" check button.
 
 void TH2Editor::DoAddCandle(Bool_t on)
 {
    if (fAvoidSignal) return;
-   if (on) ShowFrame(fCandle); else HideFrame(fCandle);
+   ShowCandleTab(on);
    DoHistChanges();
    Update();
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
